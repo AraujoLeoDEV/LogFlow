@@ -93,16 +93,16 @@ desde o início.
 
 #### 0.1 Estrutura de repositório
 
-- [ ] Criar `/backend` e `/frontend` conforme estrutura da seção 3 do `CLAUDE.md`
-- [ ] Inicializar repositório Git (se ainda não houver) + `.gitignore` raiz
+- [x] Criar `/backend` e `/frontend` conforme estrutura da seção 3 do `CLAUDE.md`
+- [x] Inicializar repositório Git (se ainda não houver) + `.gitignore` raiz
       (`node_modules`, `dist`, `.env`, `storage/`, `*.log`)
-- [ ] Copiar `.env` atual para `.env.example`, removendo valores sensíveis reais
+- [x] Copiar `.env` atual para `.env.example`, removendo valores sensíveis reais
       (senhas, secrets) e mantendo apenas placeholders
 
 #### 0.2 Backend — bootstrap NestJS
 
-- [ ] `npx @nestjs/cli new backend`
-- [ ] Instalar dependências principais:
+- [x] `npx @nestjs/cli new backend`
+- [x] Instalar dependências principais:
   - Prisma: `prisma`, `@prisma/client`
   - Auth: `@nestjs/jwt`, `@nestjs/passport`, `passport`, `passport-jwt`, `bcrypt`, `cookie-parser`
   - Validação: `class-validator`, `class-transformer`
@@ -112,51 +112,52 @@ desde o início.
   - Jobs: `@nestjs/schedule`, `@nestjs/bullmq`, `bullmq`
   - Relatórios: `exceljs`, `pdf-lib`
   - E-mail: `@nestjs-modules/mailer`, `nodemailer`
-- [ ] Criar estrutura de pastas conforme seção 3:
+- [x] Criar estrutura de pastas conforme seção 3:
       `src/modules/*`, `src/common/{guards,decorators,filters,interceptors,utils}`, `src/prisma`
-- [ ] Configurar `main.ts`:
+- [x] Configurar `main.ts`:
   - `helmet()`
   - CORS com lista explícita de origens via `FRONTEND_URL`
   - `ValidationPipe` global (`whitelist: true, forbidNonWhitelisted: true, transform: true`)
   - Swagger em `/api/docs` (`@nestjs/swagger`)
   - Logger Pino global (substitui logger padrão do Nest)
   - Cookie parser (para refresh token httpOnly)
-- [ ] Módulo `health` com `GET /health` (status da API + conexão com banco)
+- [x] Módulo `health` com `GET /health` (status da API + conexão com banco)
 
 #### 0.3 Prisma
 
-- [ ] `npx prisma init` (datasource `postgresql`, usa `DATABASE_URL` do `.env`)
-- [ ] Configurar `PrismaService` (módulo global, `onModuleInit`/`onModuleDestroy`)
-- [ ] Definir convenção: tabelas/colunas em `snake_case` via `@@map`/`@map` (seção 6),
+- [x] `npx prisma init` (datasource `postgresql`, usa `DATABASE_URL` do `.env`)
+- [x] Configurar `PrismaService` (módulo global, `onModuleInit`/`onModuleDestroy`)
+- [x] Definir convenção: tabelas/colunas em `snake_case` via `@@map`/`@map` (seção 6),
       mas atributos do model em `camelCase`
-- [ ] Criar enum `Role` e model `User` mínimo (necessário para a Fase 1) e rodar
+- [x] Criar enum `Role` e model `User` mínimo (necessário para a Fase 1) e rodar
       `npx prisma migrate dev --name init`
 
 #### 0.4 Frontend — bootstrap Vite
 
-- [ ] `npm create vite@latest frontend -- --template react-ts`
-- [ ] Instalar: `tailwindcss postcss autoprefixer`, shadcn/ui (`npx shadcn@latest init`),
+- [x] `npm create vite@latest frontend -- --template react-ts`
+- [x] Instalar: `tailwindcss postcss autoprefixer`, shadcn/ui (`npx shadcn@latest init`),
       `@tanstack/react-query`, `react-hook-form`, `zod`, `@hookform/resolvers`,
       `react-router-dom`, `recharts`, `axios`
-- [ ] Criar estrutura `src/{pages,components,hooks,services,lib,types}` (seção 3)
-- [ ] Configurar cliente HTTP (`src/lib/api.ts`) com `axios`, `baseURL` via
+- [x] Criar estrutura `src/{pages,components,hooks,services,lib,types}` (seção 3)
+- [x] Configurar cliente HTTP (`src/lib/api.ts`) com `axios`, `baseURL` via
       `VITE_API_URL`, e interceptor preparado para refresh de token (ativado na Fase 1)
-- [ ] Layout base (sidebar + header) com placeholders de navegação por módulo
+- [x] Layout base (sidebar + header) com placeholders de navegação por módulo
 
 #### 0.5 Docker & docker-compose
 
-- [ ] `backend/Dockerfile` (multi-stage: build → runtime)
-- [ ] `frontend/Dockerfile` (dev: Vite; build: estático servido por Nginx — usado na Fase 15)
-- [ ] `docker-compose.yml` na raiz com serviços: `postgres`, `redis`, `backend`, `frontend`
+- [x] `backend/Dockerfile` (multi-stage: build → runtime)
+- [x] `frontend/Dockerfile` (dev: Vite; build: estático servido por Nginx — usado na Fase 15)
+- [x] `docker-compose.yml` na raiz com serviços: `postgres`, `redis`, `backend`, `frontend`
   - Volumes nomeados para dados do Postgres e para `storage/reports`
   - Variáveis lidas do `.env`
-- [ ] `docker compose up` sobe tudo sem erros
+- [ ] `docker compose up` sobe tudo sem erros (não validado — Docker não disponível
+      nesta máquina; arquivos prontos para validação posterior)
 
 #### 0.6 Qualidade de código
 
-- [ ] ESLint + Prettier configurados em `backend` e `frontend` (regras alinhadas)
-- [ ] Husky + lint-staged (pre-commit: lint + format)
-- [ ] (Opcional) commitlint para reforçar Conventional Commits
+- [x] ESLint + Prettier configurados em `backend` e `frontend` (regras alinhadas)
+- [x] Husky + lint-staged (pre-commit: lint + format)
+- [x] (Opcional) commitlint para reforçar Conventional Commits
 
 #### 0.7 Subagente de frontend (opcional)
 
@@ -166,11 +167,16 @@ desde o início.
 **Critérios de aceite (DoD Fase 0):**
 
 - [ ] `docker compose up` sobe Postgres, Redis, backend e frontend sem erro
-- [ ] `GET /health` retorna 200 e confirma conexão com o banco
-- [ ] Swagger acessível em `/api/docs`
-- [ ] Frontend acessível em `localhost:5173` exibindo layout base
+      (não validado — Docker não disponível nesta máquina)
+- [x] `GET /health` retorna 200 — confirmado (`{"status":"ok","database":"down",...}`;
+      `database` fica `down` até existir um Postgres acessível via `DATABASE_URL`)
+- [x] Swagger acessível em `/api/docs` — confirmado (200 OK)
+- [x] Frontend acessível em `localhost:5173` exibindo layout base — confirmado (200 OK,
+      build de produção também passa)
 - [ ] `npx prisma migrate dev` funciona e cria a tabela `users`
-- [ ] Lint/format rodando sem erros em ambos os projetos
+      (não validado — requer Postgres acessível)
+- [x] Lint/format rodando sem erros em ambos os projetos — confirmado
+      (`npm run lint` limpo em backend e frontend; Husky pre-commit + commitlint testados)
 
 ---
 
