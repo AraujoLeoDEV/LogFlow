@@ -150,8 +150,8 @@ desde o início.
 - [x] `docker-compose.yml` na raiz com serviços: `postgres`, `redis`, `backend`, `frontend`
   - Volumes nomeados para dados do Postgres e para `storage/reports`
   - Variáveis lidas do `.env`
-- [ ] `docker compose up` sobe tudo sem erros (não validado — Docker não disponível
-      nesta máquina; arquivos prontos para validação posterior)
+- [x] `docker compose up` sobe tudo sem erros — confirmado (postgres e redis
+      `Healthy`, backend e frontend iniciados)
 
 #### 0.6 Qualidade de código
 
@@ -166,15 +166,16 @@ desde o início.
 
 **Critérios de aceite (DoD Fase 0):**
 
-- [ ] `docker compose up` sobe Postgres, Redis, backend e frontend sem erro
-      (não validado — Docker não disponível nesta máquina)
-- [x] `GET /health` retorna 200 — confirmado (`{"status":"ok","database":"down",...}`;
-      `database` fica `down` até existir um Postgres acessível via `DATABASE_URL`)
+- [x] `docker compose up` sobe Postgres, Redis, backend e frontend sem erro —
+      confirmado (todos os 4 serviços no ar via `docker compose up --build`)
+- [x] `GET /health` retorna 200 — confirmado (`{"status":"ok","database":"up",...}`
+      contra o stack via Docker, com Postgres acessível via `DATABASE_URL`)
 - [x] Swagger acessível em `/api/docs` — confirmado (200 OK)
 - [x] Frontend acessível em `localhost:5173` exibindo layout base — confirmado (200 OK,
       build de produção também passa)
-- [ ] `npx prisma migrate dev` funciona e cria a tabela `users`
-      (não validado — requer Postgres acessível)
+- [x] `npx prisma migrate dev` funciona e cria a tabela `users` — confirmado
+      (`docker compose exec backend npx prisma migrate dev --name init` aplicou
+      a migration `20260612192048_init`)
 - [x] Lint/format rodando sem erros em ambos os projetos — confirmado
       (`npm run lint` limpo em backend e frontend; Husky pre-commit + commitlint testados)
 
