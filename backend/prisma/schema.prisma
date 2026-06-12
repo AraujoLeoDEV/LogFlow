@@ -1,0 +1,38 @@
+// Prisma schema - Sistema de Logistica e Controle de Frota
+// Convenção (seção 6 do CLAUDE.md): tabelas/colunas em snake_case via @@map/@map,
+// atributos do model em camelCase, enums em UPPER_SNAKE_CASE.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Perfis de acesso (RBAC) - seção 4.1
+enum Role {
+  ADMIN
+  COORDENACAO
+  MOTORISTA
+  FINANCEIRO
+}
+
+// Usuários do sistema - seção 4.1
+model User {
+  id                  String    @id @default(uuid())
+  name                String
+  email               String    @unique
+  passwordHash        String    @map("password_hash")
+  role                Role
+  isActive            Boolean   @default(true) @map("is_active")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+
+  @@map("users")
+}

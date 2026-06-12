@@ -1,0 +1,2 @@
+export PATH="/c/Users/lbarreto/AppData/Local/Programs/nodejs:$PATH"
+npx --no -- commitlint --edit "$1"
