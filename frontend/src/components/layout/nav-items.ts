@@ -28,16 +28,36 @@ export interface NavItem {
 
 export const navItems: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard },
-  { label: 'Motoristas', to: '/motoristas', icon: UserRound },
-  { label: 'Veículos', to: '/veiculos', icon: Truck },
-  { label: 'Rotas', to: '/rotas', icon: Map },
+  {
+    label: 'Motoristas',
+    to: '/motoristas',
+    icon: UserRound,
+    roles: ['ADMIN', 'COORDENACAO'],
+  },
+  {
+    label: 'Veículos',
+    to: '/veiculos',
+    icon: Truck,
+    roles: ['ADMIN', 'COORDENACAO'],
+  },
+  {
+    label: 'Rotas',
+    to: '/rotas',
+    icon: Map,
+    roles: ['ADMIN', 'COORDENACAO'],
+  },
   { label: 'Registro Diário', to: '/registro-diario', icon: ClipboardList },
   { label: 'Viagens', to: '/viagens', icon: Route },
   { label: 'Abastecimentos', to: '/abastecimentos', icon: Fuel },
   { label: 'Manutenções', to: '/manutencoes', icon: Wrench },
   { label: 'Ocorrências', to: '/ocorrencias', icon: AlertTriangle },
   { label: 'Envios', to: '/envios', icon: PackageSearch },
-  { label: 'Unidades', to: '/unidades', icon: Building2 },
+  {
+    label: 'Unidades',
+    to: '/unidades',
+    icon: Building2,
+    roles: ['ADMIN', 'COORDENACAO'],
+  },
   {
     label: 'Financeiro',
     to: '/financeiro',

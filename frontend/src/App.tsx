@@ -1,4 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -7,11 +8,23 @@ import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import { DashboardPage } from '@/pages/DashboardPage';
+import { DriversPage } from '@/pages/DriversPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
+import { RoutesPage } from '@/pages/RoutesPage';
+import { UnitsPage } from '@/pages/UnitsPage';
 import { UsersPage } from '@/pages/UsersPage';
+import { VehiclesPage } from '@/pages/VehiclesPage';
 
 import { navItems } from './components/layout/nav-items';
+
+const PAGES_BY_PATH: Record<string, ReactNode> = {
+  '/usuarios': <UsersPage />,
+  '/unidades': <UnitsPage />,
+  '/rotas': <RoutesPage />,
+  '/veiculos': <VehiclesPage />,
+  '/motoristas': <DriversPage />,
+};
 
 function App() {
   return (
@@ -29,13 +42,7 @@ function App() {
                     <Route key={item.to} element={<ProtectedRoute roles={item.roles} />}>
                       <Route
                         path={item.to}
-                        element={
-                          item.to === '/usuarios' ? (
-                            <UsersPage />
-                          ) : (
-                            <PlaceholderPage title={item.label} />
-                          )
-                        }
+                        element={PAGES_BY_PATH[item.to] ?? <PlaceholderPage title={item.label} />}
                       />
                     </Route>
                   ))}

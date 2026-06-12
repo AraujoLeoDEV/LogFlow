@@ -246,32 +246,32 @@ referenciar.
 
 #### Prisma
 
-- [ ] `model Unit` (unidades de destino dos envios — usado também na Fase 8): `id, name,
+- [x] `model Unit` (unidades de destino dos envios — usado também na Fase 8): `id, name,
 address, active, createdAt, updatedAt`
-- [ ] `model Route`: `id, name, origin, destination, estimatedDistanceKm,
+- [x] `model Route`: `id, name, origin, destination, estimatedDistanceKm,
 estimatedDurationMinutes, active` — `estimatedDurationMinutes` é usado depois pelo
       job de viagens atrasadas (Fase 4)
-- [ ] `model Vehicle`: `id, plate (unique), fuelType (enum), tankCapacityLiters,
+- [x] `model Vehicle`: `id, plate (unique), fuelType (enum), tankCapacityLiters,
 yearModel, mainRouteId, acquisitionValue, usefulLifeMonths, residualValue,
 currentKm, active, deletedAt, createdBy, updatedBy, createdAt, updatedAt` — campos de
       vencimento (`licensingExpiration`, `insuranceExpiration`) entram aqui mas os alertas
       só são implementados na Fase 9
-- [ ] `model Driver`: `id, name, position, vehicleId (nullable), currentKm,
+- [x] `model Driver`: `id, name, position, vehicleId (nullable), currentKm,
 defaultRouteId (nullable), cnhExpiration, userId (nullable, FK para User — login do
 motorista), active, deletedAt, createdBy, updatedBy, createdAt, updatedAt`
-- [ ] Migration `add_units_routes_vehicles_drivers`
+- [x] Migration `add_units_routes_vehicles_drivers`
 
 #### Backend
 
-- [ ] **Módulo `units`** — CRUD simples (`ADMIN`, `COORDENACAO`)
-- [ ] **Módulo `routes`** — CRUD simples (`ADMIN`, `COORDENACAO`)
-- [ ] **Módulo `vehicles`**
+- [x] **Módulo `units`** — CRUD simples (`ADMIN`, `COORDENACAO`)
+- [x] **Módulo `routes`** — CRUD simples (`ADMIN`, `COORDENACAO`)
+- [x] **Módulo `vehicles`**
   - CRUD com soft delete
   - Validador de placa (regex Mercosul `AAA0A00` e antigo `AAA0000`) — DTO custom validator
   - Service `calculateMonthlyDepreciation()`:
     `(acquisitionValue - residualValue) / usefulLifeMonths`
   - Endpoint que retorna depreciação calculada junto do veículo
-- [ ] **Módulo `drivers`**
+- [x] **Módulo `drivers`**
   - CRUD com soft delete, vínculo com `vehicleId`/`defaultRouteId`
   - Endpoint de histórico (placeholder agregando viagens/ocorrências/abastecimentos —
     populado conforme Fases 4, 5, 7 forem concluídas)
@@ -279,22 +279,22 @@ motorista), active, deletedAt, createdBy, updatedBy, createdAt, updatedAt`
 
 #### Frontend
 
-- [ ] Páginas de listagem (DataTable shadcn) + formulário (Dialog/Sheet) para:
+- [x] Páginas de listagem (DataTable shadcn) + formulário (Dialog/Sheet) para:
       Unidades, Rotas, Veículos, Motoristas
-- [ ] Validação de placa também no frontend (Zod regex), espelhando o backend
-- [ ] Exibição da depreciação mensal calculada na tela de detalhes do veículo
+- [x] Validação de placa também no frontend (Zod regex), espelhando o backend
+- [x] Exibição da depreciação mensal calculada na tela de detalhes do veículo
 
 #### Testes (Jest)
 
-- [ ] Validador de placa: casos válidos/inválidos (Mercosul e antigo)
-- [ ] Cálculo de depreciação mensal (casos de borda: vida útil 0/negativa → erro)
-- [ ] Soft delete: registro não aparece em listagens padrão mas permanece no banco
+- [x] Validador de placa: casos válidos/inválidos (Mercosul e antigo)
+- [x] Cálculo de depreciação mensal (casos de borda: vida útil 0/negativa → erro)
+- [x] Soft delete: registro não aparece em listagens padrão mas permanece no banco
 
 **Critérios de aceite:**
 
-- [ ] CRUDs completos e protegidos por `@Roles`
-- [ ] Soft delete funcional em `vehicles` e `drivers`
-- [ ] Depreciação mensal calculada corretamente e exibida no frontend
+- [x] CRUDs completos e protegidos por `@Roles`
+- [x] Soft delete funcional em `vehicles` e `drivers`
+- [x] Depreciação mensal calculada corretamente e exibida no frontend
 
 ---
 
