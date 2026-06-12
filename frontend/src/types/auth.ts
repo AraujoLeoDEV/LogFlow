@@ -6,3 +6,13 @@ export interface AuthUser {
   email: string;
   role: Role;
 }
+
+export interface AuthResponse {
+  accessToken: string;
+  user: AuthUser;
+}
+
+export interface LoginCredentials {
+  email: string;
+  password: string;
+}

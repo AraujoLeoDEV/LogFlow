@@ -188,15 +188,15 @@ Motorista, Financeiro), com guards reutilizáveis por todo o restante do projeto
 
 #### Prisma
 
-- [ ] `enum Role { ADMIN COORDENACAO MOTORISTA FINANCEIRO }` (UPPER_SNAKE_CASE, seção 6)
-- [ ] `model User`: `id, name, email (unique), passwordHash, role, isActive,
+- [x] `enum Role { ADMIN COORDENACAO MOTORISTA FINANCEIRO }` (UPPER_SNAKE_CASE, seção 6)
+- [x] `model User`: `id, name, email (unique), passwordHash, role, isActive,
 failedLoginAttempts, lockedUntil, createdAt, updatedAt, deletedAt` (soft delete)
-- [ ] Migration `add_users_and_roles`
+- [x] Migration `add_users_and_roles`
 
 #### Backend
 
-- [ ] `common/utils`: helper de hash/verify com bcrypt (`BCRYPT_ROUNDS` do `.env`, mínimo 10)
-- [ ] **Módulo `auth`**
+- [x] `common/utils`: helper de hash/verify com bcrypt (`BCRYPT_ROUNDS` do `.env`, mínimo 10)
+- [x] **Módulo `auth`**
   - `POST /auth/login` — valida credenciais, incrementa `failedLoginAttempts` em caso de
     erro, bloqueia conta (`lockedUntil`) após N tentativas (configurável via env)
   - `POST /auth/refresh` — lê refresh token do cookie `httpOnly`, emite novo access token
@@ -205,37 +205,37 @@ failedLoginAttempts, lockedUntil, createdAt, updatedAt, deletedAt` (soft delete)
     cookie `httpOnly; secure; sameSite=strict`
   - `JwtStrategy` (Passport) + `JwtAuthGuard`
   - `@nestjs/throttler` aplicado em `/auth/login` (rate limiting)
-- [ ] **Common**
+- [x] **Common**
   - `@Roles(...roles: Role[])` decorator + `RolesGuard`
   - `@CurrentUser()` decorator (extrai usuário do request)
   - `GlobalExceptionFilter` retornando mensagens padronizadas em pt-BR
   - Interceptor de auditoria base (preenche `createdBy`/`updatedBy` — usado a partir da Fase 2)
-- [ ] **Módulo `users`**
+- [x] **Módulo `users`**
   - CRUD (somente `ADMIN`), nunca retorna `passwordHash`
   - Soft delete (`deletedAt`)
   - Endpoint `GET /users/me` (perfil do usuário autenticado)
 
 #### Frontend
 
-- [ ] Tela de login (shadcn/ui `Form` + RHF + Zod), mensagens de erro em pt-BR
-- [ ] `AuthContext`/store: access token em memória, refresh automático via interceptor axios
-- [ ] `ProtectedRoute` + verificação de `role` por rota (React Router)
-- [ ] Layout: menu lateral exibe apenas itens permitidos para o perfil logado
-- [ ] Tela `Usuários` (CRUD, somente visível para `ADMIN`)
+- [x] Tela de login (shadcn/ui `Form` + RHF + Zod), mensagens de erro em pt-BR
+- [x] `AuthContext`/store: access token em memória, refresh automático via interceptor axios
+- [x] `ProtectedRoute` + verificação de `role` por rota (React Router)
+- [x] Layout: menu lateral exibe apenas itens permitidos para o perfil logado
+- [x] Tela `Usuários` (CRUD, somente visível para `ADMIN`)
 
 #### Testes (Jest)
 
-- [ ] Hash/verify de senha
-- [ ] Bloqueio de conta após N tentativas falhas e desbloqueio após expiração
-- [ ] `RolesGuard` nega acesso para perfil não permitido
-- [ ] Geração/validação de access e refresh tokens
+- [x] Hash/verify de senha
+- [x] Bloqueio de conta após N tentativas falhas e desbloqueio após expiração
+- [x] `RolesGuard` nega acesso para perfil não permitido
+- [x] Geração/validação de access e refresh tokens
 
 **Critérios de aceite:**
 
-- [ ] Login funciona para os 4 perfis com tokens corretos
-- [ ] Rota protegida por `@Roles(Role.ADMIN)` retorna 403 para outros perfis
-- [ ] Refresh token renova sessão sem novo login
-- [ ] Lockout após N tentativas funciona e é configurável via `.env`
+- [x] Login funciona para os 4 perfis com tokens corretos
+- [x] Rota protegida por `@Roles(Role.ADMIN)` retorna 403 para outros perfis
+- [x] Refresh token renova sessão sem novo login
+- [x] Lockout após N tentativas funciona e é configurável via `.env`
 
 ---
 

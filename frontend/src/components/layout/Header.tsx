@@ -1,5 +1,6 @@
 import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -12,11 +13,29 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useAuth } from '@/contexts/AuthContext';
+import { roleLabels } from '@/lib/roles';
 
 import { Sidebar } from './Sidebar';
 
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  const initials = parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('');
+  return initials || '?';
+}
+
 export function Header() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login', { replace: true });
+  }
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
@@ -39,14 +58,19 @@ export function Header() {
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" className="gap-2" />}>
           <Avatar className="size-7">
-            <AvatarFallback>US</AvatarFallback>
+            <AvatarFallback>{user ? getInitials(user.name) : '?'}</AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm font-medium sm:inline">Usuário</span>
+          <span className="hidden text-sm font-medium sm:inline">{user?.name}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
+          <DropdownMenuLabel className="flex flex-col items-start gap-0.5">
+            <span>{user?.name}</span>
+            <span className="text-xs font-normal text-muted-foreground">
+              {user ? roleLabels[user.role] : ''}
+            </span>
+          </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="size-4" />
             Sair
           </DropdownMenuItem>

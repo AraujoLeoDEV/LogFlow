@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 
+import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 import { navItems } from './nav-items';
@@ -10,9 +11,15 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className, onNavigate }: SidebarProps) {
+  const { user } = useAuth();
+
+  const visibleItems = navItems.filter(
+    (item) => !item.roles || (user && item.roles.includes(user.role)),
+  );
+
   return (
     <nav className={cn('flex flex-col gap-1 p-3', className)}>
-      {navItems.map((item) => {
+      {visibleItems.map((item) => {
         const Icon = item.icon;
         return (
           <NavLink
