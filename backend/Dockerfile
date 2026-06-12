@@ -16,9 +16,10 @@ RUN npm ci
 FROM dependencies AS dev
 ENV NODE_ENV=development
 COPY . .
-RUN npx prisma generate
 EXPOSE 3000
-CMD ["npm", "run", "start:dev"]
+# generated/ is bind-mounted from the host (and gitignored), so the client
+# must be (re)generated on container start rather than baked into the image
+CMD ["sh", "-c", "npx prisma generate && npm run start:dev"]
 
 # ---------------------------------------------------------------------------
 # build: compiles TypeScript and generates the Prisma client
