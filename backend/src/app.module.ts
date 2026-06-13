@@ -13,6 +13,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DriversModule } from './modules/drivers/drivers.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './modules/health/health.module';
 import { IncidentsModule } from './modules/incidents/incidents.module';
@@ -75,6 +76,7 @@ import { PrismaModule } from './prisma/prisma.module';
     IncidentsModule,
     ShipmentsModule,
     AlertsModule,
+    FinanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

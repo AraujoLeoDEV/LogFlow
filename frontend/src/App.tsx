@@ -10,6 +10,7 @@ import { queryClient } from '@/lib/queryClient';
 import { DailyLogsPage } from '@/pages/DailyLogsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DriversPage } from '@/pages/DriversPage';
+import { FinancePage } from '@/pages/FinancePage';
 import { FuelPage } from '@/pages/FuelPage';
 import { IncidentsPage } from '@/pages/IncidentsPage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -36,6 +37,7 @@ const PAGES_BY_PATH: Record<string, ReactNode> = {
   '/manutencoes': <MaintenancePage />,
   '/ocorrencias': <IncidentsPage />,
   '/envios': <ShipmentsPage />,
+  '/financeiro': <FinancePage />,
 };
 
 function App() {

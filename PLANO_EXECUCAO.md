@@ -678,25 +678,25 @@ caso contrário o app quebra (tela branca) ao abrir o menu.
 
 #### Backend — Módulo `finance`
 
-- [ ] `GET /finance/monthly` — custo mensal da frota = soma de `Fuel.amountPaid` +
+- [x] `GET /finance/monthly` — custo mensal da frota = soma de `Fuel.amountPaid` +
       `Maintenance.cost` + depreciação mensal de todos os veículos ativos (Fase 2)
-- [ ] `GET /finance/cost-per-km` — custo médio por KM (custo total / KM total rodado no
+- [x] `GET /finance/cost-per-km` — custo médio por KM (custo total / KM total rodado no
       período)
-- [ ] `GET /finance/comparison` — comparativo mensal (mês atual vs. anteriores)
+- [x] `GET /finance/comparison` — comparativo mensal (mês atual vs. anteriores)
 
 #### Frontend
 
-- [ ] Tela financeira: cards de totais + gráfico comparativo mensal
+- [x] Tela financeira: cards de totais + gráfico comparativo mensal
 
 #### Testes (Jest)
 
-- [ ] Cálculo de custo mensal (combustível + manutenção + depreciação)
-- [ ] Cálculo de custo médio por KM (incluindo período sem KM rodado → não dividir por
+- [x] Cálculo de custo mensal (combustível + manutenção + depreciação)
+- [x] Cálculo de custo médio por KM (incluindo período sem KM rodado → não dividir por
       zero)
 
 **Critérios de aceite:**
 
-- [ ] Indicadores da seção 4.12 corretos com dados de seed
+- [x] Indicadores da seção 4.12 corretos com dados de seed
 
 ---
 
