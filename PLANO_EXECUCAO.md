@@ -488,33 +488,38 @@ nextReviewDate` (todos nullable) — usados pelos alertas (Fase 9)
 
 #### Prisma
 
-- [ ] `model Incident`: `id, vehicleId, driverId, category, type, severity (enum:
+- [x] `model Incident`: `id, vehicleId, driverId, category, type, severity (enum:
 BAIXA, MEDIA, ALTA, CRITICA), responsible, cost (nullable), observations, date,
 createdBy, updatedBy, createdAt, updatedAt`
-- [ ] Migration `add_incidents`
+- [x] Migration `add_incidents`
+
+> Nota: além de `severity`, foram adicionados os enums `IncidentCategory` (TRANSITO,
+> SINISTRO, MECANICA, OPERACIONAL, OUTROS) e `IncidentType` (MULTA, ACIDENTE, PANE,
+> ATRASO, DANO_VEICULO, OUTROS) para classificar a ocorrência de forma estruturada,
+> permitindo agrupamentos e filtros mais ricos do que um único campo livre.
 
 #### Backend — Módulo `incidents`
 
-- [ ] CRUD de ocorrências
-- [ ] `GET /incidents/indicators`:
+- [x] CRUD de ocorrências
+- [x] `GET /incidents/indicators`:
   - Ocorrências por motorista
   - Ocorrências por veículo
   - Índice ocorrências/KM rodado (usa soma de `DailyLog.kmDriven` ou `Trip` no período)
 
 #### Frontend
 
-- [ ] Tela de registro/listagem de ocorrências (filtro por veículo, motorista, categoria,
+- [x] Tela de registro/listagem de ocorrências (filtro por veículo, motorista, categoria,
       gravidade, período)
-- [ ] Cards/gráficos de indicadores
+- [x] Cards/gráficos de indicadores
 
 #### Testes (Jest)
 
-- [ ] Cálculo do índice ocorrências/KM (incluindo divisão por zero quando não há KM
+- [x] Cálculo do índice ocorrências/KM (incluindo divisão por zero quando não há KM
       rodado no período)
 
 **Critérios de aceite:**
 
-- [ ] CRUD completo e indicadores corretos com dados de seed
+- [x] CRUD completo e indicadores corretos com dados de seed
 
 ---
 

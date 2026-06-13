@@ -57,6 +57,35 @@ enum MaintenanceCategory {
   OUTROS
 }
 
+// Categoria da ocorrência (classificação ampla, usada em filtros e
+// indicadores) - seção 4.8
+enum IncidentCategory {
+  TRANSITO
+  SINISTRO
+  MECANICA
+  OPERACIONAL
+  OUTROS
+}
+
+// Tipo da ocorrência (classificação específica - "Exemplos de tipo" da
+// seção 4.8: multa, acidente, pane, atraso, dano ao veículo)
+enum IncidentType {
+  MULTA
+  ACIDENTE
+  PANE
+  ATRASO
+  DANO_VEICULO
+  OUTROS
+}
+
+// Gravidade da ocorrência - seção 4.8
+enum IncidentSeverity {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -142,6 +171,7 @@ model Vehicle {
   trips        Trip[]
   fuelRecords  Fuel[]
   maintenances Maintenance[]
+  incidents    Incident[]
 
   @@map("vehicles")
 }
@@ -169,6 +199,7 @@ model Driver {
   dailyLogs    DailyLog[]
   trips        Trip[]
   fuelRecords  Fuel[]
+  incidents    Incident[]
 
   @@map("drivers")
 }
@@ -267,4 +298,27 @@ model Maintenance {
   vehicle Vehicle @relation(fields: [vehicleId], references: [id])
 
   @@map("maintenances")
+}
+
+// Ocorrências - seção 4.8
+model Incident {
+  id           String           @id @default(uuid())
+  vehicleId    String           @map("vehicle_id")
+  driverId     String           @map("driver_id")
+  category     IncidentCategory
+  type         IncidentType
+  severity     IncidentSeverity
+  responsible  String
+  cost         Decimal?         @db.Decimal(10, 2)
+  observations String
+  date         DateTime
+  createdBy    String?          @map("created_by")
+  updatedBy    String?          @map("updated_by")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  driver  Driver  @relation(fields: [driverId], references: [id])
+
+  @@map("incidents")
 }
