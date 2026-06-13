@@ -131,6 +131,34 @@ enum GoalStatus {
   NAO_ATINGIDA
 }
 
+// Tipos de relatório exportável - seção 4.14
+enum ReportType {
+  DAILY_USAGE
+  VEHICLE_HISTORY
+  DRIVER_HISTORY
+  MONTHLY_COSTS
+  FUEL
+  MAINTENANCE
+  INCIDENTS
+  SAVINGS
+  RANKING
+}
+
+// Formato de exportação - seção 4.14
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+}
+
+// Status do job de geração do relatório - seção 4.14
+enum ReportStatus {
+  PENDING
+  PROCESSING
+  DONE
+  ERROR
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -460,4 +488,21 @@ model Goal {
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
 
   @@map("goals")
+}
+
+// Relatórios exportáveis (PDF/Excel/CSV) gerados de forma assíncrona via
+// fila BullMQ - seção 4.14
+model Report {
+  id           String       @id @default(uuid())
+  type         ReportType
+  format       ReportFormat
+  filters      Json
+  status       ReportStatus @default(PENDING)
+  filePath     String?      @map("file_path")
+  errorMessage String?      @map("error_message")
+  requestedBy  String       @map("requested_by")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@map("reports")
 }

@@ -742,33 +742,33 @@ NAO_ATINGIDA), createdBy, createdAt, updatedAt`
 
 #### Backend — Módulo `reports`
 
-- [ ] Fila BullMQ `reports` (Redis) + worker dedicado
-- [ ] `POST /reports` — enfileira job com `{ type, format, filters }`, retorna `reportId`
-- [ ] `GET /reports/:id` — status do job (`PENDING/PROCESSING/DONE/ERROR`) + link de
+- [x] Fila BullMQ `reports` (Redis) + worker dedicado
+- [x] `POST /reports` — enfileira job com `{ type, format, filters }`, retorna `reportId`
+- [x] `GET /reports/:id` — status do job (`PENDING/PROCESSING/DONE/ERROR`) + link de
       download quando `DONE`
-- [ ] Worker gera arquivo em `PDF_STORAGE_PATH` (do `.env`):
+- [x] Worker gera arquivo em `PDF_STORAGE_PATH` (do `.env`):
   - PDF via **pdf-lib** (tabelas simples — uso diário, custos, manutenções, etc.)
   - Excel via **ExcelJS**
   - CSV via geração nativa (stream)
-- [ ] Tipos suportados (seção 4.14): uso diário, histórico por veículo/motorista, custos
+- [x] Tipos suportados (seção 4.14): uso diário, histórico por veículo/motorista, custos
       mensais, abastecimentos, manutenções, ocorrências, economia, ranking — cada tipo
       reaproveita as queries dos módulos já implementados (Fases 3-12)
 
 #### Frontend
 
-- [ ] "Central de Relatórios": seleção de tipo + filtros + formato, lista de relatórios
+- [x] "Central de Relatórios": seleção de tipo + filtros + formato, lista de relatórios
       gerados com status e link de download
 
 #### Testes (Jest)
 
-- [ ] Geração de cada tipo de relatório com dados de seed (valida estrutura básica do
+- [x] Geração de cada tipo de relatório com dados de seed (valida estrutura básica do
       arquivo gerado: nº de linhas/colunas esperado)
-- [ ] Worker processa fila corretamente (job de teste com Redis em memória/test container)
+- [x] Worker processa fila corretamente (job de teste com Redis em memória/test container)
 
 **Critérios de aceite:**
 
-- [ ] Todos os tipos de relatório da seção 4.14 disponíveis nos 3 formatos
-- [ ] Geração não bloqueia a API (assíncrona via fila)
+- [x] Todos os tipos de relatório da seção 4.14 disponíveis nos 3 formatos
+- [x] Geração não bloqueia a API (assíncrona via fila)
 
 ---
 

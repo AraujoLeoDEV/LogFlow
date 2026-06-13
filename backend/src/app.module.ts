@@ -1,3 +1,4 @@
+import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
@@ -19,6 +20,7 @@ import { GoalsModule } from './modules/goals/goals.module';
 import { HealthModule } from './modules/health/health.module';
 import { IncidentsModule } from './modules/incidents/incidents.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TripsModule } from './modules/trips/trips.module';
@@ -60,6 +62,16 @@ import { PrismaModule } from './prisma/prisma.module';
         },
       }),
     }),
+    BullModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        connection: {
+          host: config.get<string>('REDIS_HOST', 'localhost'),
+          port: config.get<number>('REDIS_PORT', 6379),
+          password: config.get<string>('REDIS_PASSWORD') || undefined,
+        },
+      }),
+    }),
     PrismaModule,
     CommonModule,
     HealthModule,
@@ -79,6 +91,7 @@ import { PrismaModule } from './prisma/prisma.module';
     AlertsModule,
     FinanceModule,
     GoalsModule,
+    ReportsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
