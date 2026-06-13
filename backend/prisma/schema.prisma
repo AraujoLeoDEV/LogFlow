@@ -29,6 +29,12 @@ enum FuelType {
   GNV
 }
 
+// Status do registro diário de uso da frota - seção 4.4
+enum DailyLogStatus {
+  EM_ANDAMENTO
+  FINALIZADO
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -72,8 +78,9 @@ model Route {
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
 
-  vehicles Vehicle[] @relation("VehicleMainRoute")
-  drivers  Driver[]  @relation("DriverDefaultRoute")
+  vehicles  Vehicle[]  @relation("VehicleMainRoute")
+  drivers   Driver[]   @relation("DriverDefaultRoute")
+  dailyLogs DailyLog[]
 
   @@map("routes")
 }
@@ -99,8 +106,9 @@ model Vehicle {
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  mainRoute Route?   @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
+  mainRoute Route?     @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
   drivers   Driver[]
+  dailyLogs DailyLog[]
 
   @@map("vehicles")
 }
@@ -122,9 +130,37 @@ model Driver {
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  vehicle      Vehicle? @relation(fields: [vehicleId], references: [id])
-  defaultRoute Route?   @relation("DriverDefaultRoute", fields: [defaultRouteId], references: [id])
-  user         User?    @relation(fields: [userId], references: [id])
+  vehicle      Vehicle?   @relation(fields: [vehicleId], references: [id])
+  defaultRoute Route?     @relation("DriverDefaultRoute", fields: [defaultRouteId], references: [id])
+  user         User?      @relation(fields: [userId], references: [id])
+  dailyLogs    DailyLog[]
 
   @@map("drivers")
+}
+
+// Registro diário de uso da frota (saída/retorno) - seção 4.4
+model DailyLog {
+  id                   String         @id @default(uuid())
+  vehicleId            String         @map("vehicle_id")
+  driverId             String         @map("driver_id")
+  routeId              String         @map("route_id")
+  departureAt          DateTime       @map("departure_at")
+  returnAt             DateTime?      @map("return_at")
+  startKm              Decimal        @map("start_km") @db.Decimal(10, 1)
+  endKm                Decimal?       @map("end_km") @db.Decimal(10, 1)
+  kmDriven             Decimal?       @map("km_driven") @db.Decimal(10, 1)
+  totalDurationMinutes Int?           @map("total_duration_minutes")
+  avgSpeedKmh          Decimal?       @map("avg_speed_kmh") @db.Decimal(10, 2)
+  observations         String?
+  status               DailyLogStatus @default(EM_ANDAMENTO)
+  createdBy            String?        @map("created_by")
+  updatedBy            String?        @map("updated_by")
+  createdAt            DateTime       @default(now()) @map("created_at")
+  updatedAt            DateTime       @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  driver  Driver  @relation(fields: [driverId], references: [id])
+  route   Route   @relation(fields: [routeId], references: [id])
+
+  @@map("daily_logs")
 }

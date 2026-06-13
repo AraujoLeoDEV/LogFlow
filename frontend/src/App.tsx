@@ -7,6 +7,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
+import { DailyLogsPage } from '@/pages/DailyLogsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DriversPage } from '@/pages/DriversPage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -24,6 +25,7 @@ const PAGES_BY_PATH: Record<string, ReactNode> = {
   '/rotas': <RoutesPage />,
   '/veiculos': <VehiclesPage />,
   '/motoristas': <DriversPage />,
+  '/registro-diario': <DailyLogsPage />,
 };
 
 function App() {

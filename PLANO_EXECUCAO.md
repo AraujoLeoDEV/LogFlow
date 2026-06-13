@@ -305,45 +305,45 @@ validações que alimentam todos os indicadores futuros.
 
 #### Prisma
 
-- [ ] `model DailyLog`: `id, vehicleId, driverId, routeId, departureAt, returnAt
+- [x] `model DailyLog`: `id, vehicleId, driverId, routeId, departureAt, returnAt
 (nullable), startKm, endKm (nullable), kmDriven (nullable), totalDurationMinutes
 (nullable), avgSpeedKmh (nullable), observations, status (enum: EM_ANDAMENTO,
 FINALIZADO), createdBy, updatedBy, createdAt, updatedAt`
-- [ ] Migration `add_daily_logs`
+- [x] Migration `add_daily_logs`
 
 #### Backend — Módulo `daily-logs`
 
-- [ ] `POST /daily-logs` (iniciar saída): valida que não existe registro `EM_ANDAMENTO`
+- [x] `POST /daily-logs` (iniciar saída): valida que não existe registro `EM_ANDAMENTO`
       para o mesmo `vehicleId` → senão `409 Conflict`
-- [ ] `PATCH /daily-logs/:id/return` (registrar retorno):
+- [x] `PATCH /daily-logs/:id/return` (registrar retorno):
   - Valida `endKm >= startKm`, senão `422 Unprocessable Entity` (regra explícita da seção 4.4)
   - Calcula automaticamente: `kmDriven = endKm - startKm`,
     `totalDurationMinutes = returnAt - departureAt`,
     `avgSpeedKmh = kmDriven / (totalDurationMinutes / 60)`
   - Atualiza `vehicle.currentKm = endKm`
   - Marca `status = FINALIZADO`
-- [ ] `GET /daily-logs` — histórico com filtros por veículo, motorista, rota, período
-- [ ] Guard: perfil `MOTORISTA` só vê/edita registros do próprio `driverId`
+- [x] `GET /daily-logs` — histórico com filtros por veículo, motorista, rota, período
+- [x] Guard: perfil `MOTORISTA` só vê/edita registros do próprio `driverId`
 
 #### Frontend
 
-- [ ] Tela "Saída/Retorno" — fluxo operacional rápido (registrar saída; depois registrar
+- [x] Tela "Saída/Retorno" — fluxo operacional rápido (registrar saída; depois registrar
       retorno do registro em andamento)
-- [ ] Tela de histórico com filtros (data, veículo, motorista, rota) e colunas calculadas
+- [x] Tela de histórico com filtros (data, veículo, motorista, rota) e colunas calculadas
       (KM rodado, duração, velocidade média)
 
 #### Testes (Jest)
 
-- [ ] Rejeita `endKm < startKm` com 422
-- [ ] Bloqueia novo registro `EM_ANDAMENTO` se já existir um para o mesmo veículo
-- [ ] Cálculo de `kmDriven`, `totalDurationMinutes`, `avgSpeedKmh` com casos normais e de
+- [x] Rejeita `endKm < startKm` com 422
+- [x] Bloqueia novo registro `EM_ANDAMENTO` se já existir um para o mesmo veículo
+- [x] Cálculo de `kmDriven`, `totalDurationMinutes`, `avgSpeedKmh` com casos normais e de
       borda (duração zero, etc.)
-- [ ] `vehicle.currentKm` é atualizado corretamente ao finalizar
+- [x] `vehicle.currentKm` é atualizado corretamente ao finalizar
 
 **Critérios de aceite:**
 
-- [ ] Todas as regras da seção 4.4 implementadas e testadas
-- [ ] Frontend reflete em tempo real o status "em andamento"/"finalizado"
+- [x] Todas as regras da seção 4.4 implementadas e testadas
+- [x] Frontend reflete em tempo real o status "em andamento"/"finalizado"
 
 ---
 

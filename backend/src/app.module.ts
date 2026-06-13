@@ -8,6 +8,7 @@ import { CommonModule } from './common/common.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './modules/auth/auth.module';
+import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { HealthModule } from './modules/health/health.module';
 import { RoutesModule } from './modules/routes/routes.module';
@@ -57,6 +58,7 @@ import { PrismaModule } from './prisma/prisma.module';
     RoutesModule,
     VehiclesModule,
     DriversModule,
+    DailyLogsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
