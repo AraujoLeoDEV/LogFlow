@@ -119,6 +119,18 @@ enum AlertStatus {
   LIDO
 }
 
+// Tipo de meta - seção 4.13
+enum GoalType {
+  CONSUMPTION_REDUCTION
+}
+
+// Status da meta - seção 4.13
+enum GoalStatus {
+  ABERTA
+  ATINGIDA
+  NAO_ATINGIDA
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -208,6 +220,7 @@ model Vehicle {
   fuelRecords  Fuel[]
   maintenances Maintenance[]
   incidents    Incident[]
+  goals        Goal[]
 
   @@map("vehicles")
 }
@@ -237,6 +250,7 @@ model Driver {
   fuelRecords          Fuel[]
   incidents            Incident[]
   transportedShipments Shipment[] @relation("ShipmentTransporter")
+  goals                Goal[]
 
   @@map("drivers")
 }
@@ -424,4 +438,26 @@ model Alert {
 
   @@unique([referenceType, referenceId, type, dueDate])
   @@map("alerts")
+}
+
+// Metas de redução de consumo e cálculo de comissão - seção 4.13
+model Goal {
+  id              String     @id @default(uuid())
+  driverId        String?    @map("driver_id")
+  vehicleId       String?    @map("vehicle_id")
+  type            GoalType
+  period          String // YYYY-MM
+  targetValue     Decimal    @map("target_value") @db.Decimal(10, 3)
+  actualValue     Decimal?   @map("actual_value") @db.Decimal(10, 3)
+  commissionValue Decimal?   @map("commission_value") @db.Decimal(10, 2)
+  status          GoalStatus @default(ABERTA)
+  createdBy       String?    @map("created_by")
+  updatedBy       String?    @map("updated_by")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  driver  Driver?  @relation(fields: [driverId], references: [id])
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  @@map("goals")
 }

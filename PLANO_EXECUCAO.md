@@ -706,33 +706,33 @@ caso contrário o app quebra (tela branca) ao abrir o menu.
 
 #### Prisma
 
-- [ ] `model Goal`: `id, driverId (nullable), vehicleId (nullable), type (enum:
+- [x] `model Goal`: `id, driverId (nullable), vehicleId (nullable), type (enum:
 CONSUMPTION_REDUCTION, ...), period (YYYY-MM), targetValue, actualValue
 (nullable), commissionValue (nullable), status (enum: ABERTA, ATINGIDA,
 NAO_ATINGIDA), createdBy, createdAt, updatedAt`
-- [ ] Migration `add_goals`
+- [x] Migration `add_goals`
 
 #### Backend — Módulo `goals`
 
-- [ ] CRUD de metas (somente `ADMIN`/`COORDENACAO`)
-- [ ] Job/serviço que, ao fechar o período, calcula `actualValue` (a partir dos dados de
+- [x] CRUD de metas (somente `ADMIN`/`COORDENACAO`)
+- [x] Job/serviço que, ao fechar o período, calcula `actualValue` (a partir dos dados de
       `Fuel`/indicadores de consumo da Fase 5) e `commissionValue` conforme regra
       configurável
-- [ ] `GET /goals/ranking` — ranking real vs. meta por motorista/veículo
+- [x] `GET /goals/ranking` — ranking real vs. meta por motorista/veículo
 
 #### Frontend
 
-- [ ] Tela de metas (criação/acompanhamento)
-- [ ] Ranking/gamificação integrado ao dashboard (Fase 10)
+- [x] Tela de metas (criação/acompanhamento)
+- [x] Ranking/gamificação integrado ao dashboard (Fase 10)
 
 #### Testes (Jest)
 
-- [ ] Cálculo de `actualValue` vs `targetValue`
-- [ ] Cálculo de `commissionValue` (casos: meta atingida, não atingida, superada)
+- [x] Cálculo de `actualValue` vs `targetValue`
+- [x] Cálculo de `commissionValue` (casos: meta atingida, não atingida, superada)
 
 **Critérios de aceite:**
 
-- [ ] Metas e comissões calculadas corretamente conforme seção 4.13
+- [x] Metas e comissões calculadas corretamente conforme seção 4.13
 
 ---
 
