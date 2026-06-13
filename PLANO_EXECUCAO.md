@@ -529,44 +529,57 @@ createdBy, updatedBy, createdAt, updatedAt`
 
 #### Prisma
 
-- [ ] `model Shipment`: `id, protocolNumber (unique), destinationUnitId, items (Json),
+- [x] `model Shipment`: `id, protocolNumber (unique), destinationUnitId, items (Json),
 senderId, transporterId (nullable), observations, status (enum: PENDENTE,
 EM_TRANSITO, ENTREGUE, CANCELADO), createdBy, createdAt, updatedAt`
-- [ ] `model ShipmentStatusHistory`: `id, shipmentId, status, changedAt, changedBy,
+- [x] `model ShipmentStatusHistory`: `id, shipmentId, status, changedAt, changedBy,
 notes (nullable)` — timeline de movimentações
-- [ ] Sequence/contador atômico para gerar `protocolNumber` no formato `AAAAMMDD-SEQ`
+- [x] Sequence/contador atômico para gerar `protocolNumber` no formato `AAAAMMDD-SEQ`
       (ex: tabela `protocol_counters(date, last_seq)` atualizada via transação com
       `SELECT ... FOR UPDATE`, ou `Prisma.$transaction` com `UPDATE ... RETURNING`)
-- [ ] Migration `add_shipments`
+- [x] Migration `add_shipments`
+
+> Nota: o contador atômico foi implementado como `model ProtocolCounter { date (PK),
+lastSeq }`, incrementado via `INSERT ... ON CONFLICT (date) DO UPDATE SET last_seq =
+protocol_counters.last_seq + 1 RETURNING last_seq` (`$queryRaw`), garantindo
+> atomicidade em uma única instrução SQL sem `SELECT ... FOR UPDATE` explícito.
 
 #### Backend — Módulo `shipments`
 
-- [ ] `POST /shipments`:
+- [x] `POST /shipments`:
   - Gera `protocolNumber` de forma atômica (sem colisão sob concorrência)
   - `status` inicial = `PENDENTE`, cria primeira entrada em `ShipmentStatusHistory`
-- [ ] `PATCH /shipments/:id/status` — atualiza status (`PENDENTE → EM_TRANSITO →
+- [x] `PATCH /shipments/:id/status` — atualiza status (`PENDENTE → EM_TRANSITO →
 ENTREGUE` ou `CANCELADO`), grava nova entrada na timeline
-- [ ] `GET /shipments/:protocolNumber` — detalhes + timeline completa
-- [ ] `GET /shipments` — listagem com filtro por status/unidade/período
+- [x] `GET /shipments/:protocolNumber` — detalhes + timeline completa
+- [x] `GET /shipments` — listagem com filtro por status/unidade/período
+
+> Nota: acesso ao módulo restrito a `ADMIN`/`COORDENACAO` (mesmo padrão de RBAC da
+> Fase 6), seguindo a recomendação da Fase 14 de nunca deixar endpoint sem `@Roles(...)`.
 
 #### Frontend
 
-- [ ] Tela de criação de envio (seleção de unidade destino, itens, responsáveis,
+- [x] Tela de criação de envio (seleção de unidade destino, itens, responsáveis,
       observações)
-- [ ] Listagem com filtro por status
-- [ ] Tela de detalhes com timeline visual de status
+- [x] Listagem com filtro por status
+- [x] Tela de detalhes com timeline visual de status
 
 #### Testes (Jest)
 
-- [ ] Geração de protocolo: formato correto (`AAAAMMDD-SEQ`)
-- [ ] **Teste de concorrência**: N criações simultâneas geram N protocolos únicos sem
+- [x] Geração de protocolo: formato correto (`AAAAMMDD-SEQ`)
+- [x] **Teste de concorrência**: N criações simultâneas geram N protocolos únicos sem
       colisão
-- [ ] Transições de status válidas/inválidas e registro correto na timeline
+- [x] Transições de status válidas/inválidas e registro correto na timeline
 
 **Critérios de aceite:**
 
-- [ ] Protocolos únicos garantidos mesmo sob concorrência (testado)
-- [ ] Timeline completa e correta por protocolo
+- [x] Protocolos únicos garantidos mesmo sob concorrência (testado) — validado tanto
+      no Jest (mock, 5 criações paralelas) quanto via curl contra o Postgres real
+      (10 requisições `POST /shipments` simultâneas geraram protocolos
+      `20260613-0003`..`20260613-0012`, todos únicos e sequenciais)
+- [x] Timeline completa e correta por protocolo — confirmado via curl
+      (`GET /shipments/:protocolNumber` retorna `statusHistory` com cada transição)
+      e via Playwright (timeline visual exibindo Pendente → Em trânsito)
 
 ---
 

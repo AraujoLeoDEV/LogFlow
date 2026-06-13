@@ -56,7 +56,12 @@ export const navItems: NavItem[] = [
     roles: ['ADMIN', 'COORDENACAO', 'FINANCEIRO'],
   },
   { label: 'Ocorrências', to: '/ocorrencias', icon: AlertTriangle },
-  { label: 'Envios', to: '/envios', icon: PackageSearch },
+  {
+    label: 'Envios',
+    to: '/envios',
+    icon: PackageSearch,
+    roles: ['ADMIN', 'COORDENACAO'],
+  },
   {
     label: 'Unidades',
     to: '/unidades',

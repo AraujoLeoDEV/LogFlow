@@ -16,6 +16,7 @@ import { HealthModule } from './modules/health/health.module';
 import { IncidentsModule } from './modules/incidents/incidents.module';
 import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { RoutesModule } from './modules/routes/routes.module';
+import { ShipmentsModule } from './modules/shipments/shipments.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { UnitsModule } from './modules/units/units.module';
 import { UsersModule } from './modules/users/users.module';
@@ -69,6 +70,7 @@ import { PrismaModule } from './prisma/prisma.module';
     FuelModule,
     MaintenanceModule,
     IncidentsModule,
+    ShipmentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

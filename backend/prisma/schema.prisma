@@ -86,6 +86,14 @@ enum IncidentSeverity {
   CRITICA
 }
 
+// Status do envio (protocolo) - seção 4.9
+enum ShipmentStatus {
+  PENDENTE
+  EM_TRANSITO
+  ENTREGUE
+  CANCELADO
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -100,7 +108,8 @@ model User {
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  driver Driver?
+  driver        Driver?
+  sentShipments Shipment[] @relation("ShipmentSender")
 
   @@map("users")
 }
@@ -113,6 +122,8 @@ model Unit {
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  shipments Shipment[]
 
   @@map("units")
 }
@@ -193,13 +204,14 @@ model Driver {
   updatedAt      DateTime  @updatedAt @map("updated_at")
   deletedAt      DateTime? @map("deleted_at")
 
-  vehicle      Vehicle?   @relation(fields: [vehicleId], references: [id])
-  defaultRoute Route?     @relation("DriverDefaultRoute", fields: [defaultRouteId], references: [id])
-  user         User?      @relation(fields: [userId], references: [id])
-  dailyLogs    DailyLog[]
-  trips        Trip[]
-  fuelRecords  Fuel[]
-  incidents    Incident[]
+  vehicle              Vehicle?   @relation(fields: [vehicleId], references: [id])
+  defaultRoute         Route?     @relation("DriverDefaultRoute", fields: [defaultRouteId], references: [id])
+  user                 User?      @relation(fields: [userId], references: [id])
+  dailyLogs            DailyLog[]
+  trips                Trip[]
+  fuelRecords          Fuel[]
+  incidents            Incident[]
+  transportedShipments Shipment[] @relation("ShipmentTransporter")
 
   @@map("drivers")
 }
@@ -321,4 +333,50 @@ model Incident {
   driver  Driver  @relation(fields: [driverId], references: [id])
 
   @@map("incidents")
+}
+
+// Contador atômico para geração do número de protocolo (AAAAMMDD-SEQ) dos
+// envios - seção 4.9. Uma linha por dia; "lastSeq" é incrementado via
+// `INSERT ... ON CONFLICT DO UPDATE` (atômico mesmo sob concorrência).
+model ProtocolCounter {
+  date    String @id
+  lastSeq Int    @default(0) @map("last_seq")
+
+  @@map("protocol_counters")
+}
+
+// Envios de itens entre unidades, identificados por protocolo único - seção 4.9
+model Shipment {
+  id                String         @id @default(uuid())
+  protocolNumber    String         @unique @map("protocol_number")
+  destinationUnitId String         @map("destination_unit_id")
+  items             Json
+  senderId          String         @map("sender_id")
+  transporterId     String?        @map("transporter_id")
+  observations      String?
+  status            ShipmentStatus @default(PENDENTE)
+  createdBy         String?        @map("created_by")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  destinationUnit Unit                    @relation(fields: [destinationUnitId], references: [id])
+  sender          User                    @relation("ShipmentSender", fields: [senderId], references: [id])
+  transporter     Driver?                 @relation("ShipmentTransporter", fields: [transporterId], references: [id])
+  statusHistory   ShipmentStatusHistory[]
+
+  @@map("shipments")
+}
+
+// Timeline de movimentações de status de um envio - seção 4.9
+model ShipmentStatusHistory {
+  id         String         @id @default(uuid())
+  shipmentId String         @map("shipment_id")
+  status     ShipmentStatus
+  changedAt  DateTime       @default(now()) @map("changed_at")
+  changedBy  String?        @map("changed_by")
+  notes      String?
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id])
+
+  @@map("shipment_status_history")
 }

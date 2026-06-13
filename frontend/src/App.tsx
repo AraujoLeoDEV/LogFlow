@@ -16,6 +16,7 @@ import { LoginPage } from '@/pages/LoginPage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { RoutesPage } from '@/pages/RoutesPage';
+import { ShipmentsPage } from '@/pages/ShipmentsPage';
 import { TripsPage } from '@/pages/TripsPage';
 import { UnitsPage } from '@/pages/UnitsPage';
 import { UsersPage } from '@/pages/UsersPage';
@@ -34,6 +35,7 @@ const PAGES_BY_PATH: Record<string, ReactNode> = {
   '/abastecimentos': <FuelPage />,
   '/manutencoes': <MaintenancePage />,
   '/ocorrencias': <IncidentsPage />,
+  '/envios': <ShipmentsPage />,
 };
 
 function App() {
