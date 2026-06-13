@@ -442,37 +442,43 @@ updatedBy, createdAt, updatedAt`
 
 #### Prisma
 
-- [ ] `model Maintenance`: `id, vehicleId, type (enum: PREVENTIVA, CORRETIVA), km, cost,
+- [x] `model Maintenance`: `id, vehicleId, type (enum: PREVENTIVA, CORRETIVA), km, cost,
 description, scheduledDate (nullable), scheduledKm (nullable), performedDate
 (nullable), createdBy, updatedBy, createdAt, updatedAt`
-- [ ] Campos adicionais em `Vehicle` (alterar via migration): `nextOilChangeKm,
+- [x] Campos adicionais em `Vehicle` (alterar via migration): `nextOilChangeKm,
 nextOilChangeDate, nextTireChangeKm, nextTireChangeDate, nextReviewKm,
 nextReviewDate` (todos nullable) — usados pelos alertas (Fase 9)
-- [ ] Migration `add_maintenance_and_vehicle_schedule_fields`
+- [x] Migration `add_maintenance_and_vehicle_schedule_fields`
+
+> Nota: além de `type` (PREVENTIVA/CORRETIVA), foi adicionado o enum
+> `MaintenanceCategory` (TROCA_OLEO, TROCA_PNEUS, REVISAO_GERAL, OUTROS) para
+> determinar qual campo `next*` do `Vehicle` deve ser recalculado ao concluir
+> a manutenção.
 
 #### Backend — Módulo `maintenance`
 
-- [ ] CRUD de manutenções (histórico por veículo)
-- [ ] Ao registrar manutenção concluída, atualizar os campos `next*` do `Vehicle`
+- [x] CRUD de manutenções (histórico por veículo) — `create` + `findAll` (com filtros
+      por veículo, tipo, categoria e período), seguindo o mesmo escopo do módulo `fuel`
+- [x] Ao registrar manutenção concluída, atualizar os campos `next*` do `Vehicle`
       correspondentes ao tipo realizado (ex: troca de óleo → recalcula `nextOilChangeKm`/`Date`
       com base em `KM_ALERT_OIL_CHANGE`/`KM_ALERT_MAINTENANCE` do `.env`)
-- [ ] `GET /maintenance/schedule` — agenda (próximas manutenções por data/KM, ordenadas
+- [x] `GET /maintenance/schedule` — agenda (próximas manutenções por data/KM, ordenadas
       por proximidade)
 
 #### Frontend
 
-- [ ] Tela de histórico de manutenção por veículo
-- [ ] Tela de agenda (lista de próximas manutenções, ordenada por urgência)
+- [x] Tela de histórico de manutenção por veículo
+- [x] Tela de agenda (lista de próximas manutenções, ordenada por urgência)
 
 #### Testes (Jest)
 
-- [ ] Atualização dos campos `next*` do veículo após registrar manutenção
-- [ ] Cálculo da agenda (ordenação por proximidade de data/KM)
+- [x] Atualização dos campos `next*` do veículo após registrar manutenção
+- [x] Cálculo da agenda (ordenação por proximidade de data/KM)
 
 **Critérios de aceite:**
 
-- [ ] Histórico funcional por veículo
-- [ ] Campos `next*` do `Vehicle` corretamente atualizados — base para a Fase 9
+- [x] Histórico funcional por veículo
+- [x] Campos `next*` do `Vehicle` corretamente atualizados — base para a Fase 9
 
 ---
 

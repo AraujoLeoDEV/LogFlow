@@ -42,6 +42,21 @@ enum TripStatus {
   ATRASADA
 }
 
+// Tipo de manutenção - seção 4.7
+enum MaintenanceType {
+  PREVENTIVA
+  CORRETIVA
+}
+
+// Categoria de manutenção - define qual campo next* do Vehicle é
+// recalculado ao concluir o registro - seção 4.7
+enum MaintenanceCategory {
+  TROCA_OLEO
+  TROCA_PNEUS
+  REVISAO_GERAL
+  OUTROS
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -108,17 +123,25 @@ model Vehicle {
   licensingExpiration DateTime? @map("licensing_expiration")
   insuranceExpiration DateTime? @map("insurance_expiration")
   active              Boolean   @default(true)
+  // Próximas manutenções previstas - seção 4.7 (base para alertas da Fase 9)
+  nextOilChangeKm     Decimal?  @map("next_oil_change_km") @db.Decimal(10, 1)
+  nextOilChangeDate   DateTime? @map("next_oil_change_date")
+  nextTireChangeKm    Decimal?  @map("next_tire_change_km") @db.Decimal(10, 1)
+  nextTireChangeDate  DateTime? @map("next_tire_change_date")
+  nextReviewKm        Decimal?  @map("next_review_km") @db.Decimal(10, 1)
+  nextReviewDate      DateTime? @map("next_review_date")
   createdBy           String?   @map("created_by")
   updatedBy           String?   @map("updated_by")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  mainRoute   Route?     @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
-  drivers     Driver[]
-  dailyLogs   DailyLog[]
-  trips       Trip[]
-  fuelRecords Fuel[]
+  mainRoute    Route?        @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
+  drivers      Driver[]
+  dailyLogs    DailyLog[]
+  trips        Trip[]
+  fuelRecords  Fuel[]
+  maintenances Maintenance[]
 
   @@map("vehicles")
 }
@@ -222,4 +245,26 @@ model Fuel {
   driver  Driver  @relation(fields: [driverId], references: [id])
 
   @@map("fuel_records")
+}
+
+// Manutenção - seção 4.7
+model Maintenance {
+  id            String              @id @default(uuid())
+  vehicleId     String              @map("vehicle_id")
+  type          MaintenanceType
+  category      MaintenanceCategory
+  km            Decimal             @db.Decimal(10, 1)
+  cost          Decimal             @db.Decimal(10, 2)
+  description   String
+  scheduledDate DateTime?           @map("scheduled_date")
+  scheduledKm   Decimal?            @map("scheduled_km") @db.Decimal(10, 1)
+  performedDate DateTime?           @map("performed_date")
+  createdBy     String?             @map("created_by")
+  updatedBy     String?             @map("updated_by")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@map("maintenances")
 }

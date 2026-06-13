@@ -13,6 +13,7 @@ import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './modules/health/health.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { UnitsModule } from './modules/units/units.module';
@@ -65,6 +66,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DailyLogsModule,
     TripsModule,
     FuelModule,
+    MaintenanceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

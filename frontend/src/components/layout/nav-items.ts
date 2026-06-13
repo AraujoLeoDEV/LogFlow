@@ -49,7 +49,12 @@ export const navItems: NavItem[] = [
   { label: 'Registro Diário', to: '/registro-diario', icon: ClipboardList },
   { label: 'Viagens', to: '/viagens', icon: Route },
   { label: 'Abastecimentos', to: '/abastecimentos', icon: Fuel },
-  { label: 'Manutenções', to: '/manutencoes', icon: Wrench },
+  {
+    label: 'Manutenções',
+    to: '/manutencoes',
+    icon: Wrench,
+    roles: ['ADMIN', 'COORDENACAO', 'FINANCEIRO'],
+  },
   { label: 'Ocorrências', to: '/ocorrencias', icon: AlertTriangle },
   { label: 'Envios', to: '/envios', icon: PackageSearch },
   {
