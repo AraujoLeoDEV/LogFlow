@@ -647,27 +647,28 @@ caso contrário o app quebra (tela branca) ao abrir o menu.
 
 #### Backend — Módulo `dashboard`
 
-- [ ] `GET /dashboard/drivers` — por motorista: KM total rodado, horas dirigidas,
+- [x] `GET /dashboard/drivers` — por motorista: KM total rodado, horas dirigidas,
       ocorrências, índice ocorrências/KM, ranking
-- [ ] `GET /dashboard/vehicles` — por veículo: KM total, tempo de uso, qtd. de usos,
+- [x] `GET /dashboard/vehicles` — por veículo: KM total, tempo de uso, qtd. de usos,
       custos totais, custo/KM, mais utilizado/mais caro
-- [ ] `GET /dashboard/routes` — por rota: rotas mais utilizadas, distância média, tempo
+- [x] `GET /dashboard/routes` — por rota: rotas mais utilizadas, distância média, tempo
       médio, custo por rota
-- [ ] Todas as queries via Prisma `groupBy`/`aggregate`, com filtro de período (mês/ano)
+- [x] Todas as queries com filtro de período (`from`/`to`), seguindo o padrão de
+      agregação em memória (Map) já usado nos demais módulos
 
 #### Frontend
 
-- [ ] Páginas de dashboard com gráficos (Recharts): barras/linhas para KM, custos,
+- [x] Páginas de dashboard com gráficos (Recharts): barras/linhas para KM, custos,
       ocorrências; tabelas de ranking
-- [ ] Filtros de período reutilizáveis
+- [x] Filtros de período reutilizáveis
 
 #### Testes (Jest)
 
-- [ ] Cada endpoint de agregação retorna valores corretos com dados de seed conhecidos
+- [x] Cada endpoint de agregação retorna valores corretos com dados de seed conhecidos
 
 **Critérios de aceite:**
 
-- [ ] Os três dashboards da seção 4.11 implementados e corretos
+- [x] Os três dashboards da seção 4.11 implementados e corretos
 
 ---
 

@@ -11,6 +11,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './modules/health/health.module';
@@ -67,6 +68,7 @@ import { PrismaModule } from './prisma/prisma.module';
     VehiclesModule,
     DriversModule,
     DailyLogsModule,
+    DashboardModule,
     TripsModule,
     FuelModule,
     MaintenanceModule,
