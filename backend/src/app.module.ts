@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 
@@ -12,6 +13,7 @@ import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
 import { DriversModule } from './modules/drivers/drivers.module';
 import { HealthModule } from './modules/health/health.module';
 import { RoutesModule } from './modules/routes/routes.module';
+import { TripsModule } from './modules/trips/trips.module';
 import { UnitsModule } from './modules/units/units.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
@@ -20,6 +22,7 @@ import { PrismaModule } from './prisma/prisma.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     LoggerModule.forRootAsync({
       inject: [ConfigService],
@@ -59,6 +62,7 @@ import { PrismaModule } from './prisma/prisma.module';
     VehiclesModule,
     DriversModule,
     DailyLogsModule,
+    TripsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

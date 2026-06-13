@@ -35,6 +35,13 @@ enum DailyLogStatus {
   FINALIZADO
 }
 
+// Status da viagem - seção 4.5
+enum TripStatus {
+  EM_ANDAMENTO
+  FINALIZADA
+  ATRASADA
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -81,6 +88,7 @@ model Route {
   vehicles  Vehicle[]  @relation("VehicleMainRoute")
   drivers   Driver[]   @relation("DriverDefaultRoute")
   dailyLogs DailyLog[]
+  trips     Trip[]
 
   @@map("routes")
 }
@@ -109,6 +117,7 @@ model Vehicle {
   mainRoute Route?     @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
   drivers   Driver[]
   dailyLogs DailyLog[]
+  trips     Trip[]
 
   @@map("vehicles")
 }
@@ -134,6 +143,7 @@ model Driver {
   defaultRoute Route?     @relation("DriverDefaultRoute", fields: [defaultRouteId], references: [id])
   user         User?      @relation(fields: [userId], references: [id])
   dailyLogs    DailyLog[]
+  trips        Trip[]
 
   @@map("drivers")
 }
@@ -163,4 +173,28 @@ model DailyLog {
   route   Route   @relation(fields: [routeId], references: [id])
 
   @@map("daily_logs")
+}
+
+// Viagens (trips) - seção 4.5
+model Trip {
+  id          String     @id @default(uuid())
+  vehicleId   String     @map("vehicle_id")
+  driverId    String     @map("driver_id")
+  routeId     String     @map("route_id")
+  status      TripStatus @default(EM_ANDAMENTO)
+  destination String
+  startKm     Decimal    @map("start_km") @db.Decimal(10, 1)
+  endKm       Decimal?   @map("end_km") @db.Decimal(10, 1)
+  startedAt   DateTime   @map("started_at")
+  finishedAt  DateTime?  @map("finished_at")
+  createdBy   String?    @map("created_by")
+  updatedBy   String?    @map("updated_by")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  driver  Driver  @relation(fields: [driverId], references: [id])
+  route   Route   @relation(fields: [routeId], references: [id])
+
+  @@map("trips")
 }

@@ -353,41 +353,41 @@ FINALIZADO), createdBy, updatedBy, createdAt, updatedAt`
 
 #### Prisma
 
-- [ ] `model Trip`: `id, vehicleId, driverId, routeId, status (enum: EM_ANDAMENTO,
+- [x] `model Trip`: `id, vehicleId, driverId, routeId, status (enum: EM_ANDAMENTO,
 FINALIZADA, ATRASADA), destination, startKm, endKm (nullable), startedAt,
 finishedAt (nullable), createdBy, updatedBy, createdAt, updatedAt`
-- [ ] Migration `add_trips`
+- [x] Migration `add_trips`
 
 #### Backend — Módulo `trips`
 
-- [ ] `POST /trips` — cria viagem associando veículo + motorista + rota, `status =
+- [x] `POST /trips` — cria viagem associando veículo + motorista + rota, `status =
 EM_ANDAMENTO`, `startKm` informado
-- [ ] `PATCH /trips/:id/finish` — valida `endKm >= startKm`, define `finishedAt`,
+- [x] `PATCH /trips/:id/finish` — valida `endKm >= startKm`, define `finishedAt`,
       `status = FINALIZADA`
-- [ ] `GET /trips` — histórico completo por motorista/veículo, com filtro de status
-- [ ] **Job agendado** (`@Cron`, a cada X minutos): busca `Trip` com `status =
+- [x] `GET /trips` — histórico completo por motorista/veículo, com filtro de status
+- [x] **Job agendado** (`@Cron`, a cada X minutos): busca `Trip` com `status =
 EM_ANDAMENTO` cujo `startedAt + route.estimatedDurationMinutes < now()` e atualiza
       para `status = ATRASADA`
-- [ ] Guard: perfil `MOTORISTA` só vê/opera as próprias viagens
+- [x] Guard: perfil `MOTORISTA` só vê/opera as próprias viagens
 
 #### Frontend
 
-- [ ] Tela de viagens (lista ou kanban por status: Em andamento / Finalizada / Atrasada)
-- [ ] Ação "Iniciar viagem" / "Encerrar viagem" (com input de KM devolução)
-- [ ] Indicador visual (badge vermelho) para viagens `ATRASADA`
+- [x] Tela de viagens (lista ou kanban por status: Em andamento / Finalizada / Atrasada)
+- [x] Ação "Iniciar viagem" / "Encerrar viagem" (com input de KM devolução)
+- [x] Indicador visual (badge vermelho) para viagens `ATRASADA`
 
 #### Testes (Jest)
 
-- [ ] Encerramento rejeita `endKm < startKm`
-- [ ] Job de atraso: viagem além do tempo estimado da rota é marcada `ATRASADA`
+- [x] Encerramento rejeita `endKm < startKm`
+- [x] Job de atraso: viagem além do tempo estimado da rota é marcada `ATRASADA`
       (usar fake timers / datas mockadas)
-- [ ] Viagem finalizada a tempo nunca é marcada como atrasada
+- [x] Viagem finalizada a tempo nunca é marcada como atrasada
 
 **Critérios de aceite:**
 
-- [ ] Transições de status corretas (`EM_ANDAMENTO → FINALIZADA` /
+- [x] Transições de status corretas (`EM_ANDAMENTO → FINALIZADA` /
       `EM_ANDAMENTO → ATRASADA`)
-- [ ] Job roda automaticamente e é idempotente (não reprocessa viagens já finalizadas)
+- [x] Job roda automaticamente e é idempotente (não reprocessa viagens já finalizadas)
 
 ---
 
