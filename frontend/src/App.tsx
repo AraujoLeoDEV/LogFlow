@@ -10,6 +10,7 @@ import { queryClient } from '@/lib/queryClient';
 import { DailyLogsPage } from '@/pages/DailyLogsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DriversPage } from '@/pages/DriversPage';
+import { FuelPage } from '@/pages/FuelPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { RoutesPage } from '@/pages/RoutesPage';
@@ -28,6 +29,7 @@ const PAGES_BY_PATH: Record<string, ReactNode> = {
   '/motoristas': <DriversPage />,
   '/registro-diario': <DailyLogsPage />,
   '/viagens': <TripsPage />,
+  '/abastecimentos': <FuelPage />,
 };
 
 function App() {

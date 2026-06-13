@@ -397,41 +397,41 @@ EM_ANDAMENTO` cujo `startedAt + route.estimatedDurationMinutes < now()` e atuali
 
 #### Prisma
 
-- [ ] `model Fuel`: `id, vehicleId, driverId, liters, amountPaid, currentKm, fuelType
+- [x] `model Fuel`: `id, vehicleId, driverId, liters, amountPaid, currentKm, fuelType
 (enum), date, consumptionKmL (nullable), costPerKm (nullable), createdBy,
 updatedBy, createdAt, updatedAt`
-- [ ] Migration `add_fuel`
+- [x] Migration `add_fuel`
 
 #### Backend — Módulo `fuel`
 
-- [ ] `POST /fuel`:
+- [x] `POST /fuel`:
   - Rejeita se `currentKm` < último `currentKm` registrado para o veículo (404/422)
   - Valida que `fuelType` é compatível com `vehicle.fuelType`
   - Calcula:
     - `consumptionKmL = (currentKm - kmDoAbastecimentoAnterior) / liters`
     - `costPerKm = amountPaid / (currentKm - kmDoAbastecimentoAnterior)`
   - Atualiza `vehicle.currentKm` se este abastecimento for o mais recente
-- [ ] `GET /fuel/indicators`:
+- [x] `GET /fuel/indicators`:
   - Média KM/L por veículo
   - Veículo mais econômico / mais caro
   - Gasto mensal (total e por veículo)
 
 #### Frontend
 
-- [ ] Tela de registro de abastecimento (formulário)
-- [ ] Cards de indicadores + gráfico (Recharts) de consumo por veículo / gasto mensal
+- [x] Tela de registro de abastecimento (formulário)
+- [x] Cards de indicadores + gráfico (Recharts) de consumo por veículo / gasto mensal
 
 #### Testes (Jest)
 
-- [ ] Rejeita `currentKm` menor que o último registrado
-- [ ] Valida incompatibilidade de tipo de combustível
-- [ ] Cálculo de `consumptionKmL` e `costPerKm` (incluindo primeiro abastecimento sem
+- [x] Rejeita `currentKm` menor que o último registrado
+- [x] Valida incompatibilidade de tipo de combustível
+- [x] Cálculo de `consumptionKmL` e `costPerKm` (incluindo primeiro abastecimento sem
       anterior — não deve calcular, deve retornar `null`)
 
 **Critérios de aceite:**
 
-- [ ] Todas as regras da seção 4.6 implementadas e testadas
-- [ ] Indicadores corretos com dados de seed
+- [x] Todas as regras da seção 4.6 implementadas e testadas
+- [x] Indicadores corretos com dados de seed
 
 ---
 

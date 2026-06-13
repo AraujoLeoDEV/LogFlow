@@ -11,6 +11,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
 import { DriversModule } from './modules/drivers/drivers.module';
+import { FuelModule } from './modules/fuel/fuel.module';
 import { HealthModule } from './modules/health/health.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { TripsModule } from './modules/trips/trips.module';
@@ -63,6 +64,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DriversModule,
     DailyLogsModule,
     TripsModule,
+    FuelModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

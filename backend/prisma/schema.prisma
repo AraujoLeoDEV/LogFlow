@@ -114,10 +114,11 @@ model Vehicle {
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  mainRoute Route?     @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
-  drivers   Driver[]
-  dailyLogs DailyLog[]
-  trips     Trip[]
+  mainRoute   Route?     @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
+  drivers     Driver[]
+  dailyLogs   DailyLog[]
+  trips       Trip[]
+  fuelRecords Fuel[]
 
   @@map("vehicles")
 }
@@ -144,6 +145,7 @@ model Driver {
   user         User?      @relation(fields: [userId], references: [id])
   dailyLogs    DailyLog[]
   trips        Trip[]
+  fuelRecords  Fuel[]
 
   @@map("drivers")
 }
@@ -197,4 +199,27 @@ model Trip {
   route   Route   @relation(fields: [routeId], references: [id])
 
   @@map("trips")
+}
+
+// Abastecimento - seção 4.6
+model Fuel {
+  id             String   @id @default(uuid())
+  vehicleId      String   @map("vehicle_id")
+  driverId       String   @map("driver_id")
+  liters         Decimal  @db.Decimal(10, 2)
+  amountPaid     Decimal  @map("amount_paid") @db.Decimal(10, 2)
+  currentKm      Decimal  @map("current_km") @db.Decimal(10, 1)
+  fuelType       FuelType @map("fuel_type")
+  date           DateTime @default(now())
+  consumptionKmL Decimal? @map("consumption_km_l") @db.Decimal(10, 3)
+  costPerKm      Decimal? @map("cost_per_km") @db.Decimal(10, 4)
+  createdBy      String?  @map("created_by")
+  updatedBy      String?  @map("updated_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
+  driver  Driver  @relation(fields: [driverId], references: [id])
+
+  @@map("fuel_records")
 }
