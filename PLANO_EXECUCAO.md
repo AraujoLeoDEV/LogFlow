@@ -590,42 +590,54 @@ opcional).
 
 #### Prisma
 
-- [ ] `model Alert`: `id, type (enum: LICENSING, INSURANCE, CNH, REVIEW, OIL_CHANGE,
+- [x] `model Alert`: `id, type (enum: LICENSING, INSURANCE, CNH, REVIEW, OIL_CHANGE,
 TIRE_CHANGE, TRIP_DELAYED), referenceType, referenceId, message, severity (enum:
 INFO, AVISO, CRITICO), dueDate (nullable), status (enum: PENDENTE, ENVIADO, LIDO),
 targetRole (nullable), targetUserId (nullable), createdAt`
-- [ ] Campos de vencimento em `Vehicle` (`licensingExpiration`, `insuranceExpiration`) e
-      em `Driver` (`cnhExpiration`) — se ainda não existirem, adicionar nesta fase
-- [ ] Migration `add_alerts_and_expiration_fields`
+- [x] Campos de vencimento em `Vehicle` (`licensingExpiration`, `insuranceExpiration`) e
+      em `Driver` (`cnhExpiration`) — já existiam de fases anteriores
+- [x] Migration `add_alerts`
 
 #### Backend — Módulo `alerts`
 
-- [ ] `@Cron` diário (ex: 06:00, configurável):
+- [x] `@Cron` diário (configurável via `ALERT_CRON_EXPRESSION`, default `0 6 * * *`):
   - Para cada `Vehicle`: verifica `licensingExpiration`, `insuranceExpiration`,
     `nextOilChangeKm/Date`, `nextTireChangeKm/Date`, `nextReviewKm/Date` — gera `Alert`
     nos limiares **30/15/7 dias** antes (ou KM equivalente)
   - Para cada `Driver`: verifica `cnhExpiration` (mesmos limiares)
   - Para `Trip` com `status = ATRASADA`: gera `Alert` do tipo `TRIP_DELAYED`
-  - **Idempotência**: não duplicar `Alert` já gerado para o mesmo
-    `referenceType + referenceId + type + dueDate`
-- [ ] Envio de e-mail condicionado a `ENABLE_EMAIL_ALERTS=true` (usa SMTP do `.env`)
-- [ ] `GET /alerts` — lista alertas do usuário/role atual
-- [ ] `PATCH /alerts/:id/read` — marca como lido
+  - **Idempotência**: não duplica `Alert` já gerado para o mesmo
+    `referenceType + referenceId + type + dueDate` (via `createMany` +
+    `skipDuplicates` sobre `@@unique`)
+- [x] Envio de e-mail condicionado a `ENABLE_EMAIL_ALERTS=true` (usa SMTP do `.env`);
+      em falha de envio o alerta permanece `PENDENTE` e é retentado no próximo ciclo
+- [x] `GET /alerts` — lista alertas do usuário/role atual (RBAC: ADMIN vê todos;
+      demais veem por `targetRole` ou `targetUserId`); filtro opcional `?status=`
+- [x] `PATCH /alerts/:id/read` — marca como lido (404 se o alerta não for visível
+      para o usuário)
 
 #### Frontend
 
-- [ ] Painel de notificações (badge no header com contagem de não lidos + lista)
+- [x] Painel de notificações (badge no header com contagem de não lidos + lista,
+      `NotificationsMenu.tsx`, polling a cada 60s, marca como lido ao clicar)
 
 #### Testes (Jest)
 
-- [ ] Geração de alertas nos limiares 30/15/7 dias (datas mockadas)
-- [ ] Idempotência: rodar o job duas vezes no mesmo dia não duplica alertas
-- [ ] Alerta de viagem atrasada gerado corretamente
+- [x] Geração de alertas nos limiares 30/15/7 dias (datas mockadas) — `alerts.util.spec.ts`
+- [x] Idempotência: rodar o job duas vezes no mesmo dia não duplica alertas — validado
+      via `alerts.service.spec.ts` e também manualmente via cron real (2ª execução:
+      "0 novo(s) registrado(s)")
+- [x] Alerta de viagem atrasada gerado corretamente
 
 **Critérios de aceite:**
 
-- [ ] Todas as verificações da seção 4.10 implementadas
-- [ ] Job idempotente e testado
+- [x] Todas as verificações da seção 4.10 implementadas
+- [x] Job idempotente e testado
+
+**Observação:** durante a validação via Playwright foi corrigido um bug pré-existente
+nos componentes `DropdownMenu` (Header e NotificationsMenu) — `DropdownMenuLabel`
+precisa estar dentro de `DropdownMenuGroup` (Base UI exige `MenuGroupContext`),
+caso contrário o app quebra (tela branca) ao abrir o menu.
 
 ---
 

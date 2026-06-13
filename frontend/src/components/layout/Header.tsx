@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -16,6 +17,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import { useAuth } from '@/contexts/AuthContext';
 import { roleLabels } from '@/lib/roles';
 
+import { NotificationsMenu } from './NotificationsMenu';
 import { Sidebar } from './Sidebar';
 
 function getInitials(name: string) {
@@ -55,6 +57,8 @@ export function Header() {
         </h1>
       </div>
 
+      <NotificationsMenu />
+
       <DropdownMenu>
         <DropdownMenuTrigger render={<Button variant="ghost" className="gap-2" />}>
           <Avatar className="size-7">
@@ -63,17 +67,19 @@ export function Header() {
           <span className="hidden text-sm font-medium sm:inline">{user?.name}</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel className="flex flex-col items-start gap-0.5">
-            <span>{user?.name}</span>
-            <span className="text-xs font-normal text-muted-foreground">
-              {user ? roleLabels[user.role] : ''}
-            </span>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="size-4" />
-            Sair
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="flex flex-col items-start gap-0.5">
+              <span>{user?.name}</span>
+              <span className="text-xs font-normal text-muted-foreground">
+                {user ? roleLabels[user.role] : ''}
+              </span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="size-4" />
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     </header>

@@ -94,6 +94,31 @@ enum ShipmentStatus {
   CANCELADO
 }
 
+// Tipo de alerta automático - seção 4.10
+enum AlertType {
+  LICENSING
+  INSURANCE
+  CNH
+  REVIEW
+  OIL_CHANGE
+  TIRE_CHANGE
+  TRIP_DELAYED
+}
+
+// Gravidade do alerta - seção 4.10
+enum AlertSeverity {
+  INFO
+  AVISO
+  CRITICO
+}
+
+// Status do alerta (controle de envio/leitura) - seção 4.10
+enum AlertStatus {
+  PENDENTE
+  ENVIADO
+  LIDO
+}
+
 // Usuários do sistema - seção 4.1
 model User {
   id                  String    @id @default(uuid())
@@ -379,4 +404,24 @@ model ShipmentStatusHistory {
   shipment Shipment @relation(fields: [shipmentId], references: [id])
 
   @@map("shipment_status_history")
+}
+
+// Alertas automáticos de vencimento/atraso - seção 4.10. Gerados
+// diariamente por job (@Cron) que verifica licenciamento/seguro/CNH,
+// agenda de manutenção (revisão/óleo/pneus) e viagens em atraso.
+model Alert {
+  id            String        @id @default(uuid())
+  type          AlertType
+  referenceType String        @map("reference_type")
+  referenceId   String        @map("reference_id")
+  message       String
+  severity      AlertSeverity
+  dueDate       DateTime?     @map("due_date")
+  status        AlertStatus   @default(PENDENTE)
+  targetRole    Role?         @map("target_role")
+  targetUserId  String?       @map("target_user_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  @@unique([referenceType, referenceId, type, dueDate])
+  @@map("alerts")
 }

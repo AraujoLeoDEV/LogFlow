@@ -8,6 +8,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { CommonModule } from './common/common.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { AlertsModule } from './modules/alerts/alerts.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
 import { DriversModule } from './modules/drivers/drivers.module';
@@ -71,6 +72,7 @@ import { PrismaModule } from './prisma/prisma.module';
     MaintenanceModule,
     IncidentsModule,
     ShipmentsModule,
+    AlertsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
