@@ -1,0 +1,13 @@
+# Reverse proxy com HTTPS automatico (Let's Encrypt) - Fase 15 (Deploy e Producao).
+# APP_DOMAIN e API_DOMAIN sao lidos do ambiente do container caddy
+# (definidos em .env.production e injetados via docker-compose.prod.yml).
+
+{$APP_DOMAIN} {
+	encode gzip
+	reverse_proxy frontend:80
+}
+
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy backend:3000
+}

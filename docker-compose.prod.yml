@@ -1,0 +1,109 @@
+# Ambiente de producao (Fase 15 - Deploy e Producao).
+# Uso: docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Diferencas em relacao ao docker-compose.yml (dev):
+# - builds com target "production" (sem bind mount / hot-reload)
+# - postgres/redis nao expoem portas no host (somente rede interna)
+# - reverse proxy Caddy com HTTPS automatico (Let's Encrypt) na frente de
+#   frontend (estatico via Nginx) e backend
+# - servico de backup periodico do Postgres
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: antigravity-backend-production
+    build:
+      context: ./backend
+      target: production
+    restart: unless-stopped
+    env_file:
+      - ./.env.production
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}
+      DB_HOST: postgres
+      REDIS_HOST: redis
+    volumes:
+      - backend_storage:/app/storage
+      - backend_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    image: antigravity-frontend-production
+    build:
+      context: ./frontend
+      target: production
+      args:
+        VITE_API_URL: ${API_URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      API_DOMAIN: ${API_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
+
+  backup:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: postgres
+      PGUSER: ${DB_USER}
+      PGPASSWORD: ${DB_PASSWORD}
+      PGDATABASE: ${DB_NAME}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    entrypoint: ['sh', '/backup.sh']
+    volumes:
+      - ./scripts/backup-postgres.sh:/backup.sh:ro
+      - postgres_backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  postgres_backups:
+  backend_storage:
+  backend_logs:
+  caddy_data:
+  caddy_config:

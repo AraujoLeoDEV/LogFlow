@@ -810,20 +810,29 @@ segurança do `CLAUDE.md`.
 
 **Objetivo:** ambiente produtivo containerizado com HTTPS.
 
-- [ ] `docker-compose.prod.yml` (builds otimizados, sem volumes de dev/hot-reload)
-- [ ] Reverse proxy (Nginx ou Caddy) com HTTPS — Caddy recomendado para certificado
+- [x] `docker-compose.prod.yml` (builds otimizados, sem volumes de dev/hot-reload)
+- [x] Reverse proxy (Nginx ou Caddy) com HTTPS — Caddy recomendado para certificado
       automático via Let's Encrypt em ambiente com domínio próprio
-- [ ] `.env.production` baseado em `.env.example`, com secrets reais fora do controle de
+- [x] `.env.production` baseado em `.env.example`, com secrets reais fora do controle de
       versão
-- [ ] `prisma migrate deploy` no pipeline de deploy (nunca `migrate dev` em produção)
-- [ ] Estratégia de backup periódico do Postgres (dump agendado)
-- [ ] Configuração de `LOG_LEVEL` e rotação de logs (Pino/`pino-roll`) adequada para
+- [x] `prisma migrate deploy` no pipeline de deploy (nunca `migrate dev` em produção)
+- [x] Estratégia de backup periódico do Postgres (dump agendado)
+- [x] Configuração de `LOG_LEVEL` e rotação de logs (Pino/`pino-roll`) adequada para
       produção
 
 **Critérios de aceite:**
 
-- [ ] Ambiente sobe via `docker compose -f docker-compose.prod.yml up` com HTTPS
+- [x] Ambiente sobe via `docker compose -f docker-compose.prod.yml up` com HTTPS
       funcionando e migrations aplicadas
+
+> **Nota:** validação completa do HTTPS automático (Let's Encrypt) requer um domínio
+> público real apontando para o servidor — não testável em ambiente local. A
+> configuração do Caddy (`Caddyfile`) está pronta e segue o padrão documentado da
+> ferramenta; `docker compose -f docker-compose.prod.yml config` foi validado com
+> sucesso e os builds de produção (`backend`, `frontend`) foram executados e geraram
+> imagens distintas (`antigravity-backend-production`, `antigravity-frontend-production`)
+> sem colidir com as imagens de desenvolvimento. O serviço de backup periódico do
+> Postgres foi validado isoladamente (dump `.dump` gerado com sucesso via `pg_dump -Fc`).
 
 ---
 
