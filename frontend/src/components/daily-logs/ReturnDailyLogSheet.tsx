@@ -14,13 +14,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { DailyLogWithRelations, ReturnDailyLogPayload } from '@/types/dailyLog';
 
 const schema = z.object({
@@ -68,20 +68,20 @@ export function ReturnDailyLogSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Registrar retorno</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Registrar retorno</DialogTitle>
+          <DialogDescription>
             {dailyLog
               ? `Veículo ${dailyLog.vehicle.plate} · Motorista ${dailyLog.driver.name} · Rota ${dailyLog.route.name}`
               : ''}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+            className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4"
           >
             <FormField
               control={form.control}
@@ -115,14 +115,14 @@ export function ReturnDailyLogSheet({
                 </FormItem>
               )}
             />
-            <SheetFooter className="mt-auto px-0">
+            <DialogFooter className="mt-auto px-0">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Salvando...' : 'Registrar retorno'}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
         </Form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

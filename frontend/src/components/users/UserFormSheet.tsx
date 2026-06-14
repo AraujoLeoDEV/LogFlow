@@ -15,13 +15,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { roleOptions } from '@/lib/roles';
 import type { CreateUserPayload, UpdateUserPayload, User } from '@/types/user';
 
@@ -112,20 +112,20 @@ export function UserFormSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>{isEditing ? 'Editar usuário' : 'Novo usuário'}</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Editar usuário' : 'Novo usuário'}</DialogTitle>
+          <DialogDescription>
             {isEditing
               ? 'Atualize os dados do usuário. Deixe a senha em branco para não alterá-la.'
               : 'Preencha os dados para criar um novo usuário do sistema.'}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+            className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4"
           >
             <FormField
               control={form.control}
@@ -205,14 +205,14 @@ export function UserFormSheet({
                 )}
               />
             )}
-            <SheetFooter className="mt-auto px-0">
+            <DialogFooter className="mt-auto px-0">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Salvando...' : 'Salvar'}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
         </Form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

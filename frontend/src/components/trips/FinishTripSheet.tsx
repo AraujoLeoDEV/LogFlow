@@ -14,13 +14,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { FinishTripPayload, TripWithRelations } from '@/types/trip';
 
 const schema = z.object({
@@ -63,20 +63,20 @@ export function FinishTripSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Encerrar viagem</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Encerrar viagem</DialogTitle>
+          <DialogDescription>
             {trip
               ? `Veículo ${trip.vehicle.plate} · Motorista ${trip.driver.name} · Destino ${trip.destination}`
               : ''}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleSubmit)}
-            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+            className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4"
           >
             <FormField
               control={form.control}
@@ -97,14 +97,14 @@ export function FinishTripSheet({
                 </FormItem>
               )}
             />
-            <SheetFooter className="mt-auto px-0">
+            <DialogFooter className="mt-auto px-0">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Salvando...' : 'Encerrar viagem'}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
         </Form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

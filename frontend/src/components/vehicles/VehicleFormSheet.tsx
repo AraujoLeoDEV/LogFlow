@@ -16,13 +16,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { api } from '@/lib/api';
 import { fuelTypeOptions } from '@/lib/fuelTypes';
 import { VEHICLE_PLATE_MESSAGE, VEHICLE_PLATE_REGEX } from '@/lib/vehiclePlate';
@@ -153,20 +153,20 @@ export function VehicleFormSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>{isEditing ? 'Editar veículo' : 'Novo veículo'}</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isEditing ? 'Editar veículo' : 'Novo veículo'}</DialogTitle>
+          <DialogDescription>
             {isEditing
               ? 'Atualize os dados do veículo.'
               : 'Preencha os dados para cadastrar um novo veículo.'}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
+            className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4"
           >
             <FormField
               control={form.control}
@@ -385,14 +385,14 @@ export function VehicleFormSheet({
                 )}
               />
             )}
-            <SheetFooter className="mt-auto px-0">
+            <DialogFooter className="mt-auto px-0">
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Salvando...' : 'Salvar'}
               </Button>
-            </SheetFooter>
+            </DialogFooter>
           </form>
         </Form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
