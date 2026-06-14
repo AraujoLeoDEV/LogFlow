@@ -73,10 +73,17 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#221a45] to-[#0c0e1c] p-4">
-      <Card className="w-full max-w-sm shadow-2xl">
-        <CardHeader className="items-center justify-items-center text-center">
-          <img src={logoIcon} alt="LogFlow" className="mb-2 size-14 rounded-xl" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#221a45] to-[#0c0e1c] p-4">
+      <div className="pointer-events-none absolute -top-32 -left-32 size-96 rounded-full bg-primary/40 blur-3xl" />
+      <div className="pointer-events-none absolute -right-32 -bottom-32 size-96 rounded-full bg-[#5b3df5]/30 blur-3xl" />
+      <div className="relative mb-6 flex flex-col items-center gap-2">
+        <img src={logoIcon} alt="" className="size-16 rounded-2xl shadow-lg" />
+        <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-2xl font-bold text-transparent">
+          LogFlow
+        </span>
+      </div>
+      <Card className="relative w-full max-w-sm shadow-2xl">
+        <CardHeader className="text-center">
           <CardTitle className="text-xl">Entrar</CardTitle>
           <CardDescription>Sistema de Logística e Controle de Frota</CardDescription>
         </CardHeader>
