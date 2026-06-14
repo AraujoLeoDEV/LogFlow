@@ -1,11 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsDateString,
-  IsOptional,
-  IsUUID,
-  Min,
-  MinLength,
-} from 'class-validator';
+import { IsDateString, IsOptional, IsUUID, MinLength } from 'class-validator';
 
 export class CreateTripDto {
   @ApiProperty({ description: 'Id do veículo utilizado na viagem.' })
@@ -31,10 +25,6 @@ export class CreateTripDto {
   @ApiProperty({ description: 'Destino da viagem.' })
   @MinLength(1, { message: 'Informe o destino da viagem.' })
   destination: string;
-
-  @ApiProperty({ example: 1000, description: 'KM de retirada do veículo.' })
-  @Min(0, { message: 'O KM de retirada não pode ser negativo.' })
-  startKm: number;
 
   @ApiPropertyOptional({
     description: 'Data/hora de início da viagem. Padrão: agora.',

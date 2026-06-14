@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -30,6 +30,7 @@ import type {
   TripQuery,
   TripWithRelations,
 } from '@/types/trip';
+import type { DailyLogWithRelations } from '@/types/dailyLog';
 import type { Driver } from '@/types/driver';
 import type { Route } from '@/types/route';
 import type { Vehicle } from '@/types/vehicle';
@@ -113,6 +114,16 @@ export function TripsPage() {
     queryFn: async () => (await api.get<TripWithRelations[]>('/trips')).data,
   });
 
+  const { data: ongoingDailyLogs } = useQuery({
+    queryKey: ['daily-logs', 'ongoing'],
+    queryFn: async () =>
+      (
+        await api.get<DailyLogWithRelations[]>('/daily-logs', {
+          params: { status: 'EM_ANDAMENTO' },
+        })
+      ).data,
+  });
+
   const { data: history, isLoading: isLoadingHistory } = useQuery({
     queryKey: ['trips', 'history', filters],
     queryFn: async () => (await api.get<TripWithRelations[]>('/trips', { params: filters })).data,
@@ -155,13 +166,27 @@ export function TripsPage() {
   const activeDrivers = (drivers ?? []).filter((driver) => driver.active);
   const activeRoutes = (routes ?? []).filter((route) => route.active);
 
+  const unavailableVehicleIds = new Set([
+    ...ongoingTrips.map((trip) => trip.vehicleId),
+    ...(ongoingDailyLogs ?? []).map((log) => log.vehicleId),
+  ]);
+  const availableVehicles = activeVehicles.filter(
+    (vehicle) => !unavailableVehicleIds.has(vehicle.id),
+  );
+
+  const selectedVehicleId = tripForm.watch('vehicleId');
+
+  useEffect(() => {
+    const vehicle = activeVehicles.find((item) => item.id === selectedVehicleId);
+    tripForm.setValue('startKm', vehicle ? Number(vehicle.currentKm) : 0);
+  }, [selectedVehicleId, activeVehicles, tripForm]);
+
   function onSubmitTrip(values: TripFormValues) {
     createMutation.mutate({
       vehicleId: values.vehicleId,
       driverId: values.driverId || undefined,
       routeId: values.routeId || undefined,
       destination: values.destination,
-      startKm: values.startKm,
     });
   }
 
@@ -272,7 +297,7 @@ export function TripsPage() {
                     <FormControl>
                       <Select {...field} required>
                         <option value="">Selecione...</option>
-                        {activeVehicles.map((vehicle) => (
+                        {availableVehicles.map((vehicle) => (
                           <option key={vehicle.id} value={vehicle.id}>
                             {vehicle.model} ({vehicle.plate})
                           </option>
@@ -350,7 +375,9 @@ export function TripsPage() {
                         step="0.1"
                         min="0"
                         {...field}
-                        onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                        readOnly
+                        disabled
+                        className="bg-muted"
                       />
                     </FormControl>
                     <FormMessage />

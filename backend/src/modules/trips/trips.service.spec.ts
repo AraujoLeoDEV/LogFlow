@@ -8,11 +8,15 @@ import {
 
 import { PrismaService } from '../../prisma/prisma.service';
 import {
+  DailyLog,
+  DailyLogStatus,
   Driver,
+  FuelType,
   Prisma,
   Role,
   Trip,
   TripStatus,
+  Vehicle,
 } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { TripsService } from './trips.service';
@@ -40,7 +44,7 @@ interface CreateTripArgs {
     driverId: string;
     routeId: string;
     destination: string;
-    startKm: number;
+    startKm: Prisma.Decimal;
     startedAt: Date;
     status: TripStatus;
     createdBy: string;
@@ -95,6 +99,60 @@ function buildDriver(overrides: Partial<Driver> = {}): Driver {
   };
 }
 
+function buildVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
+  return {
+    id: 'vehicle-1',
+    plate: 'ABC1D23',
+    model: 'Fiat Strada',
+    fuelType: FuelType.FLEX,
+    tankCapacityLiters: new Prisma.Decimal(55),
+    yearModel: 2022,
+    mainRouteId: null,
+    acquisitionValue: new Prisma.Decimal(95000),
+    usefulLifeMonths: 60,
+    residualValue: new Prisma.Decimal(35000),
+    currentKm: new Prisma.Decimal(1000),
+    licensingExpiration: null,
+    insuranceExpiration: null,
+    active: true,
+    nextOilChangeKm: null,
+    nextOilChangeDate: null,
+    nextTireChangeKm: null,
+    nextTireChangeDate: null,
+    nextReviewKm: null,
+    nextReviewDate: null,
+    createdBy: null,
+    updatedBy: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+function buildDailyLog(overrides: Partial<DailyLog> = {}): DailyLog {
+  return {
+    id: 'daily-log-1',
+    vehicleId: 'vehicle-1',
+    driverId: 'driver-1',
+    routeId: 'route-1',
+    departureAt: new Date('2026-06-12T08:00:00Z'),
+    returnAt: null,
+    startKm: new Prisma.Decimal(1000),
+    endKm: null,
+    kmDriven: null,
+    totalDurationMinutes: null,
+    avgSpeedKmh: null,
+    observations: null,
+    status: DailyLogStatus.EM_ANDAMENTO,
+    createdBy: null,
+    updatedBy: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
+  };
+}
+
 function buildTrip(overrides: Partial<Trip> = {}): Trip {
   return {
     id: 'trip-1',
@@ -119,6 +177,8 @@ function buildService(
   options: {
     trips?: Trip[];
     drivers?: Driver[];
+    vehicles?: Vehicle[];
+    dailyLogs?: DailyLog[];
     routeDurations?: Record<string, number>;
   } = {},
 ) {
@@ -126,6 +186,8 @@ function buildService(
   (options.trips ?? []).forEach((trip) => trips.set(trip.id, trip));
 
   const drivers = options.drivers ?? [buildDriver()];
+  const vehicles = options.vehicles ?? [buildVehicle()];
+  const dailyLogs = options.dailyLogs ?? [];
   const routeDurations = options.routeDurations ?? { 'route-1': 60 };
 
   const findFirstDriver = jest.fn(
@@ -195,6 +257,39 @@ function buildService(
     return Promise.resolve(created);
   });
 
+  const findFirstVehicle = jest.fn(
+    (args: { where: { id: string } }): Promise<Vehicle | null> => {
+      const found = vehicles.find((vehicle) => vehicle.id === args.where.id);
+      return Promise.resolve(found ?? null);
+    },
+  );
+
+  const findFirstDailyLog = jest.fn(
+    (args: {
+      where: { vehicleId: string; status: DailyLogStatus };
+    }): Promise<DailyLog | null> => {
+      const found = dailyLogs.find(
+        (log) =>
+          log.vehicleId === args.where.vehicleId &&
+          log.status === args.where.status,
+      );
+      return Promise.resolve(found ?? null);
+    },
+  );
+
+  const findFirstTrip = jest.fn(
+    (args: {
+      where: { vehicleId: string; status: { in: TripStatus[] } };
+    }): Promise<Trip | null> => {
+      const found = [...trips.values()].find(
+        (trip) =>
+          trip.vehicleId === args.where.vehicleId &&
+          args.where.status.in.includes(trip.status),
+      );
+      return Promise.resolve(found ?? null);
+    },
+  );
+
   const updateTrip = jest.fn((args: UpdateTripArgs): Promise<Trip> => {
     const current = trips.get(args.where.id);
     if (!current) {
@@ -221,12 +316,19 @@ function buildService(
     trip: {
       findUnique: findUniqueTrip,
       findMany: findManyTrip,
+      findFirst: findFirstTrip,
       create: createTrip,
       update: updateTrip,
       updateMany: updateManyTrip,
     },
     driver: {
       findFirst: findFirstDriver,
+    },
+    vehicle: {
+      findFirst: findFirstVehicle,
+    },
+    dailyLog: {
+      findFirst: findFirstDailyLog,
     },
   } as unknown as PrismaService;
 
@@ -242,7 +344,7 @@ describe('TripsService', () => {
 
       await expect(
         service.create(
-          { vehicleId: 'vehicle-1', destination: 'Centro', startKm: 1000 },
+          { vehicleId: 'vehicle-1', destination: 'Centro' },
           adminUser,
         ),
       ).rejects.toThrow(BadRequestException);
@@ -259,7 +361,6 @@ describe('TripsService', () => {
             vehicleId: 'vehicle-1',
             driverId: 'driver-1',
             destination: 'Centro',
-            startKm: 1000,
           },
           adminUser,
         ),
@@ -270,7 +371,7 @@ describe('TripsService', () => {
       const { service, trips } = buildService();
 
       const created = await service.create(
-        { vehicleId: 'vehicle-1', destination: 'Centro', startKm: 1000 },
+        { vehicleId: 'vehicle-1', destination: 'Centro' },
         motoristaUser,
       );
 
@@ -285,10 +386,85 @@ describe('TripsService', () => {
 
       await expect(
         service.create(
-          { vehicleId: 'vehicle-1', destination: 'Centro', startKm: 1000 },
+          { vehicleId: 'vehicle-1', destination: 'Centro' },
           motoristaUser,
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('usa o currentKm do veículo como startKm da viagem', async () => {
+      const { service, trips } = buildService({
+        vehicles: [buildVehicle({ currentKm: new Prisma.Decimal(4250.5) })],
+      });
+
+      const created = await service.create(
+        { vehicleId: 'vehicle-1', destination: 'Centro' },
+        motoristaUser,
+      );
+
+      expect(trips.get(created.id)?.startKm.toString()).toBe('4250.5');
+    });
+
+    it('rejeita criação quando o veículo informado não existe', async () => {
+      const { service } = buildService({ vehicles: [] });
+
+      await expect(
+        service.create(
+          { vehicleId: 'vehicle-1', destination: 'Centro' },
+          motoristaUser,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejeita criação quando o veículo já possui viagem em andamento', async () => {
+      const { service } = buildService({
+        trips: [
+          buildTrip({
+            vehicleId: 'vehicle-1',
+            status: TripStatus.EM_ANDAMENTO,
+          }),
+        ],
+      });
+
+      await expect(
+        service.create(
+          { vehicleId: 'vehicle-1', destination: 'Centro' },
+          motoristaUser,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('rejeita criação quando o veículo já possui viagem atrasada', async () => {
+      const { service } = buildService({
+        trips: [
+          buildTrip({ vehicleId: 'vehicle-1', status: TripStatus.ATRASADA }),
+        ],
+      });
+
+      await expect(
+        service.create(
+          { vehicleId: 'vehicle-1', destination: 'Centro' },
+          motoristaUser,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('rejeita criação quando o veículo está em uma rota em andamento (registro diário)', async () => {
+      const { service } = buildService({
+        dailyLogs: [
+          buildDailyLog({
+            vehicleId: 'vehicle-1',
+            status: DailyLogStatus.EM_ANDAMENTO,
+          }),
+        ],
+      });
+
+      await expect(
+        service.create(
+          { vehicleId: 'vehicle-1', destination: 'Centro' },
+          motoristaUser,
+        ),
+      ).rejects.toThrow(ConflictException);
     });
   });
 

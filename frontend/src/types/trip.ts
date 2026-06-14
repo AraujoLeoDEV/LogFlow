@@ -26,7 +26,6 @@ export interface CreateTripPayload {
   driverId?: string;
   routeId?: string;
   destination: string;
-  startKm: number;
   startedAt?: string;
 }
 

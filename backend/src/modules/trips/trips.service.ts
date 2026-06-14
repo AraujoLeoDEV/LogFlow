@@ -10,6 +10,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import {
+  DailyLogStatus,
   Driver,
   Prisma,
   Role,
@@ -48,6 +49,37 @@ export class TripsService {
       );
     }
 
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: { id: dto.vehicleId, deletedAt: null },
+    });
+
+    if (!vehicle) {
+      throw new BadRequestException('Veículo informado não existe.');
+    }
+
+    const ongoingTrip = await this.prisma.trip.findFirst({
+      where: {
+        vehicleId: dto.vehicleId,
+        status: { in: [TripStatus.EM_ANDAMENTO, TripStatus.ATRASADA] },
+      },
+    });
+
+    if (ongoingTrip) {
+      throw new ConflictException(
+        'Este veículo já possui uma viagem em andamento.',
+      );
+    }
+
+    const ongoingDailyLog = await this.prisma.dailyLog.findFirst({
+      where: { vehicleId: dto.vehicleId, status: DailyLogStatus.EM_ANDAMENTO },
+    });
+
+    if (ongoingDailyLog) {
+      throw new ConflictException(
+        'Este veículo está em uma rota em andamento.',
+      );
+    }
+
     try {
       return await this.prisma.trip.create({
         data: {
@@ -55,7 +87,7 @@ export class TripsService {
           driverId: driver.id,
           routeId,
           destination: dto.destination,
-          startKm: dto.startKm,
+          startKm: vehicle.currentKm,
           startedAt: dto.startedAt ? new Date(dto.startedAt) : new Date(),
           status: TripStatus.EM_ANDAMENTO,
           createdBy: user.sub,
