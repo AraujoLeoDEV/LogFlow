@@ -51,7 +51,7 @@ const schema = z.object({
     .positive('O valor de aquisição deve ser maior que zero.'),
   usefulLifeMonths: z
     .number({ message: 'Informe a vida útil.' })
-    .int('A vida útil deve ser um número inteiro de meses.')
+    .int('A vida útil deve ser um número inteiro.')
     .positive('A vida útil deve ser maior que zero.'),
   residualValue: z
     .number({ message: 'Informe o valor residual.' })
@@ -303,14 +303,17 @@ export function VehicleFormSheet({
               name="usefulLifeMonths"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vida útil (meses)</FormLabel>
+                  <FormLabel>Vida útil (anos)</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
                       step="1"
                       min="1"
                       {...field}
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                      value={field.value / 12}
+                      onChange={(event) =>
+                        field.onChange(Math.round(event.target.valueAsNumber * 12))
+                      }
                     />
                   </FormControl>
                   <FormMessage />
