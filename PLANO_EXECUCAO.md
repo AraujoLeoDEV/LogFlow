@@ -777,32 +777,32 @@ NAO_ATINGIDA), createdBy, createdAt, updatedAt`
 **Objetivo:** revisão transversal de tudo que foi construído contra o checklist de
 segurança do `CLAUDE.md`.
 
-- [ ] **Auth**: confirmar expiração curta do access token, refresh em cookie
+- [x] **Auth**: confirmar expiração curta do access token, refresh em cookie
       `httpOnly; secure; sameSite=strict`
-- [ ] **Senhas**: bcrypt custo ≥ 10 em todos os fluxos; nenhuma resposta de API retorna
+- [x] **Senhas**: bcrypt custo ≥ 10 em todos os fluxos; nenhuma resposta de API retorna
       `passwordHash`
-- [ ] **RBAC**: auditar todos os endpoints — todos declaram `@Roles(...)` explicitamente
+- [x] **RBAC**: auditar todos os endpoints — todos declaram `@Roles(...)` explicitamente
       (nenhum endpoint "esquecido" sem guard)
-- [ ] **Validação**: todos os DTOs com `class-validator`, `ValidationPipe` global com
+- [x] **Validação**: todos os DTOs com `class-validator`, `ValidationPipe` global com
       `whitelist`/`forbidNonWhitelisted` ativos
-- [ ] **SQL Injection**: confirmar que não há `$queryRawUnsafe`/concatenação manual de SQL
+- [x] **SQL Injection**: confirmar que não há `$queryRawUnsafe`/concatenação manual de SQL
       em nenhum módulo
-- [ ] **Rate limiting**: `@nestjs/throttler` em `/auth/login` e demais rotas sensíveis
-- [ ] **CORS**: lista explícita de origens via `FRONTEND_URL`/env, sem wildcard `*`
-- [ ] **Helmet**: confirmar headers de segurança ativos
-- [ ] **Auditoria**: `created_by`/`updated_by`/timestamps presentes em todas as entidades
+- [x] **Rate limiting**: `@nestjs/throttler` em `/auth/login` e demais rotas sensíveis
+- [x] **CORS**: lista explícita de origens via `FRONTEND_URL`/env, sem wildcard `*`
+- [x] **Helmet**: confirmar headers de segurança ativos
+- [x] **Auditoria**: `created_by`/`updated_by`/timestamps presentes em todas as entidades
       sensíveis (vehicles, drivers, daily-logs, trips, fuel, maintenance, incidents,
       shipments, goals)
-- [ ] **Logs (Pino)**: revisar `redact` — nunca logar `passwordHash`, tokens, e-mails
+- [x] **Logs (Pino)**: revisar `redact` — nunca logar `passwordHash`, tokens, e-mails
       completos ou dados pessoais sensíveis
-- [ ] **Dependências**: `npm audit` em backend e frontend, atualizar vulnerabilidades
+- [x] **Dependências**: `npm audit` em backend e frontend, atualizar vulnerabilidades
       críticas/altas
-- [ ] **Testes E2E** dos fluxos principais: login (4 perfis), ciclo completo de
+- [x] **Testes E2E** dos fluxos principais: login (4 perfis), ciclo completo de
       daily-log, viagem, abastecimento, criação de envio com protocolo, geração de alerta
 
 **Critérios de aceite:**
 
-- [ ] 100% dos itens da seção 5 do `CLAUDE.md` verificados e marcados
+- [x] 100% dos itens da seção 5 do `CLAUDE.md` verificados e marcados
 
 ---
 
