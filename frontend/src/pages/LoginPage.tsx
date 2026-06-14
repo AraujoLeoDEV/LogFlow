@@ -73,8 +73,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-sm">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#221a45] to-[#0c0e1c] p-4">
+      <Card className="w-full max-w-sm shadow-2xl">
         <CardHeader className="items-center justify-items-center text-center">
           <img src={logoIcon} alt="LogFlow" className="mb-2 size-14 rounded-xl" />
           <CardTitle className="text-xl">Entrar</CardTitle>
