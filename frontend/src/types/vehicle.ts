@@ -3,6 +3,7 @@ export type FuelType = 'GASOLINE' | 'ETHANOL' | 'DIESEL' | 'FLEX' | 'GNV';
 export interface Vehicle {
   id: string;
   plate: string;
+  model: string;
   fuelType: FuelType;
   tankCapacityLiters: string;
   yearModel: number;
@@ -21,6 +22,7 @@ export interface Vehicle {
 
 export interface CreateVehiclePayload {
   plate: string;
+  model: string;
   fuelType: FuelType;
   tankCapacityLiters: number;
   yearModel: number;

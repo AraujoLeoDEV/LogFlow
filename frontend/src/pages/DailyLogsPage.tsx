@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { ReturnDailyLogSheet } from '@/components/daily-logs/ReturnDailyLogSheet';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -220,7 +221,9 @@ export function DailyLogsPage() {
               )}
               {ongoingLogs?.map((log) => (
                 <tr key={log.id} className="border-b last:border-0">
-                  <td className="px-2 py-2 font-medium">{log.vehicle.plate}</td>
+                  <td className="px-2 py-2 font-medium">
+                    <VehicleName vehicle={log.vehicle} />
+                  </td>
                   <td className="px-2 py-2 text-muted-foreground">{log.driver.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{log.route.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">
@@ -263,7 +266,7 @@ export function DailyLogsPage() {
                         <option value="">Selecione...</option>
                         {availableVehicles.map((vehicle) => (
                           <option key={vehicle.id} value={vehicle.id}>
-                            {vehicle.plate}
+                            {vehicle.model} ({vehicle.plate})
                           </option>
                         ))}
                       </Select>
@@ -372,7 +375,7 @@ export function DailyLogsPage() {
                 <option value="">Todos</option>
                 {(vehicles ?? []).map((vehicle) => (
                   <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate}
+                    {vehicle.model} ({vehicle.plate})
                   </option>
                 ))}
               </Select>
@@ -467,7 +470,9 @@ export function DailyLogsPage() {
               )}
               {history?.map((log) => (
                 <tr key={log.id} className="border-b last:border-0">
-                  <td className="px-2 py-2 font-medium">{log.vehicle.plate}</td>
+                  <td className="px-2 py-2 font-medium">
+                    <VehicleName vehicle={log.vehicle} />
+                  </td>
                   <td className="px-2 py-2 text-muted-foreground">{log.driver.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{log.route.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">

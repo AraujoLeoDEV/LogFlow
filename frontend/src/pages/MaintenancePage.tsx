@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -223,7 +224,9 @@ export function MaintenancePage() {
                     key={`${entry.vehicleId}-${entry.category}-${index}`}
                     className="border-b last:border-0"
                   >
-                    <td className="px-2 py-2 font-medium">{entry.plate}</td>
+                    <td className="px-2 py-2 font-medium">
+                      <VehicleName vehicle={entry} />
+                    </td>
                     <td className="px-2 py-2 text-muted-foreground">
                       {scheduleCategoryLabels[entry.category]}
                     </td>
@@ -266,7 +269,7 @@ export function MaintenancePage() {
                           <option value="">Selecione...</option>
                           {activeVehicles.map((vehicle) => (
                             <option key={vehicle.id} value={vehicle.id}>
-                              {vehicle.plate}
+                              {vehicle.model} ({vehicle.plate})
                             </option>
                           ))}
                         </Select>
@@ -444,7 +447,7 @@ export function MaintenancePage() {
                     <option value="">Todos</option>
                     {(vehicles ?? []).map((vehicle) => (
                       <option key={vehicle.id} value={vehicle.id}>
-                        {vehicle.plate}
+                        {vehicle.model} ({vehicle.plate})
                       </option>
                     ))}
                   </Select>
@@ -529,7 +532,9 @@ export function MaintenancePage() {
                     <td className="px-2 py-2 text-muted-foreground">
                       {formatDateTime(maintenance.createdAt)}
                     </td>
-                    <td className="px-2 py-2 font-medium">{maintenance.vehicle.plate}</td>
+                    <td className="px-2 py-2 font-medium">
+                      <VehicleName vehicle={maintenance.vehicle} />
+                    </td>
                     <td className="px-2 py-2 text-muted-foreground">
                       {maintenanceTypeOptions.find((option) => option.value === maintenance.type)
                         ?.label ?? maintenance.type}

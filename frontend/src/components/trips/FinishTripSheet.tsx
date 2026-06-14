@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { FinishTripPayload, TripWithRelations } from '@/types/trip';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 
 const schema = z.object({
   endKm: z
@@ -68,9 +69,14 @@ export function FinishTripSheet({
         <DialogHeader>
           <DialogTitle>Encerrar viagem</DialogTitle>
           <DialogDescription>
-            {trip
-              ? `Veículo ${trip.vehicle.plate} · Motorista ${trip.driver.name} · Destino ${trip.destination}`
-              : ''}
+            {trip ? (
+              <>
+                Veículo <VehicleName vehicle={trip.vehicle} /> · Motorista {trip.driver.name} ·
+                Destino {trip.destination}
+              </>
+            ) : (
+              ''
+            )}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

@@ -16,7 +16,7 @@ export interface Fuel {
 }
 
 export interface FuelWithRelations extends Fuel {
-  vehicle: { id: string; plate: string };
+  vehicle: { id: string; plate: string; model: string; currentKm: string };
   driver: { id: string; name: string };
 }
 
@@ -40,6 +40,8 @@ export interface FuelQuery {
 export interface VehicleFuelIndicator {
   vehicleId: string;
   plate: string;
+  model: string;
+  currentKm: string;
   avgConsumptionKmL: number | null;
   totalSpent: number;
 }

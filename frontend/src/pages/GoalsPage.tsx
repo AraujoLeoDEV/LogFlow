@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -220,11 +221,25 @@ export function GoalsPage() {
     setFilters((prev) => ({ ...prev, [key]: (value || undefined) as GoalQuery[K] }));
   }
 
-  function entityLabel(goal: GoalWithRelations | GoalRankingEntry): string {
+  function entityDisplay(goal: GoalWithRelations | GoalRankingEntry) {
     if ('driver' in goal) {
-      return goal.driver?.name ?? goal.vehicle?.plate ?? '—';
+      if (goal.driver) return goal.driver.name;
+      if (goal.vehicle) return <VehicleName vehicle={goal.vehicle} />;
+      return '—';
     }
-    return goal.driverName ?? goal.vehiclePlate ?? '—';
+    if (goal.driverName) return goal.driverName;
+    if (goal.vehiclePlate) {
+      return (
+        <VehicleName
+          vehicle={{
+            plate: goal.vehiclePlate,
+            model: goal.vehicleModel ?? goal.vehiclePlate,
+            currentKm: goal.vehicleCurrentKm ?? '0',
+          }}
+        />
+      );
+    }
+    return '—';
   }
 
   if (!canManage) {
@@ -303,7 +318,7 @@ export function GoalsPage() {
                             ))
                           : activeVehicles.map((vehicle) => (
                               <option key={vehicle.id} value={vehicle.id}>
-                                {vehicle.plate}
+                                {vehicle.model} ({vehicle.plate})
                               </option>
                             ))}
                       </Select>
@@ -400,7 +415,7 @@ export function GoalsPage() {
                 <option value="">Todos</option>
                 {activeVehicles.map((vehicle) => (
                   <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate}
+                    {vehicle.model} ({vehicle.plate})
                   </option>
                 ))}
               </Select>
@@ -459,7 +474,7 @@ export function GoalsPage() {
               {goals?.map((goal) => (
                 <tr key={goal.id} className="border-b last:border-0">
                   <td className="px-2 py-2 font-medium">{goal.period}</td>
-                  <td className="px-2 py-2 text-muted-foreground">{entityLabel(goal)}</td>
+                  <td className="px-2 py-2 text-muted-foreground">{entityDisplay(goal)}</td>
                   <td className="px-2 py-2">{formatConsumption(goal.targetValue)}</td>
                   <td className="px-2 py-2">{formatConsumption(goal.actualValue)}</td>
                   <td className="px-2 py-2">
@@ -537,7 +552,7 @@ export function GoalsPage() {
               {ranking?.map((entry, index) => (
                 <tr key={entry.goalId} className="border-b last:border-0">
                   <td className="px-2 py-2 font-medium">{index + 1}º</td>
-                  <td className="px-2 py-2 text-muted-foreground">{entityLabel(entry)}</td>
+                  <td className="px-2 py-2 text-muted-foreground">{entityDisplay(entry)}</td>
                   <td className="px-2 py-2">{formatConsumption(entry.targetValue)}</td>
                   <td className="px-2 py-2">{formatConsumption(entry.actualValue)}</td>
                   <td className="px-2 py-2">

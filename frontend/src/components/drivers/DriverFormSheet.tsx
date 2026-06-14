@@ -190,7 +190,7 @@ export function DriverFormSheet({
                       <option value="">Nenhum</option>
                       {vehicles?.map((vehicle) => (
                         <option key={vehicle.id} value={vehicle.id}>
-                          {vehicle.plate}
+                          {vehicle.model} ({vehicle.plate})
                         </option>
                       ))}
                     </Select>

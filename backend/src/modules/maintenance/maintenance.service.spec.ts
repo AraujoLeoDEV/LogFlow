@@ -25,6 +25,7 @@ function buildVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   return {
     id: 'vehicle-1',
     plate: 'ABC1D23',
+    model: 'Fiat Strada',
     fuelType: FuelType.FLEX,
     tankCapacityLiters: new Prisma.Decimal(50),
     yearModel: 2020,
@@ -107,7 +108,16 @@ function buildService(
   const createMaintenance = jest.fn(
     (
       args: CreateMaintenanceArgs,
-    ): Promise<Maintenance & { vehicle: { id: string; plate: string } }> => {
+    ): Promise<
+      Maintenance & {
+        vehicle: {
+          id: string;
+          plate: string;
+          model: string;
+          currentKm: Prisma.Decimal;
+        };
+      }
+    > => {
       const data = args.data as unknown as {
         type: MaintenanceType;
         category: MaintenanceCategory;
@@ -142,22 +152,32 @@ function buildService(
       const vehicle = vehicles.find((item) => item.id === created.vehicleId);
       return Promise.resolve({
         ...created,
-        vehicle: { id: created.vehicleId, plate: vehicle?.plate ?? 'UNKNOWN' },
+        vehicle: {
+          id: created.vehicleId,
+          plate: vehicle?.plate ?? 'UNKNOWN',
+          model: vehicle?.model ?? 'UNKNOWN',
+          currentKm: vehicle?.currentKm ?? new Prisma.Decimal(0),
+        },
       });
     },
   );
 
   const findManyMaintenance = jest.fn(() =>
     Promise.resolve(
-      maintenances.map((maintenance) => ({
-        ...maintenance,
-        vehicle: {
-          id: maintenance.vehicleId,
-          plate:
-            vehicles.find((vehicle) => vehicle.id === maintenance.vehicleId)
-              ?.plate ?? 'UNKNOWN',
-        },
-      })),
+      maintenances.map((maintenance) => {
+        const vehicle = vehicles.find(
+          (item) => item.id === maintenance.vehicleId,
+        );
+        return {
+          ...maintenance,
+          vehicle: {
+            id: maintenance.vehicleId,
+            plate: vehicle?.plate ?? 'UNKNOWN',
+            model: vehicle?.model ?? 'UNKNOWN',
+            currentKm: vehicle?.currentKm ?? new Prisma.Decimal(0),
+          },
+        };
+      }),
     ),
   );
 
@@ -307,7 +327,12 @@ describe('MaintenanceService', () => {
       const result = await service.findAll({});
 
       expect(result).toHaveLength(1);
-      expect(result[0].vehicle).toEqual({ id: 'vehicle-1', plate: 'ABC1D23' });
+      expect(result[0].vehicle).toEqual({
+        id: 'vehicle-1',
+        plate: 'ABC1D23',
+        model: 'Fiat Strada',
+        currentKm: new Prisma.Decimal(50000),
+      });
     });
   });
 

@@ -20,7 +20,7 @@ export interface Goal {
 
 export interface GoalWithRelations extends Goal {
   driver: { id: string; name: string } | null;
-  vehicle: { id: string; plate: string } | null;
+  vehicle: { id: string; plate: string; model: string; currentKm: string } | null;
 }
 
 export interface CreateGoalPayload {
@@ -47,6 +47,8 @@ export interface GoalRankingEntry {
   driverName: string | null;
   vehicleId: string | null;
   vehiclePlate: string | null;
+  vehicleModel: string | null;
+  vehicleCurrentKm: string | null;
   type: GoalType;
   targetValue: number;
   actualValue: number | null;

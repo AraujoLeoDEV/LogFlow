@@ -26,6 +26,11 @@ export class CreateVehicleDto {
   @IsVehiclePlate()
   plate: string;
 
+  @ApiProperty({ example: 'Fiat Strada' })
+  @IsString()
+  @IsNotEmpty({ message: 'O modelo é obrigatório.' })
+  model: string;
+
   @ApiProperty({ enum: FuelType, example: FuelType.FLEX })
   @IsEnum(FuelType, { message: 'Tipo de combustível inválido.' })
   fuelType: FuelType;

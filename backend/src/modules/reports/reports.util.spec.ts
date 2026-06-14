@@ -384,6 +384,8 @@ describe('buildReportTable', () => {
         driverName: 'João',
         vehicleId: null,
         vehiclePlate: null,
+        vehicleModel: null,
+        vehicleCurrentKm: null,
         type: GoalType.CONSUMPTION_REDUCTION,
         targetValue: 10,
         actualValue: 12,

@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { DailyLogWithRelations, ReturnDailyLogPayload } from '@/types/dailyLog';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 
 const schema = z.object({
   endKm: z.number({ message: 'Informe o KM final.' }).min(0, 'O KM final não pode ser negativo.'),
@@ -73,9 +74,14 @@ export function ReturnDailyLogSheet({
         <DialogHeader>
           <DialogTitle>Registrar retorno</DialogTitle>
           <DialogDescription>
-            {dailyLog
-              ? `Veículo ${dailyLog.vehicle.plate} · Motorista ${dailyLog.driver.name} · Rota ${dailyLog.route.name}`
-              : ''}
+            {dailyLog ? (
+              <>
+                Veículo <VehicleName vehicle={dailyLog.vehicle} /> · Motorista{' '}
+                {dailyLog.driver.name} · Rota {dailyLog.route.name}
+              </>
+            ) : (
+              ''
+            )}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

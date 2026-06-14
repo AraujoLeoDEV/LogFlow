@@ -16,7 +16,7 @@ export interface Trip {
 }
 
 export interface TripWithRelations extends Trip {
-  vehicle: { id: string; plate: string };
+  vehicle: { id: string; plate: string; model: string; currentKm: string };
   driver: { id: string; name: string };
   route: { id: string; name: string };
 }

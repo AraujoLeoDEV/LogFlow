@@ -85,6 +85,7 @@ describe('buildScheduleEntries', () => {
         {
           id: 'v1',
           plate: 'AAA0000',
+          model: 'Modelo A',
           currentKm: 1000,
           nextOilChangeKm: null,
           nextOilChangeDate: null,
@@ -106,6 +107,7 @@ describe('buildScheduleEntries', () => {
         {
           id: 'v1',
           plate: 'AAA0000',
+          model: 'Modelo A',
           currentKm: 9000,
           // troca de óleo a 1000km de distância
           nextOilChangeKm: 10000,
@@ -119,6 +121,7 @@ describe('buildScheduleEntries', () => {
         {
           id: 'v2',
           plate: 'BBB0000',
+          model: 'Modelo B',
           currentKm: 5000,
           nextOilChangeKm: null,
           nextOilChangeDate: null,
@@ -156,6 +159,7 @@ describe('buildScheduleEntries', () => {
         {
           id: 'v1',
           plate: 'AAA0000',
+          model: 'Modelo A',
           currentKm: 11000,
           // já passou 1000km do previsto
           nextOilChangeKm: 10000,

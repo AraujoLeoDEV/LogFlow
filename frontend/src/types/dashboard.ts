@@ -16,6 +16,8 @@ export interface DriverIndicator {
 export interface VehicleIndicator {
   vehicleId: string;
   plate: string;
+  model: string;
+  currentKm: string;
   kmTotal: number;
   usageMinutes: number;
   usageCount: number;

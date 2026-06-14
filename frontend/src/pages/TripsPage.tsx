@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { FinishTripSheet } from '@/components/trips/FinishTripSheet';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -224,7 +225,9 @@ export function TripsPage() {
               )}
               {ongoingTrips.map((trip) => (
                 <tr key={trip.id} className="border-b last:border-0">
-                  <td className="px-2 py-2 font-medium">{trip.vehicle.plate}</td>
+                  <td className="px-2 py-2 font-medium">
+                    <VehicleName vehicle={trip.vehicle} />
+                  </td>
                   <td className="px-2 py-2 text-muted-foreground">{trip.driver.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{trip.route.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{trip.destination}</td>
@@ -271,7 +274,7 @@ export function TripsPage() {
                         <option value="">Selecione...</option>
                         {activeVehicles.map((vehicle) => (
                           <option key={vehicle.id} value={vehicle.id}>
-                            {vehicle.plate}
+                            {vehicle.model} ({vehicle.plate})
                           </option>
                         ))}
                       </Select>
@@ -380,7 +383,7 @@ export function TripsPage() {
                 <option value="">Todos</option>
                 {(vehicles ?? []).map((vehicle) => (
                   <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate}
+                    {vehicle.model} ({vehicle.plate})
                   </option>
                 ))}
               </Select>
@@ -476,7 +479,9 @@ export function TripsPage() {
               )}
               {history?.map((trip) => (
                 <tr key={trip.id} className="border-b last:border-0">
-                  <td className="px-2 py-2 font-medium">{trip.vehicle.plate}</td>
+                  <td className="px-2 py-2 font-medium">
+                    <VehicleName vehicle={trip.vehicle} />
+                  </td>
                   <td className="px-2 py-2 text-muted-foreground">{trip.driver.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{trip.route.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{trip.destination}</td>

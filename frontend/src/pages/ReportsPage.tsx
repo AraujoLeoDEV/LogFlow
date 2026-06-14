@@ -363,7 +363,7 @@ export function ReportsPage() {
                           <option value="">Selecione...</option>
                           {activeVehicles.map((vehicle) => (
                             <option key={vehicle.id} value={vehicle.id}>
-                              {vehicle.plate}
+                              {vehicle.model} ({vehicle.plate})
                             </option>
                           ))}
                         </Select>

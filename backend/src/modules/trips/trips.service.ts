@@ -28,7 +28,7 @@ export interface TripWithRelations extends Trip {
 }
 
 const tripInclude = {
-  vehicle: { select: { id: true, plate: true } },
+  vehicle: { select: { id: true, plate: true, model: true, currentKm: true } },
   driver: { select: { id: true, name: true } },
   route: { select: { id: true, name: true } },
 } as const;

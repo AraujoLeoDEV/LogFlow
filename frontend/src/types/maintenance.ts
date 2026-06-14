@@ -18,7 +18,7 @@ export interface Maintenance {
 }
 
 export interface MaintenanceWithVehicle extends Maintenance {
-  vehicle: { id: string; plate: string };
+  vehicle: { id: string; plate: string; model: string; currentKm: string };
 }
 
 export interface CreateMaintenancePayload {
@@ -46,6 +46,8 @@ export type ScheduleCategory = 'TROCA_OLEO' | 'TROCA_PNEUS' | 'REVISAO_GERAL';
 export interface ScheduleEntry {
   vehicleId: string;
   plate: string;
+  model: string;
+  currentKm: number;
   category: ScheduleCategory;
   nextKm: number | null;
   nextDate: string | null;

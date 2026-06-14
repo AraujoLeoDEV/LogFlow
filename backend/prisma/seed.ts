@@ -112,6 +112,7 @@ async function seedVehicles(
   const vehiclesToSeed = [
     {
       plate: 'ABC1D23',
+      model: 'Fiat Strada',
       fuelType: FuelType.FLEX,
       tankCapacityLiters: 55,
       yearModel: 2022,
@@ -125,6 +126,7 @@ async function seedVehicles(
     },
     {
       plate: 'XYZ9876',
+      model: 'Mercedes-Benz Sprinter',
       fuelType: FuelType.DIESEL,
       tankCapacityLiters: 120,
       yearModel: 2020,

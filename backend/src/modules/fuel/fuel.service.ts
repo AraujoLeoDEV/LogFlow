@@ -37,7 +37,7 @@ export interface FuelIndicators {
 }
 
 const fuelInclude = {
-  vehicle: { select: { id: true, plate: true } },
+  vehicle: { select: { id: true, plate: true, model: true, currentKm: true } },
   driver: { select: { id: true, name: true } },
 } as const;
 
@@ -155,7 +155,11 @@ export class FuelService {
   // Indicadores - seção 4.6
   async getIndicators(): Promise<FuelIndicators> {
     const records = await this.prisma.fuel.findMany({
-      include: { vehicle: { select: { id: true, plate: true } } },
+      include: {
+        vehicle: {
+          select: { id: true, plate: true, model: true, currentKm: true },
+        },
+      },
       orderBy: { date: 'asc' },
     });
 
@@ -163,6 +167,8 @@ export class FuelService {
       string,
       {
         plate: string;
+        model: string;
+        currentKm: string;
         consumptionSum: Prisma.Decimal;
         consumptionCount: number;
         totalSpent: Prisma.Decimal;
@@ -173,6 +179,8 @@ export class FuelService {
     for (const record of records) {
       const entry = byVehicle.get(record.vehicleId) ?? {
         plate: record.vehicle.plate,
+        model: record.vehicle.model,
+        currentKm: record.vehicle.currentKm.toString(),
         consumptionSum: new Prisma.Decimal(0),
         consumptionCount: 0,
         totalSpent: new Prisma.Decimal(0),
@@ -196,6 +204,8 @@ export class FuelService {
       ([vehicleId, entry]) => ({
         vehicleId,
         plate: entry.plate,
+        model: entry.model,
+        currentKm: entry.currentKm,
         avgConsumptionKmL:
           entry.consumptionCount > 0
             ? entry.consumptionSum.dividedBy(entry.consumptionCount).toNumber()

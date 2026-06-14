@@ -37,6 +37,7 @@ function buildVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   return {
     id: 'vehicle-1',
     plate: 'ABC1D23',
+    model: 'Fiat Strada',
     fuelType: FuelType.FLEX,
     tankCapacityLiters: new Prisma.Decimal(50),
     yearModel: 2020,
@@ -196,6 +197,9 @@ function buildService(
     vehicle: {
       id: incident.vehicleId,
       plate: findVehicle(incident.vehicleId)?.plate ?? 'UNKNOWN',
+      model: findVehicle(incident.vehicleId)?.model ?? 'UNKNOWN',
+      currentKm:
+        findVehicle(incident.vehicleId)?.currentKm ?? new Prisma.Decimal(0),
     },
     driver: {
       id: incident.driverId,
@@ -309,6 +313,9 @@ function buildService(
         vehicle: {
           id: log.vehicleId,
           plate: findVehicle(log.vehicleId)?.plate ?? 'UNKNOWN',
+          model: findVehicle(log.vehicleId)?.model ?? 'UNKNOWN',
+          currentKm:
+            findVehicle(log.vehicleId)?.currentKm ?? new Prisma.Decimal(0),
         },
       })),
     );
@@ -416,7 +423,12 @@ describe('IncidentsService', () => {
       );
 
       expect(created.driverId).toBe('driver-1');
-      expect(created.vehicle).toEqual({ id: 'vehicle-1', plate: 'ABC1D23' });
+      expect(created.vehicle).toEqual({
+        id: 'vehicle-1',
+        plate: 'ABC1D23',
+        model: 'Fiat Strada',
+        currentKm: new Prisma.Decimal(50000),
+      });
       expect(created.driver).toEqual({ id: 'driver-1', name: 'João da Silva' });
       expect(incidents).toHaveLength(1);
     });
@@ -690,12 +702,16 @@ describe('IncidentsService', () => {
       expect(vehicle1).toEqual({
         vehicleId: 'vehicle-1',
         plate: 'ABC1D23',
+        model: 'Fiat Strada',
+        currentKm: '50000',
         count: 2,
         totalCost: 150,
       });
       expect(vehicle2).toEqual({
         vehicleId: 'vehicle-2',
         plate: 'XYZ9876',
+        model: 'Fiat Strada',
+        currentKm: '50000',
         count: 1,
         totalCost: 0,
       });
@@ -709,6 +725,8 @@ describe('IncidentsService', () => {
       expect(rateVehicle1).toEqual({
         vehicleId: 'vehicle-1',
         plate: 'ABC1D23',
+        model: 'Fiat Strada',
+        currentKm: '50000',
         incidentCount: 2,
         kmDriven: 1000,
         ratePer1000Km: 2,
@@ -717,6 +735,8 @@ describe('IncidentsService', () => {
       expect(rateVehicle2).toEqual({
         vehicleId: 'vehicle-2',
         plate: 'XYZ9876',
+        model: 'Fiat Strada',
+        currentKm: '50000',
         incidentCount: 1,
         kmDriven: 0,
         ratePer1000Km: null,

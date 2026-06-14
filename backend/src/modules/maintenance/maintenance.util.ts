@@ -75,6 +75,8 @@ export type ScheduleCategory = 'TROCA_OLEO' | 'TROCA_PNEUS' | 'REVISAO_GERAL';
 export interface ScheduleEntry {
   vehicleId: string;
   plate: string;
+  model: string;
+  currentKm: number;
   category: ScheduleCategory;
   nextKm: number | null;
   nextDate: string | null;
@@ -85,6 +87,7 @@ export interface ScheduleEntry {
 export interface VehicleScheduleSource {
   id: string;
   plate: string;
+  model: string;
   currentKm: number;
   nextOilChangeKm: number | null;
   nextOilChangeDate: Date | null;
@@ -151,6 +154,8 @@ export function buildScheduleEntries(
       entries.push({
         vehicleId: vehicle.id,
         plate: vehicle.plate,
+        model: vehicle.model,
+        currentKm: vehicle.currentKm,
         category,
         nextKm,
         nextDate: nextDate ? nextDate.toISOString() : null,

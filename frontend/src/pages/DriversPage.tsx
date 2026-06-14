@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { DriverFormSheet } from '@/components/drivers/DriverFormSheet';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -35,7 +36,7 @@ export function DriversPage() {
     queryFn: async () => (await api.get<Route[]>('/routes')).data,
   });
 
-  const vehiclePlateById = new Map((vehicles ?? []).map((vehicle) => [vehicle.id, vehicle.plate]));
+  const vehicleById = new Map((vehicles ?? []).map((vehicle) => [vehicle.id, vehicle]));
   const routeNameById = new Map((routes ?? []).map((route) => [route.id, route.name]));
 
   const invalidateDrivers = () => queryClient.invalidateQueries({ queryKey: ['drivers'] });
@@ -143,7 +144,11 @@ export function DriversPage() {
                 <td className="px-4 py-2 font-medium">{driver.name}</td>
                 <td className="px-4 py-2 text-muted-foreground">{driver.position}</td>
                 <td className="px-4 py-2 text-muted-foreground">
-                  {driver.vehicleId ? (vehiclePlateById.get(driver.vehicleId) ?? '—') : '—'}
+                  {driver.vehicleId && vehicleById.get(driver.vehicleId) ? (
+                    <VehicleName vehicle={vehicleById.get(driver.vehicleId)!} />
+                  ) : (
+                    '—'
+                  )}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {driver.defaultRouteId ? (routeNameById.get(driver.defaultRouteId) ?? '—') : '—'}

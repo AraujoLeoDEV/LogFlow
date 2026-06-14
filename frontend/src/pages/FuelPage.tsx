@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -193,21 +194,27 @@ export function FuelPage() {
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground uppercase">Mais econômico</p>
                     <p className="text-lg font-semibold">
-                      {indicators.mostEconomical
-                        ? `${indicators.mostEconomical.plate} — ${formatConsumption(
-                            indicators.mostEconomical.avgConsumptionKmL,
-                          )}`
-                        : '—'}
+                      {indicators.mostEconomical ? (
+                        <>
+                          <VehicleName vehicle={indicators.mostEconomical} /> —{' '}
+                          {formatConsumption(indicators.mostEconomical.avgConsumptionKmL)}
+                        </>
+                      ) : (
+                        '—'
+                      )}
                     </p>
                   </div>
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground uppercase">Menos econômico</p>
                     <p className="text-lg font-semibold">
-                      {indicators.mostExpensive
-                        ? `${indicators.mostExpensive.plate} — ${formatConsumption(
-                            indicators.mostExpensive.avgConsumptionKmL,
-                          )}`
-                        : '—'}
+                      {indicators.mostExpensive ? (
+                        <>
+                          <VehicleName vehicle={indicators.mostExpensive} /> —{' '}
+                          {formatConsumption(indicators.mostExpensive.avgConsumptionKmL)}
+                        </>
+                      ) : (
+                        '—'
+                      )}
                     </p>
                   </div>
                 </div>
@@ -230,7 +237,9 @@ export function FuelPage() {
                     )}
                     {indicators.vehicles.map((vehicle) => (
                       <tr key={vehicle.vehicleId} className="border-b last:border-0">
-                        <td className="px-2 py-2 font-medium">{vehicle.plate}</td>
+                        <td className="px-2 py-2 font-medium">
+                          <VehicleName vehicle={vehicle} />
+                        </td>
                         <td className="px-2 py-2">
                           {formatConsumption(vehicle.avgConsumptionKmL)}
                         </td>
@@ -296,7 +305,7 @@ export function FuelPage() {
                           <option value="">Selecione...</option>
                           {activeVehicles.map((vehicle) => (
                             <option key={vehicle.id} value={vehicle.id}>
-                              {vehicle.plate}
+                              {vehicle.model} ({vehicle.plate})
                             </option>
                           ))}
                         </Select>
@@ -432,7 +441,7 @@ export function FuelPage() {
                   <option value="">Todos</option>
                   {(vehicles ?? []).map((vehicle) => (
                     <option key={vehicle.id} value={vehicle.id}>
-                      {vehicle.plate}
+                      {vehicle.model} ({vehicle.plate})
                     </option>
                   ))}
                 </Select>
@@ -503,7 +512,9 @@ export function FuelPage() {
                 {history?.map((fuel) => (
                   <tr key={fuel.id} className="border-b last:border-0">
                     <td className="px-2 py-2 text-muted-foreground">{formatDateTime(fuel.date)}</td>
-                    <td className="px-2 py-2 font-medium">{fuel.vehicle.plate}</td>
+                    <td className="px-2 py-2 font-medium">
+                      <VehicleName vehicle={fuel.vehicle} />
+                    </td>
                     <td className="px-2 py-2 text-muted-foreground">{fuel.driver.name}</td>
                     <td className="px-2 py-2 text-muted-foreground">
                       {fuelTypeLabels[fuel.fuelType]}

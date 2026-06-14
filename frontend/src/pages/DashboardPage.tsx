@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,7 +81,7 @@ export function DashboardPage() {
   }));
 
   const vehicleChartData = (vehicleIndicators?.vehicles ?? []).map((vehicle) => ({
-    name: vehicle.plate,
+    name: vehicle.model,
     kmTotal: vehicle.kmTotal,
   }));
 
@@ -230,22 +231,27 @@ export function DashboardPage() {
                       <div className="rounded-lg border p-4">
                         <p className="text-xs text-muted-foreground uppercase">Mais utilizado</p>
                         <p className="text-lg font-semibold">
-                          {vehicleIndicators.mostUsed
-                            ? `${vehicleIndicators.mostUsed.plate} — ${formatNumber(
-                                vehicleIndicators.mostUsed.usageCount,
-                                0,
-                              )} uso(s)`
-                            : '—'}
+                          {vehicleIndicators.mostUsed ? (
+                            <>
+                              <VehicleName vehicle={vehicleIndicators.mostUsed} /> —{' '}
+                              {formatNumber(vehicleIndicators.mostUsed.usageCount, 0)} uso(s)
+                            </>
+                          ) : (
+                            '—'
+                          )}
                         </p>
                       </div>
                       <div className="rounded-lg border p-4">
                         <p className="text-xs text-muted-foreground uppercase">Mais caro</p>
                         <p className="text-lg font-semibold">
-                          {vehicleIndicators.mostExpensive
-                            ? `${vehicleIndicators.mostExpensive.plate} — ${formatCurrency(
-                                vehicleIndicators.mostExpensive.totalCost,
-                              )}`
-                            : '—'}
+                          {vehicleIndicators.mostExpensive ? (
+                            <>
+                              <VehicleName vehicle={vehicleIndicators.mostExpensive} /> —{' '}
+                              {formatCurrency(vehicleIndicators.mostExpensive.totalCost)}
+                            </>
+                          ) : (
+                            '—'
+                          )}
                         </p>
                       </div>
                     </div>
@@ -271,7 +277,9 @@ export function DashboardPage() {
                         )}
                         {vehicleIndicators.vehicles.map((vehicle) => (
                           <tr key={vehicle.vehicleId} className="border-b last:border-0">
-                            <td className="px-2 py-2 font-medium">{vehicle.plate}</td>
+                            <td className="px-2 py-2 font-medium">
+                              <VehicleName vehicle={vehicle} />
+                            </td>
                             <td className="px-2 py-2">{formatNumber(vehicle.kmTotal)} km</td>
                             <td className="px-2 py-2">
                               {formatNumber(vehicle.usageMinutes / 60, 2)} h

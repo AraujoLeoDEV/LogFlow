@@ -47,7 +47,12 @@ function buildService(
   options: {
     goals?: Goal[];
     drivers?: { id: string; name: string }[];
-    vehicles?: { id: string; plate: string }[];
+    vehicles?: {
+      id: string;
+      plate: string;
+      model: string;
+      currentKm: Prisma.Decimal;
+    }[];
     fuelRecords?: FuelRecordFixture[];
   } = {},
 ) {
@@ -55,7 +60,14 @@ function buildService(
   const drivers = options.drivers ?? [
     { id: 'driver-1', name: 'João da Silva' },
   ];
-  const vehicles = options.vehicles ?? [{ id: 'vehicle-1', plate: 'ABC1D23' }];
+  const vehicles = options.vehicles ?? [
+    {
+      id: 'vehicle-1',
+      plate: 'ABC1D23',
+      model: 'Fiat Strada',
+      currentKm: new Prisma.Decimal(50000),
+    },
+  ];
   const fuelRecords = options.fuelRecords ?? [];
 
   function withRelations(goal: Goal) {
@@ -71,6 +83,10 @@ function buildService(
         ? {
             id: goal.vehicleId,
             plate: vehicles.find((v) => v.id === goal.vehicleId)?.plate ?? '?',
+            model: vehicles.find((v) => v.id === goal.vehicleId)?.model ?? '?',
+            currentKm:
+              vehicles.find((v) => v.id === goal.vehicleId)?.currentKm ??
+              new Prisma.Decimal(0),
           }
         : null,
     };

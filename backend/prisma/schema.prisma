@@ -217,6 +217,7 @@ model Route {
 model Vehicle {
   id                  String    @id @default(uuid())
   plate               String    @unique
+  model               String
   fuelType            FuelType  @map("fuel_type")
   tankCapacityLiters  Decimal   @map("tank_capacity_liters") @db.Decimal(10, 2)
   yearModel           Int       @map("year_model")

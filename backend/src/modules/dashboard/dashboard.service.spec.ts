@@ -42,6 +42,7 @@ function buildVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   return {
     id: 'vehicle-1',
     plate: 'ABC1D23',
+    model: 'Fiat Strada',
     fuelType: FuelType.FLEX,
     tankCapacityLiters: new Prisma.Decimal(50),
     yearModel: 2020,
@@ -404,6 +405,8 @@ describe('DashboardService', () => {
         {
           vehicleId: 'vehicle-1',
           plate: 'ABC1D23',
+          model: 'Fiat Strada',
+          currentKm: '50000',
           kmTotal: 100,
           usageMinutes: 120,
           usageCount: 1,

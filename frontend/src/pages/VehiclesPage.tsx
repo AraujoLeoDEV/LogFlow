@@ -111,6 +111,7 @@ export function VehiclesPage() {
           <thead className="border-b bg-muted/50 text-left text-xs text-muted-foreground uppercase">
             <tr>
               <th className="px-4 py-2 font-medium">Placa</th>
+              <th className="px-4 py-2 font-medium">Modelo</th>
               <th className="px-4 py-2 font-medium">Combustível</th>
               <th className="px-4 py-2 font-medium">Ano/Modelo</th>
               <th className="px-4 py-2 font-medium">Rota principal</th>
@@ -123,14 +124,14 @@ export function VehiclesPage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
                   Carregando...
                 </td>
               </tr>
             )}
             {!isLoading && vehicles?.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={9} className="px-4 py-6 text-center text-muted-foreground">
                   Nenhum veículo cadastrado.
                 </td>
               </tr>
@@ -138,6 +139,7 @@ export function VehiclesPage() {
             {vehicles?.map((vehicle) => (
               <tr key={vehicle.id} className="border-b last:border-0">
                 <td className="px-4 py-2 font-medium">{vehicle.plate}</td>
+                <td className="px-4 py-2">{vehicle.model}</td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {fuelTypeLabels[vehicle.fuelType]}
                 </td>

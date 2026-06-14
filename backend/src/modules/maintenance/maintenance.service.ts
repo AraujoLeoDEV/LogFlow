@@ -13,11 +13,16 @@ import {
 } from './maintenance.util';
 
 export interface MaintenanceWithVehicle extends Maintenance {
-  vehicle: { id: string; plate: string };
+  vehicle: {
+    id: string;
+    plate: string;
+    model: string;
+    currentKm: Prisma.Decimal;
+  };
 }
 
 const maintenanceInclude = {
-  vehicle: { select: { id: true, plate: true } },
+  vehicle: { select: { id: true, plate: true, model: true, currentKm: true } },
 } as const;
 
 const DEFAULT_KM_ALERT_OIL_CHANGE = 10000;
@@ -126,6 +131,7 @@ export class MaintenanceService {
       select: {
         id: true,
         plate: true,
+        model: true,
         currentKm: true,
         nextOilChangeKm: true,
         nextOilChangeDate: true,
@@ -140,6 +146,7 @@ export class MaintenanceService {
       vehicles.map((vehicle) => ({
         id: vehicle.id,
         plate: vehicle.plate,
+        model: vehicle.model,
         currentKm: vehicle.currentKm.toNumber(),
         nextOilChangeKm: vehicle.nextOilChangeKm?.toNumber() ?? null,
         nextOilChangeDate: vehicle.nextOilChangeDate,

@@ -36,6 +36,7 @@ const schema = z.object({
     .string()
     .min(1, 'Informe a placa.')
     .refine((value) => VEHICLE_PLATE_REGEX.test(value.toUpperCase().trim()), VEHICLE_PLATE_MESSAGE),
+  model: z.string().min(1, 'Informe o modelo do veículo.'),
   fuelType: z.enum(FUEL_TYPE_VALUES, { message: 'Selecione o tipo de combustível.' }),
   tankCapacityLiters: z
     .number({ message: 'Informe a capacidade do tanque.' })
@@ -76,6 +77,7 @@ interface VehicleFormSheetProps {
 
 const EMPTY_VALUES: VehicleFormValues = {
   plate: '',
+  model: '',
   fuelType: 'FLEX',
   tankCapacityLiters: 0,
   yearModel: new Date().getFullYear(),
@@ -119,6 +121,7 @@ export function VehicleFormSheet({
         vehicle
           ? {
               plate: vehicle.plate,
+              model: vehicle.model,
               fuelType: vehicle.fuelType,
               tankCapacityLiters: Number(vehicle.tankCapacityLiters),
               yearModel: vehicle.yearModel,
@@ -181,6 +184,19 @@ export function VehicleFormSheet({
                       maxLength={7}
                       placeholder="AAA0A00"
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="model"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Modelo</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex: Fiat Strada" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

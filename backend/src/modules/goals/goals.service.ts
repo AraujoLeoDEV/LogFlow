@@ -23,7 +23,12 @@ const DEFAULT_GOALS_CRON_EXPRESSION = '0 7 1 * *';
 
 export interface GoalWithRelations extends Goal {
   driver: { id: string; name: string } | null;
-  vehicle: { id: string; plate: string } | null;
+  vehicle: {
+    id: string;
+    plate: string;
+    model: string;
+    currentKm: Prisma.Decimal;
+  } | null;
 }
 
 export interface GoalRankingEntry {
@@ -32,6 +37,8 @@ export interface GoalRankingEntry {
   driverName: string | null;
   vehicleId: string | null;
   vehiclePlate: string | null;
+  vehicleModel: string | null;
+  vehicleCurrentKm: string | null;
   type: GoalType;
   targetValue: number;
   actualValue: number | null;
@@ -42,7 +49,7 @@ export interface GoalRankingEntry {
 
 const goalInclude = {
   driver: { select: { id: true, name: true } },
-  vehicle: { select: { id: true, plate: true } },
+  vehicle: { select: { id: true, plate: true, model: true, currentKm: true } },
 } as const;
 
 @Injectable()
@@ -253,6 +260,8 @@ export class GoalsService {
         driverName: goal.driver?.name ?? null,
         vehicleId: goal.vehicleId,
         vehiclePlate: goal.vehicle?.plate ?? null,
+        vehicleModel: goal.vehicle?.model ?? null,
+        vehicleCurrentKm: goal.vehicle?.currentKm?.toString() ?? null,
         type: goal.type,
         targetValue,
         actualValue,

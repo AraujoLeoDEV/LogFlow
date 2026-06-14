@@ -20,7 +20,7 @@ export interface Incident {
 }
 
 export interface IncidentWithRelations extends Incident {
-  vehicle: { id: string; plate: string };
+  vehicle: { id: string; plate: string; model: string; currentKm: string };
   driver: { id: string; name: string };
 }
 
@@ -56,6 +56,8 @@ export interface IncidentsByDriver {
 export interface IncidentsByVehicle {
   vehicleId: string;
   plate: string;
+  model: string;
+  currentKm: string;
   count: number;
   totalCost: number;
 }
@@ -63,6 +65,8 @@ export interface IncidentsByVehicle {
 export interface VehicleIncidentRate {
   vehicleId: string;
   plate: string;
+  model: string;
+  currentKm: string;
   incidentCount: number;
   kmDriven: number;
   ratePer1000Km: number | null;

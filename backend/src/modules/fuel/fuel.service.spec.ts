@@ -93,6 +93,7 @@ function buildVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   return {
     id: 'vehicle-1',
     plate: 'ABC1D23',
+    model: 'Fiat Strada',
     fuelType: FuelType.FLEX,
     tankCapacityLiters: new Prisma.Decimal(50),
     yearModel: 2020,
@@ -103,6 +104,12 @@ function buildVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
     currentKm: new Prisma.Decimal(1000),
     licensingExpiration: null,
     insuranceExpiration: null,
+    nextOilChangeKm: null,
+    nextOilChangeDate: null,
+    nextTireChangeKm: null,
+    nextTireChangeDate: null,
+    nextReviewKm: null,
+    nextReviewDate: null,
     active: true,
     createdBy: null,
     updatedBy: null,
@@ -205,6 +212,13 @@ function buildService(
           plate:
             vehicles.find((vehicle) => vehicle.id === fuel.vehicleId)?.plate ??
             'UNKNOWN',
+          model:
+            vehicles.find((vehicle) => vehicle.id === fuel.vehicleId)?.model ??
+            'UNKNOWN',
+          currentKm:
+            vehicles
+              .find((vehicle) => vehicle.id === fuel.vehicleId)
+              ?.currentKm.toString() ?? '0',
         },
         driver: { id: fuel.driverId, name: 'João da Silva' },
       })),

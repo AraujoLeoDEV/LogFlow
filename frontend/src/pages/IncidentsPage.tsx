@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
@@ -253,7 +254,9 @@ export function IncidentsPage() {
                         )}
                         {indicators.byVehicle.map((item) => (
                           <tr key={item.vehicleId} className="border-b last:border-0">
-                            <td className="px-2 py-2 font-medium">{item.plate}</td>
+                            <td className="px-2 py-2 font-medium">
+                              <VehicleName vehicle={item} />
+                            </td>
                             <td className="px-2 py-2">{item.count}</td>
                             <td className="px-2 py-2">{formatCurrency(item.totalCost)}</td>
                           </tr>
@@ -284,7 +287,9 @@ export function IncidentsPage() {
                       )}
                       {indicators.incidentRate.map((item) => (
                         <tr key={item.vehicleId} className="border-b last:border-0">
-                          <td className="px-2 py-2 font-medium">{item.plate}</td>
+                          <td className="px-2 py-2 font-medium">
+                            <VehicleName vehicle={item} />
+                          </td>
                           <td className="px-2 py-2">{item.incidentCount}</td>
                           <td className="px-2 py-2">{item.kmDriven.toFixed(1)} km</td>
                           <td className="px-2 py-2">{formatRate(item.ratePer1000Km)}</td>
@@ -324,7 +329,7 @@ export function IncidentsPage() {
                           <option value="">Selecione...</option>
                           {activeVehicles.map((vehicle) => (
                             <option key={vehicle.id} value={vehicle.id}>
-                              {vehicle.plate}
+                              {vehicle.model} ({vehicle.plate})
                             </option>
                           ))}
                         </Select>
@@ -506,7 +511,7 @@ export function IncidentsPage() {
                 <option value="">Todos</option>
                 {(vehicles ?? []).map((vehicle) => (
                   <option key={vehicle.id} value={vehicle.id}>
-                    {vehicle.plate}
+                    {vehicle.model} ({vehicle.plate})
                   </option>
                 ))}
               </Select>
@@ -621,7 +626,9 @@ export function IncidentsPage() {
                   <td className="px-2 py-2 text-muted-foreground">
                     {formatDateTime(incident.date)}
                   </td>
-                  <td className="px-2 py-2 font-medium">{incident.vehicle.plate}</td>
+                  <td className="px-2 py-2 font-medium">
+                    <VehicleName vehicle={incident.vehicle} />
+                  </td>
                   <td className="px-2 py-2 text-muted-foreground">{incident.driver.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">
                     {incidentCategoryLabels[incident.category]}

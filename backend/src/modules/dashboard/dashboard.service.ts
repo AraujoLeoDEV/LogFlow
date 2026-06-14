@@ -125,7 +125,7 @@ export class DashboardService {
     const [vehicles, dailyLogs, fuelRecords, maintenances] = await Promise.all([
       this.prisma.vehicle.findMany({
         where: { deletedAt: null },
-        select: { id: true, plate: true },
+        select: { id: true, plate: true, model: true, currentKm: true },
       }),
       this.prisma.dailyLog.findMany({
         where: {
@@ -192,6 +192,8 @@ export class DashboardService {
       return {
         vehicleId: vehicle.id,
         plate: vehicle.plate,
+        model: vehicle.model,
+        currentKm: vehicle.currentKm.toString(),
         kmTotal: usage.kmTotal,
         usageMinutes: usage.minutes,
         usageCount: usage.count,

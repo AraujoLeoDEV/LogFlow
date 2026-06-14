@@ -59,7 +59,7 @@ export interface IncidentIndicators {
 }
 
 const incidentInclude = {
-  vehicle: { select: { id: true, plate: true } },
+  vehicle: { select: { id: true, plate: true, model: true, currentKm: true } },
   driver: { select: { id: true, name: true } },
 } as const;
 
@@ -208,7 +208,13 @@ export class IncidentsService {
     >();
     const byVehicleMap = new Map<
       string,
-      { plate: string; count: number; totalCost: Prisma.Decimal }
+      {
+        plate: string;
+        model: string;
+        currentKm: string;
+        count: number;
+        totalCost: Prisma.Decimal;
+      }
     >();
 
     for (const incident of incidents) {
@@ -225,6 +231,8 @@ export class IncidentsService {
 
       const vehicleEntry = byVehicleMap.get(incident.vehicleId) ?? {
         plate: incident.vehicle.plate,
+        model: incident.vehicle.model,
+        currentKm: incident.vehicle.currentKm.toString(),
         count: 0,
         totalCost: new Prisma.Decimal(0),
       };
@@ -246,6 +254,8 @@ export class IncidentsService {
       ([vehicleId, entry]) => ({
         vehicleId,
         plate: entry.plate,
+        model: entry.model,
+        currentKm: entry.currentKm,
         count: entry.count,
         totalCost: entry.totalCost.toNumber(),
       }),
@@ -259,14 +269,14 @@ export class IncidentsService {
       (vehicleId) => {
         const incidentCount = byVehicleMap.get(vehicleId)?.count ?? 0;
         const kmDriven = kmByVehicle.get(vehicleId)?.km ?? 0;
-        const plate =
-          byVehicleMap.get(vehicleId)?.plate ??
-          kmByVehicle.get(vehicleId)?.plate ??
-          '';
+        const vehicleEntry = byVehicleMap.get(vehicleId);
+        const kmEntry = kmByVehicle.get(vehicleId);
 
         return {
           vehicleId,
-          plate,
+          plate: vehicleEntry?.plate ?? kmEntry?.plate ?? '',
+          model: vehicleEntry?.model ?? kmEntry?.model ?? '',
+          currentKm: vehicleEntry?.currentKm ?? kmEntry?.currentKm ?? '0',
           incidentCount,
           kmDriven,
           ratePer1000Km: calculateIncidentRate(incidentCount, kmDriven),
@@ -294,7 +304,9 @@ export class IncidentsService {
 
   private async sumKmDrivenByVehicle(
     query: IncidentIndicatorsQueryDto,
-  ): Promise<Map<string, { plate: string; km: number }>> {
+  ): Promise<
+    Map<string, { plate: string; model: string; currentKm: string; km: number }>
+  > {
     const dateFilter = this.buildDateFilter(query);
 
     const dailyLogs = await this.prisma.dailyLog.findMany({
@@ -303,14 +315,23 @@ export class IncidentsService {
         kmDriven: { not: null },
         ...(dateFilter ? { departureAt: dateFilter } : {}),
       },
-      include: { vehicle: { select: { id: true, plate: true } } },
+      include: {
+        vehicle: {
+          select: { id: true, plate: true, model: true, currentKm: true },
+        },
+      },
     });
 
-    const result = new Map<string, { plate: string; km: number }>();
+    const result = new Map<
+      string,
+      { plate: string; model: string; currentKm: string; km: number }
+    >();
 
     for (const log of dailyLogs) {
       const entry = result.get(log.vehicleId) ?? {
         plate: log.vehicle.plate,
+        model: log.vehicle.model,
+        currentKm: log.vehicle.currentKm.toString(),
         km: 0,
       };
       entry.km += log.kmDriven?.toNumber() ?? 0;
