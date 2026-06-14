@@ -120,15 +120,23 @@ export class TripsService {
       );
     }
 
-    return this.prisma.trip.update({
-      where: { id },
-      data: {
-        endKm: dto.endKm,
-        finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : new Date(),
-        status: TripStatus.FINALIZADA,
-        updatedBy: user.sub,
-      },
-    });
+    const [, updated] = await this.prisma.$transaction([
+      this.prisma.vehicle.update({
+        where: { id: trip.vehicleId },
+        data: { currentKm: dto.endKm },
+      }),
+      this.prisma.trip.update({
+        where: { id },
+        data: {
+          endKm: dto.endKm,
+          finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : new Date(),
+          status: TripStatus.FINALIZADA,
+          updatedBy: user.sub,
+        },
+      }),
+    ]);
+
+    return updated;
   }
 
   // Histórico com filtros - seção 4.5

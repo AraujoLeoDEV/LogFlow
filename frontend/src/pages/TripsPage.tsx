@@ -155,6 +155,7 @@ export function TripsPage() {
       toast.success('Viagem encerrada com sucesso.');
       setFinishSheetOpen(false);
       invalidateTrips();
+      queryClient.invalidateQueries({ queryKey: ['vehicles'] });
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Não foi possível encerrar a viagem.'));

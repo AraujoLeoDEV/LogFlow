@@ -312,6 +312,16 @@ function buildService(
     return Promise.resolve({ count });
   });
 
+  const updateVehicle = jest.fn(
+    (args: { where: { id: string }; data: { currentKm: number } }) => {
+      const vehicle = vehicles.find((item) => item.id === args.where.id);
+      if (vehicle) {
+        vehicle.currentKm = new Prisma.Decimal(args.data.currentKm);
+      }
+      return Promise.resolve(vehicle);
+    },
+  );
+
   const prisma = {
     trip: {
       findUnique: findUniqueTrip,
@@ -326,15 +336,19 @@ function buildService(
     },
     vehicle: {
       findFirst: findFirstVehicle,
+      update: updateVehicle,
     },
     dailyLog: {
       findFirst: findFirstDailyLog,
     },
+    $transaction: jest.fn((operations: Promise<unknown>[]) =>
+      Promise.all(operations),
+    ),
   } as unknown as PrismaService;
 
   const service = new TripsService(prisma);
 
-  return { service, prisma, trips, updateManyTrip };
+  return { service, prisma, trips, vehicles, updateManyTrip, updateVehicle };
 }
 
 describe('TripsService', () => {
@@ -504,6 +518,32 @@ describe('TripsService', () => {
       expect(updated.endKm).toBe(1050);
       expect(updated.finishedAt).toEqual(new Date('2026-06-12T09:00:00Z'));
       expect(trips.get('trip-1')?.status).toBe(TripStatus.FINALIZADA);
+    });
+
+    it('atualiza o currentKm do veículo para o endKm da viagem', async () => {
+      const { service, vehicles, updateVehicle } = buildService({
+        trips: [
+          buildTrip({
+            vehicleId: 'vehicle-1',
+            startKm: new Prisma.Decimal(1000),
+            status: TripStatus.EM_ANDAMENTO,
+          }),
+        ],
+        vehicles: [
+          buildVehicle({
+            id: 'vehicle-1',
+            currentKm: new Prisma.Decimal(1000),
+          }),
+        ],
+      });
+
+      await service.finish('trip-1', { endKm: 1050 }, adminUser);
+
+      expect(updateVehicle).toHaveBeenCalledWith({
+        where: { id: 'vehicle-1' },
+        data: { currentKm: 1050 },
+      });
+      expect(vehicles[0].currentKm.toString()).toBe('1050');
     });
 
     it('permite encerrar viagem marcada como ATRASADA', async () => {
