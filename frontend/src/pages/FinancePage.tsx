@@ -13,7 +13,7 @@ import {
 
 import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import {
@@ -104,18 +104,16 @@ export function FinancePage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:w-1/2">
             <div className="grid gap-1.5">
               <Label>De</Label>
-              <Input
-                type="date"
-                value={filters.from ?? ''}
-                onChange={(event) => handleFilterChange('from', event.target.value)}
+              <DatePicker
+                value={filters.from}
+                onChange={(value) => handleFilterChange('from', value)}
               />
             </div>
             <div className="grid gap-1.5">
               <Label>Até</Label>
-              <Input
-                type="date"
-                value={filters.to ?? ''}
-                onChange={(event) => handleFilterChange('to', event.target.value)}
+              <DatePicker
+                value={filters.to}
+                onChange={(value) => handleFilterChange('to', value)}
               />
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -381,18 +382,16 @@ export function ShipmentsPage() {
             </div>
             <div className="grid gap-1.5">
               <Label>De</Label>
-              <Input
-                type="date"
-                value={filters.from ?? ''}
-                onChange={(event) => handleFilterChange('from', event.target.value)}
+              <DatePicker
+                value={filters.from}
+                onChange={(value) => handleFilterChange('from', value)}
               />
             </div>
             <div className="grid gap-1.5">
               <Label>Até</Label>
-              <Input
-                type="date"
-                value={filters.to ?? ''}
-                onChange={(event) => handleFilterChange('to', event.target.value)}
+              <DatePicker
+                value={filters.to}
+                onChange={(value) => handleFilterChange('to', value)}
               />
             </div>
           </div>

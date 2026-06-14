@@ -16,6 +16,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
@@ -329,7 +330,7 @@ export function ReportsPage() {
                       <FormItem>
                         <FormLabel>De</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <DatePicker value={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -342,7 +343,7 @@ export function ReportsPage() {
                       <FormItem>
                         <FormLabel>Até</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <DatePicker value={field.value} onChange={field.onChange} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

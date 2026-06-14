@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
@@ -376,7 +377,7 @@ export function MaintenancePage() {
                     <FormItem>
                       <FormLabel>Data de realização</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker value={field.value} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -389,7 +390,7 @@ export function MaintenancePage() {
                     <FormItem>
                       <FormLabel>Data prevista (agendamento)</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <DatePicker value={field.value} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -483,18 +484,16 @@ export function MaintenancePage() {
               </div>
               <div className="grid gap-1.5">
                 <Label>Realizada de</Label>
-                <Input
-                  type="date"
-                  value={filters.from ?? ''}
-                  onChange={(event) => handleFilterChange('from', event.target.value)}
+                <DatePicker
+                  value={filters.from}
+                  onChange={(value) => handleFilterChange('from', value)}
                 />
               </div>
               <div className="grid gap-1.5">
                 <Label>Realizada até</Label>
-                <Input
-                  type="date"
-                  value={filters.to ?? ''}
-                  onChange={(event) => handleFilterChange('to', event.target.value)}
+                <DatePicker
+                  value={filters.to}
+                  onChange={(value) => handleFilterChange('to', value)}
                 />
               </div>
             </div>
