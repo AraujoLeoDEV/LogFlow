@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -66,6 +67,8 @@ function statusBadgeVariant(status: ReportStatus): 'secondary' | 'success' | 'de
   if (status === 'ERROR') return 'destructive';
   return 'secondary';
 }
+
+const REPORTS_PAGE_SIZE = 10;
 
 const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
   dateStyle: 'short',
@@ -210,6 +213,14 @@ export function ReportsPage() {
 
   const activeDrivers = (drivers ?? []).filter((driver) => driver.active);
   const activeVehicles = (vehicles ?? []).filter((vehicle) => vehicle.active);
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil((reports?.length ?? 0) / REPORTS_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paginatedReports = (reports ?? []).slice(
+    (currentPage - 1) * REPORTS_PAGE_SIZE,
+    currentPage * REPORTS_PAGE_SIZE,
+  );
 
   function onSubmit(values: ReportFormValues) {
     const payload: CreateReportPayload = {
@@ -446,7 +457,7 @@ export function ReportsPage() {
                   </td>
                 </tr>
               )}
-              {reports?.map((report) => (
+              {paginatedReports.map((report) => (
                 <tr key={report.id} className="border-b last:border-0">
                   <td className="px-2 py-2 text-muted-foreground">
                     {formatDateTime(report.createdAt)}
@@ -475,6 +486,32 @@ export function ReportsPage() {
               ))}
             </tbody>
           </table>
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <p className="text-sm text-muted-foreground">
+                Página {currentPage} de {totalPages}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((current) => Math.max(1, current - 1))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                >
+                  Próxima
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

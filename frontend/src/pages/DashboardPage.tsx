@@ -2,12 +2,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import {
+  chartAxisProps,
+  chartGradientUrl,
+  chartGridProps,
+  chartTooltipProps,
+} from '@/lib/chartTheme';
 import type {
   DashboardQuery,
   DriverIndicator,
@@ -178,11 +185,20 @@ export function DashboardPage() {
                         <div className="h-72 w-full">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={driverChartData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" />
-                              <YAxis />
-                              <Tooltip formatter={(value) => `${formatNumber(Number(value))} km`} />
-                              <Bar dataKey="kmTotal" name="KM total" fill="var(--color-primary)" />
+                              <ChartGradientDefs />
+                              <CartesianGrid {...chartGridProps} />
+                              <XAxis dataKey="name" {...chartAxisProps} />
+                              <YAxis {...chartAxisProps} />
+                              <Tooltip
+                                {...chartTooltipProps}
+                                formatter={(value) => `${formatNumber(Number(value))} km`}
+                              />
+                              <Bar
+                                dataKey="kmTotal"
+                                name="KM total"
+                                fill={chartGradientUrl('primary')}
+                                radius={[6, 6, 0, 0]}
+                              />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
@@ -274,11 +290,20 @@ export function DashboardPage() {
                         <div className="h-72 w-full">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={vehicleChartData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" />
-                              <YAxis />
-                              <Tooltip formatter={(value) => `${formatNumber(Number(value))} km`} />
-                              <Bar dataKey="kmTotal" name="KM total" fill="var(--color-primary)" />
+                              <ChartGradientDefs />
+                              <CartesianGrid {...chartGridProps} />
+                              <XAxis dataKey="name" {...chartAxisProps} />
+                              <YAxis {...chartAxisProps} />
+                              <Tooltip
+                                {...chartTooltipProps}
+                                formatter={(value) => `${formatNumber(Number(value))} km`}
+                              />
+                              <Bar
+                                dataKey="kmTotal"
+                                name="KM total"
+                                fill={chartGradientUrl('primary')}
+                                radius={[6, 6, 0, 0]}
+                              />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
@@ -348,11 +373,17 @@ export function DashboardPage() {
                         <div className="h-72 w-full">
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={routeChartData}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="name" />
-                              <YAxis allowDecimals={false} />
-                              <Tooltip />
-                              <Bar dataKey="usageCount" name="Usos" fill="var(--color-primary)" />
+                              <ChartGradientDefs />
+                              <CartesianGrid {...chartGridProps} />
+                              <XAxis dataKey="name" {...chartAxisProps} />
+                              <YAxis allowDecimals={false} {...chartAxisProps} />
+                              <Tooltip {...chartTooltipProps} />
+                              <Bar
+                                dataKey="usageCount"
+                                name="Usos"
+                                fill={chartGradientUrl('primary')}
+                                radius={[6, 6, 0, 0]}
+                              />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>

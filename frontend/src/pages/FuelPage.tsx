@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -21,6 +22,12 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
+import {
+  chartAxisProps,
+  chartGradientUrl,
+  chartGridProps,
+  chartTooltipProps,
+} from '@/lib/chartTheme';
 import { getErrorMessage } from '@/lib/errors';
 import { fuelTypeLabels, fuelTypeOptions } from '@/lib/fuelTypes';
 import type { CreateFuelPayload, FuelIndicators, FuelQuery, FuelWithRelations } from '@/types/fuel';
@@ -239,11 +246,20 @@ export function FuelPage() {
                     <div className="h-72 w-full">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={monthlySpendData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                          <Bar dataKey="total" name="Gasto (R$)" fill="var(--color-primary)" />
+                          <ChartGradientDefs />
+                          <CartesianGrid {...chartGridProps} />
+                          <XAxis dataKey="month" {...chartAxisProps} />
+                          <YAxis {...chartAxisProps} />
+                          <Tooltip
+                            {...chartTooltipProps}
+                            formatter={(value) => formatCurrency(Number(value))}
+                          />
+                          <Bar
+                            dataKey="total"
+                            name="Gasto (R$)"
+                            fill={chartGradientUrl('primary')}
+                            radius={[6, 6, 0, 0]}
+                          />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>

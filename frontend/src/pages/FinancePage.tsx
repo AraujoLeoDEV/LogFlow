@@ -11,10 +11,17 @@ import {
   YAxis,
 } from 'recharts';
 
+import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
+import {
+  chartAxisProps,
+  chartGradientUrl,
+  chartGridProps,
+  chartTooltipProps,
+} from '@/lib/chartTheme';
 import type {
   CostPerKmResult,
   FinanceQuery,
@@ -231,14 +238,31 @@ export function FinancePage() {
                   <div className="h-72 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                        <Legend />
-                        <Bar dataKey="Combustível" stackId="cost" fill="var(--color-chart-1)" />
-                        <Bar dataKey="Manutenção" stackId="cost" fill="var(--color-chart-3)" />
-                        <Bar dataKey="Depreciação" stackId="cost" fill="var(--color-chart-5)" />
+                        <ChartGradientDefs />
+                        <CartesianGrid {...chartGridProps} />
+                        <XAxis dataKey="month" {...chartAxisProps} />
+                        <YAxis {...chartAxisProps} />
+                        <Tooltip
+                          {...chartTooltipProps}
+                          formatter={(value) => formatCurrency(Number(value))}
+                        />
+                        <Legend wrapperStyle={{ fontSize: '0.8125rem' }} />
+                        <Bar
+                          dataKey="Combustível"
+                          stackId="cost"
+                          fill={chartGradientUrl('chart-1')}
+                        />
+                        <Bar
+                          dataKey="Manutenção"
+                          stackId="cost"
+                          fill={chartGradientUrl('chart-3')}
+                        />
+                        <Bar
+                          dataKey="Depreciação"
+                          stackId="cost"
+                          fill={chartGradientUrl('chart-5')}
+                          radius={[6, 6, 0, 0]}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
