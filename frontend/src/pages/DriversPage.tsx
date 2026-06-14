@@ -155,7 +155,7 @@ export function DriversPage() {
                     : '—'}
                 </td>
                 <td className="px-4 py-2">
-                  <Badge variant={driver.active ? 'default' : 'outline'}>
+                  <Badge variant={driver.active ? 'success' : 'outline'}>
                     {driver.active ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </td>

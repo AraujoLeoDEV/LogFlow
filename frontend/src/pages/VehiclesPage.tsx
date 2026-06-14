@@ -150,7 +150,7 @@ export function VehiclesPage() {
                   {currencyFormatter.format(vehicle.monthlyDepreciation)}
                 </td>
                 <td className="px-4 py-2">
-                  <Badge variant={vehicle.active ? 'default' : 'outline'}>
+                  <Badge variant={vehicle.active ? 'success' : 'outline'}>
                     {vehicle.active ? 'Ativo' : 'Inativo'}
                   </Badge>
                 </td>

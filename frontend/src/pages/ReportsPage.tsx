@@ -61,8 +61,8 @@ const reportStatusLabels: Record<ReportStatus, string> = {
   ERROR: 'Erro',
 };
 
-function statusBadgeVariant(status: ReportStatus): 'secondary' | 'default' | 'destructive' {
-  if (status === 'DONE') return 'default';
+function statusBadgeVariant(status: ReportStatus): 'secondary' | 'success' | 'destructive' {
+  if (status === 'DONE') return 'success';
   if (status === 'ERROR') return 'destructive';
   return 'secondary';
 }

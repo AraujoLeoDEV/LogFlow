@@ -127,4 +127,10 @@
   html {
     @apply font-sans;
     }
+  tbody tr:nth-child(even) {
+    @apply bg-muted/30;
+    }
+  tbody tr:hover {
+    @apply bg-muted/60;
+    }
 }
