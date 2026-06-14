@@ -1,4 +1,4 @@
-import { LogOut, Menu } from 'lucide-react';
+import { LogOut, Menu, PackageSearch, Plus, Route, Truck, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,15 +31,41 @@ function getInitials(name: string) {
   return initials || '?';
 }
 
+const quickActions = [
+  {
+    label: 'Novo envio',
+    to: '/envios',
+    icon: PackageSearch,
+    roles: ['ADMIN', 'COORDENACAO'] as const,
+  },
+  { label: 'Nova viagem', to: '/viagens', icon: Route, roles: undefined },
+  {
+    label: 'Novo veículo',
+    to: '/veiculos',
+    icon: Truck,
+    roles: ['ADMIN', 'COORDENACAO'] as const,
+  },
+  {
+    label: 'Novo motorista',
+    to: '/motoristas',
+    icon: UserRound,
+    roles: ['ADMIN', 'COORDENACAO'] as const,
+  },
+];
+
 export function Header() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const navigate = useNavigate();
 
   async function handleLogout() {
     await logout();
     navigate('/login', { replace: true });
   }
+
+  const visibleQuickActions = quickActions.filter(
+    (action) => !action.roles || hasRole(...action.roles),
+  );
 
   return (
     <header className="flex h-14 items-center gap-4 border-b bg-background px-4 lg:px-6">
@@ -61,6 +87,25 @@ export function Header() {
           Sistema de Logística e Controle de Frota
         </h1>
       </div>
+
+      {visibleQuickActions.length > 0 && (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button size="sm" className="gap-1.5" />}>
+            <Plus className="size-4" />
+            Novo
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuGroup>
+              {visibleQuickActions.map((action) => (
+                <DropdownMenuItem key={action.to} onClick={() => navigate(action.to)}>
+                  <action.icon className="size-4" />
+                  {action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       <NotificationsMenu />
 
