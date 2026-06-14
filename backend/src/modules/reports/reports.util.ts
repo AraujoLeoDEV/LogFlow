@@ -3,6 +3,7 @@ import { Workbook } from 'exceljs';
 import { PDFFont, PDFPage, StandardFonts, PDFDocument } from 'pdf-lib';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseDateOnly } from '../../common/utils/date-range.util';
 import {
   Prisma,
   ReportFormat,
@@ -108,8 +109,8 @@ function dateFilter(
   }
 
   return {
-    ...(filters.from ? { gte: new Date(filters.from) } : {}),
-    ...(filters.to ? { lte: new Date(filters.to) } : {}),
+    ...(filters.from ? { gte: parseDateOnly(filters.from) } : {}),
+    ...(filters.to ? { lte: parseDateOnly(filters.to, true) } : {}),
   };
 }
 

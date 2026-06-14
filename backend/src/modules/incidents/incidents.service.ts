@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseDateOnly } from '../../common/utils/date-range.util';
 import {
   DailyLogStatus,
   Driver,
@@ -350,8 +351,8 @@ export class IncidentsService {
     }
 
     return {
-      ...(query.from ? { gte: new Date(query.from) } : {}),
-      ...(query.to ? { lte: new Date(query.to) } : {}),
+      ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
+      ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
     };
   }
 

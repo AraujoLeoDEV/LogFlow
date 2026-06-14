@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { DailyLogStatus, Prisma } from '../../../generated/prisma/client';
+import { parseDateOnly } from '../../common/utils/date-range.util';
 import { calculateCostPerKm } from '../dashboard/dashboard.util';
 import { calculateMonthlyDepreciation } from '../vehicles/vehicles.util';
 import { FinanceQueryDto } from './dto/finance-query.dto';
@@ -105,7 +106,7 @@ export class FinanceService {
   }
 
   private defaultComparisonStart(to?: string): Date {
-    const end = to ? new Date(to) : new Date();
+    const end = to ? parseDateOnly(to) : new Date();
     return new Date(end.getFullYear(), end.getMonth() - 5, 1);
   }
 
@@ -121,8 +122,8 @@ export class FinanceService {
     }
 
     return {
-      ...(query.from ? { gte: new Date(query.from) } : {}),
-      ...(query.to ? { lte: new Date(query.to) } : {}),
+      ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
+      ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
     };
   }
 

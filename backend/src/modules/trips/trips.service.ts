@@ -9,6 +9,7 @@ import {
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseDateOnly } from '../../common/utils/date-range.util';
 import {
   DailyLogStatus,
   Driver,
@@ -153,8 +154,8 @@ export class TripsService {
 
     if (query.from || query.to) {
       where.startedAt = {
-        ...(query.from ? { gte: new Date(query.from) } : {}),
-        ...(query.to ? { lte: new Date(query.to) } : {}),
+        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
+        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
       };
     }
 

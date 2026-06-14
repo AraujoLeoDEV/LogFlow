@@ -1,3 +1,5 @@
+import { parseDateOnly } from '../../common/utils/date-range.util';
+
 export interface MonthRange {
   month: string;
   start: Date;
@@ -8,8 +10,8 @@ export interface MonthRange {
 // 4.12. Sem filtros, retorna apenas o mês atual; com apenas um dos dois,
 // usa o outro como referência (mês único).
 export function buildMonthRange(from?: string, to?: string): MonthRange[] {
-  const end = to ? new Date(to) : new Date();
-  const start = from ? new Date(from) : end;
+  const end = to ? parseDateOnly(to) : new Date();
+  const start = from ? parseDateOnly(from) : end;
 
   const months: MonthRange[] = [];
   const cursor = new Date(start.getFullYear(), start.getMonth(), 1);

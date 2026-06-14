@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseDateOnly } from '../../common/utils/date-range.util';
 import { Maintenance, Prisma } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { CreateMaintenanceDto } from './dto/create-maintenance.dto';
@@ -111,8 +112,8 @@ export class MaintenanceService {
 
     if (query.from || query.to) {
       where.performedDate = {
-        ...(query.from ? { gte: new Date(query.from) } : {}),
-        ...(query.to ? { lte: new Date(query.to) } : {}),
+        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
+        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
       };
     }
 

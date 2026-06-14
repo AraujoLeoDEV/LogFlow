@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseDateOnly } from '../../common/utils/date-range.util';
 import {
   Prisma,
   Shipment,
@@ -110,8 +111,8 @@ export class ShipmentsService {
 
     if (query.from || query.to) {
       where.createdAt = {
-        ...(query.from ? { gte: new Date(query.from) } : {}),
-        ...(query.to ? { lte: new Date(query.to) } : {}),
+        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
+        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
       };
     }
 

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
+import { parseDateOnly } from '../../common/utils/date-range.util';
 import { Driver, Fuel, Prisma, Role } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { CreateFuelDto } from './dto/create-fuel.dto';
@@ -128,8 +129,8 @@ export class FuelService {
 
     if (query.from || query.to) {
       where.date = {
-        ...(query.from ? { gte: new Date(query.from) } : {}),
-        ...(query.to ? { lte: new Date(query.to) } : {}),
+        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
+        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
       };
     }
 
