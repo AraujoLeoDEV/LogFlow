@@ -5,6 +5,8 @@ import { useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
+import logoIcon from '@/assets/logo-icon.png';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -73,7 +75,8 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
+        <CardHeader className="items-center justify-items-center text-center">
+          <img src={logoIcon} alt="LogFlow" className="mb-2 size-14 rounded-xl" />
           <CardTitle className="text-xl">Entrar</CardTitle>
           <CardDescription>Sistema de Logística e Controle de Frota</CardDescription>
         </CardHeader>

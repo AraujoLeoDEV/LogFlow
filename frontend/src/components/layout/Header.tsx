@@ -2,6 +2,8 @@ import { LogOut, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import logoIcon from '@/assets/logo-icon.png';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,7 +48,10 @@ export function Header() {
           <Menu className="size-5" />
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0">
-          <SheetTitle className="px-4 pt-4 text-left">Sistema de Frota</SheetTitle>
+          <SheetTitle className="flex items-center gap-2 px-4 pt-4 text-left">
+            <img src={logoIcon} alt="LogFlow" className="size-7 rounded-md" />
+            Sistema de Frota
+          </SheetTitle>
           <Sidebar onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>
       </Sheet>
