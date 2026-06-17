@@ -153,19 +153,23 @@ function buildWhatsappShareUrl(shipment: ShipmentWithTimeline, pdfUrl: string | 
 
   if (pdfUrl) {
     message =
-      `Olá! Segue o comprovante do envio (protocolo ${shipment.protocolNumber}) ` +
-      `destinado a ${shipment.destinationUnit.name}.\n\n${pdfUrl}`;
+      `📦 *Comprovante de Envio — LogFlow*\n\n` +
+      `Olá! Segue o comprovante do envio destinado a *${shipment.destinationUnit.name}*.\n\n` +
+      `🔖 *Protocolo:* ${shipment.protocolNumber}\n\n` +
+      `📄 *Comprovante (PDF):*\n${pdfUrl}`;
   } else {
     const itemsList = shipment.items
       .map(
-        (item) => `- ${item.description} (${item.quantity} ${shipmentItemUnitLabels[item.unit]})`,
+        (item) => `  • ${item.description} — ${item.quantity} ${shipmentItemUnitLabels[item.unit]}`,
       )
       .join('\n');
 
     message =
-      `Olá! Informamos que o envio (protocolo ${shipment.protocolNumber}) ` +
-      `destinado a ${shipment.destinationUnit.name} foi registrado e está a caminho. ` +
-      `Fique atento(a) para o recebimento.\n\nItens:\n${itemsList}`;
+      `🚚 *Aviso de Envio — LogFlow*\n\n` +
+      `Olá! Um envio foi registrado para *${shipment.destinationUnit.name}* e está a caminho.\n\n` +
+      `🔖 *Protocolo:* ${shipment.protocolNumber}\n\n` +
+      `📋 *Itens:*\n${itemsList}\n\n` +
+      `⏳ Fique atento(a) para o recebimento!`;
   }
 
   // Sem telefone cadastrado na unidade, abre o WhatsApp para o usuário
