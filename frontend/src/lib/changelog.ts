@@ -4,9 +4,19 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.0.2026';
+export const APP_VERSION = 'V0.1.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.1.2026',
+    date: '17/06/2026',
+    items: [
+      'Novo: usuários Conferente podem registrar envios com foto obrigatória diretamente pelo sistema.',
+      'Novo: notificações automáticas (no sistema e por e-mail) para a unidade de destino e Coordenação ao criar um envio.',
+      'Novo: recuperação de senha por e-mail — link "Esqueci minha senha" na tela de login.',
+      'Melhoria: sistema migrado para o endereço https://10.90.10.245 (IP exclusivo, sem conflito com VMware).',
+    ],
+  },
   {
     version: 'V0.0.2026',
     date: '15/06/2026',
