@@ -5,6 +5,7 @@ export const roleLabels: Record<Role, string> = {
   COORDENACAO: 'Coordenação',
   MOTORISTA: 'Motorista',
   FINANCEIRO: 'Financeiro',
+  CONFERENTE: 'Conferente',
 };
 
 export const roleOptions: { value: Role; label: string }[] = Object.entries(roleLabels).map(

@@ -36,6 +36,7 @@ interface CreateDailyLogArgs {
     routeId: string;
     departureAt: Date;
     startKm: number;
+    destination?: string;
     observations?: string;
     status: DailyLogStatus;
     createdBy: string;
@@ -69,6 +70,13 @@ interface FindManyDailyLogArgs {
     routeId?: string;
     status?: DailyLogStatus;
   };
+  skip?: number;
+  take?: number;
+}
+
+interface UpdateManyDailyLogArgs {
+  where: { id: { in: string[] } };
+  data: { status: DailyLogStatus };
 }
 
 const adminUser: AuthenticatedUser = {
@@ -116,6 +124,7 @@ function buildDailyLog(overrides: Partial<DailyLog> = {}): DailyLog {
     kmDriven: null,
     totalDurationMinutes: null,
     avgSpeedKmh: null,
+    destination: null,
     observations: null,
     status: DailyLogStatus.EM_ANDAMENTO,
     createdBy: 'user-admin',
@@ -127,12 +136,17 @@ function buildDailyLog(overrides: Partial<DailyLog> = {}): DailyLog {
 }
 
 function buildService(
-  options: { dailyLogs?: DailyLog[]; drivers?: Driver[] } = {},
+  options: {
+    dailyLogs?: DailyLog[];
+    drivers?: Driver[];
+    routeDurations?: Record<string, number>;
+  } = {},
 ) {
   const dailyLogs = new Map<string, DailyLog>();
   (options.dailyLogs ?? []).forEach((log) => dailyLogs.set(log.id, log));
 
   const drivers = options.drivers ?? [buildDriver()];
+  const routeDurations = options.routeDurations ?? {};
 
   const findFirstDriver = jest.fn(
     (args: FindFirstDriverArgs): Promise<Driver | null> => {
@@ -166,29 +180,49 @@ function buildService(
     },
   );
 
-  const findManyDailyLog = jest.fn((args: FindManyDailyLogArgs) => {
+  const filterDailyLogs = (where: FindManyDailyLogArgs['where']) => {
     let results = [...dailyLogs.values()];
-    if (args.where.vehicleId) {
-      results = results.filter((log) => log.vehicleId === args.where.vehicleId);
+    if (where.vehicleId) {
+      results = results.filter((log) => log.vehicleId === where.vehicleId);
     }
-    if (args.where.driverId) {
-      results = results.filter((log) => log.driverId === args.where.driverId);
+    if (where.driverId) {
+      results = results.filter((log) => log.driverId === where.driverId);
     }
-    if (args.where.routeId) {
-      results = results.filter((log) => log.routeId === args.where.routeId);
+    if (where.routeId) {
+      results = results.filter((log) => log.routeId === where.routeId);
     }
-    if (args.where.status) {
-      results = results.filter((log) => log.status === args.where.status);
+    if (where.status) {
+      results = results.filter((log) => log.status === where.status);
+    }
+    return results;
+  };
+
+  const findManyDailyLog = jest.fn((args: FindManyDailyLogArgs) => {
+    let results = filterDailyLogs(args.where);
+    if (args.skip) {
+      results = results.slice(args.skip);
+    }
+    if (args.take) {
+      results = results.slice(0, args.take);
     }
     return Promise.resolve(
       results.map((log) => ({
         ...log,
         vehicle: { id: log.vehicleId, plate: 'ABC1D23' },
         driver: { id: log.driverId, name: 'João da Silva' },
-        route: { id: log.routeId, name: 'Rota Principal' },
+        route: {
+          id: log.routeId,
+          name: 'Rota Principal',
+          estimatedDurationMinutes: routeDurations[log.routeId] ?? 60,
+        },
       })),
     );
   });
+
+  const countDailyLog = jest.fn(
+    (args: { where: FindManyDailyLogArgs['where'] }) =>
+      Promise.resolve(filterDailyLogs(args.where).length),
+  );
 
   const createDailyLog = jest.fn(
     (args: CreateDailyLogArgs): Promise<DailyLog> => {
@@ -199,6 +233,7 @@ function buildService(
         routeId: args.data.routeId,
         departureAt: args.data.departureAt,
         startKm: new Prisma.Decimal(args.data.startKm),
+        destination: args.data.destination ?? null,
         observations: args.data.observations ?? null,
         status: args.data.status,
         createdBy: args.data.createdBy,
@@ -225,13 +260,27 @@ function buildService(
     Promise.resolve({ id: args.where.id, currentKm: args.data.currentKm }),
   );
 
+  const updateManyDailyLog = jest.fn((args: UpdateManyDailyLogArgs) => {
+    let count = 0;
+    for (const id of args.where.id.in) {
+      const current = dailyLogs.get(id);
+      if (current) {
+        dailyLogs.set(id, { ...current, status: args.data.status });
+        count += 1;
+      }
+    }
+    return Promise.resolve({ count });
+  });
+
   const prisma = {
     dailyLog: {
       findFirst: findFirstDailyLog,
       findUnique: findUniqueDailyLog,
       findMany: findManyDailyLog,
+      count: countDailyLog,
       create: createDailyLog,
       update: updateDailyLog,
+      updateMany: updateManyDailyLog,
     },
     driver: {
       findFirst: findFirstDriver,
@@ -246,7 +295,7 @@ function buildService(
 
   const service = new DailyLogsService(prisma);
 
-  return { service, prisma, dailyLogs, updateVehicle };
+  return { service, prisma, dailyLogs, updateVehicle, updateManyDailyLog };
 }
 
 describe('DailyLogsService', () => {
@@ -307,6 +356,23 @@ describe('DailyLogsService', () => {
           motoristaUser,
         ),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('persiste o destino quando informado', async () => {
+      const { service, dailyLogs } = buildService();
+
+      const created = await service.create(
+        {
+          vehicleId: 'vehicle-1',
+          driverId: 'driver-1',
+          startKm: 1000,
+          destination: 'Filial Centro',
+        },
+        adminUser,
+      );
+
+      expect(created.destination).toBe('Filial Centro');
+      expect(dailyLogs.get(created.id)?.destination).toBe('Filial Centro');
     });
   });
 
@@ -398,8 +464,53 @@ describe('DailyLogsService', () => {
 
       const result = await service.findAll({}, motoristaUser);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('log-1');
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('log-1');
+      expect(result.total).toBe(1);
+    });
+  });
+
+  describe('markOverdueLogs', () => {
+    it('marca como ATRASADO os registros que excederam o tempo estimado da rota', async () => {
+      const departureAt = new Date(Date.now() - 120 * 60_000);
+      const { service, dailyLogs, updateManyDailyLog } = buildService({
+        dailyLogs: [
+          buildDailyLog({
+            id: 'log-1',
+            status: DailyLogStatus.EM_ANDAMENTO,
+            departureAt,
+            routeId: 'route-1',
+          }),
+        ],
+        routeDurations: { 'route-1': 60 },
+      });
+
+      const count = await service.markOverdueLogs();
+
+      expect(count).toBe(1);
+      expect(dailyLogs.get('log-1')?.status).toBe(DailyLogStatus.ATRASADO);
+      expect(updateManyDailyLog).toHaveBeenCalledTimes(1);
+    });
+
+    it('não marca registros que ainda estão dentro do tempo estimado da rota', async () => {
+      const departureAt = new Date(Date.now() - 10 * 60_000);
+      const { service, dailyLogs, updateManyDailyLog } = buildService({
+        dailyLogs: [
+          buildDailyLog({
+            id: 'log-1',
+            status: DailyLogStatus.EM_ANDAMENTO,
+            departureAt,
+            routeId: 'route-1',
+          }),
+        ],
+        routeDurations: { 'route-1': 60 },
+      });
+
+      const count = await service.markOverdueLogs();
+
+      expect(count).toBe(0);
+      expect(dailyLogs.get('log-1')?.status).toBe(DailyLogStatus.EM_ANDAMENTO);
+      expect(updateManyDailyLog).not.toHaveBeenCalled();
     });
   });
 });

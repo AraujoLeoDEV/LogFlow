@@ -5,9 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { parseDateOnly } from '../../common/utils/date-range.util';
+import {
+  emptyPage,
+  paginate,
+  PaginatedResult,
+} from '../../common/utils/pagination.util';
 import {
   DailyLog,
   DailyLogStatus,
@@ -69,6 +75,7 @@ export class DailyLogsService {
           routeId,
           departureAt: dto.departureAt ? new Date(dto.departureAt) : new Date(),
           startKm: dto.startKm,
+          destination: dto.destination,
           observations: dto.observations,
           status: DailyLogStatus.EM_ANDAMENTO,
           createdBy: user.sub,
@@ -127,7 +134,7 @@ export class DailyLogsService {
   async findAll(
     query: DailyLogQueryDto,
     user: AuthenticatedUser,
-  ): Promise<DailyLogWithRelations[]> {
+  ): Promise<PaginatedResult<DailyLogWithRelations>> {
     const where: Prisma.DailyLogWhereInput = {
       vehicleId: query.vehicleId,
       driverId: query.driverId,
@@ -142,23 +149,64 @@ export class DailyLogsService {
       };
     }
 
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
     if (user.role === Role.MOTORISTA) {
       const driver = await this.prisma.driver.findFirst({
         where: { userId: user.sub, deletedAt: null },
       });
 
       if (!driver) {
-        return [];
+        return emptyPage(page, limit);
       }
 
       where.driverId = driver.id;
     }
 
-    return this.prisma.dailyLog.findMany({
-      where,
-      orderBy: { departureAt: 'desc' },
-      include: dailyLogInclude,
+    const [data, total] = await Promise.all([
+      this.prisma.dailyLog.findMany({
+        where,
+        orderBy: { departureAt: 'desc' },
+        include: dailyLogInclude,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.dailyLog.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
+  }
+
+  // Job agendado - seção 4.5: marca como ATRASADO os registros que excederem
+  // o tempo estimado da rota sem retorno
+  @Cron(CronExpression.EVERY_5_MINUTES)
+  async markOverdueLogs(): Promise<number> {
+    const ongoingLogs = await this.prisma.dailyLog.findMany({
+      where: { status: DailyLogStatus.EM_ANDAMENTO },
+      include: { route: { select: { estimatedDurationMinutes: true } } },
     });
+
+    const now = Date.now();
+    const overdueIds = ongoingLogs
+      .filter((log) => {
+        const deadline =
+          log.departureAt.getTime() +
+          log.route.estimatedDurationMinutes * 60_000;
+        return deadline < now;
+      })
+      .map((log) => log.id);
+
+    if (overdueIds.length === 0) {
+      return 0;
+    }
+
+    const result = await this.prisma.dailyLog.updateMany({
+      where: { id: { in: overdueIds } },
+      data: { status: DailyLogStatus.ATRASADO },
+    });
+
+    return result.count;
   }
 
   private async resolveDriverForCreate(

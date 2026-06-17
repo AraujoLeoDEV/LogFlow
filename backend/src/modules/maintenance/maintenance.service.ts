@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { parseDateOnly } from '../../common/utils/date-range.util';
+import { paginate, PaginatedResult } from '../../common/utils/pagination.util';
 import { Maintenance, Prisma } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { CreateMaintenanceDto } from './dto/create-maintenance.dto';
@@ -103,7 +104,12 @@ export class MaintenanceService {
   }
 
   // Histórico por veículo com filtros - seção 4.7
-  async findAll(query: MaintenanceQueryDto): Promise<MaintenanceWithVehicle[]> {
+  async findAll(
+    query: MaintenanceQueryDto,
+  ): Promise<PaginatedResult<MaintenanceWithVehicle>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
     const where: Prisma.MaintenanceWhereInput = {
       vehicleId: query.vehicleId,
       type: query.type,
@@ -117,11 +123,18 @@ export class MaintenanceService {
       };
     }
 
-    return this.prisma.maintenance.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      include: maintenanceInclude,
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.maintenance.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: maintenanceInclude,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.maintenance.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   // Agenda de manutenções previstas (próxima troca de óleo, pneus e revisão

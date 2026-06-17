@@ -8,6 +8,11 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { parseDateOnly } from '../../common/utils/date-range.util';
 import {
+  emptyPage,
+  paginate,
+  PaginatedResult,
+} from '../../common/utils/pagination.util';
+import {
   DailyLogStatus,
   Driver,
   Incident,
@@ -105,18 +110,28 @@ export class IncidentsService {
   async findAll(
     query: IncidentQueryDto,
     user: AuthenticatedUser,
-  ): Promise<IncidentWithRelations[]> {
+  ): Promise<PaginatedResult<IncidentWithRelations>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
     const where = await this.buildWhere(query, user);
 
     if (where === null) {
-      return [];
+      return emptyPage(page, limit);
     }
 
-    return this.prisma.incident.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      include: incidentInclude,
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.incident.findMany({
+        where,
+        orderBy: { date: 'desc' },
+        include: incidentInclude,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.incident.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async findOne(

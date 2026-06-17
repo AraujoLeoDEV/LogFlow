@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
+import type { PaginatedResult } from '../../common/utils/pagination.util';
 import { Role } from '../../../generated/prisma/client';
 import { CreateMaintenanceDto } from './dto/create-maintenance.dto';
 import { MaintenanceQueryDto } from './dto/maintenance-query.dto';
@@ -27,7 +28,7 @@ export class MaintenanceController {
   })
   findAll(
     @Query() query: MaintenanceQueryDto,
-  ): Promise<MaintenanceWithVehicle[]> {
+  ): Promise<PaginatedResult<MaintenanceWithVehicle>> {
     return this.maintenanceService.findAll(query);
   }
 

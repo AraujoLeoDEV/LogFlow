@@ -8,6 +8,7 @@ export const alertTypeLabels: Record<AlertType, string> = {
   OIL_CHANGE: 'Troca de óleo',
   TIRE_CHANGE: 'Troca de pneus',
   TRIP_DELAYED: 'Viagem atrasada',
+  SHIPMENT_CREATED: 'Novo envio criado',
 };
 
 export const alertSeverityLabels: Record<AlertSeverity, string> = {

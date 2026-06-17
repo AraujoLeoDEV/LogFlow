@@ -16,6 +16,7 @@ const USER_SELECT = {
   name: true,
   email: true,
   role: true,
+  unitId: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -38,6 +39,7 @@ export class UsersService {
           email: dto.email,
           passwordHash,
           role: dto.role,
+          unitId: dto.unitId,
         },
         select: USER_SELECT,
       });
@@ -70,10 +72,11 @@ export class UsersService {
   async update(id: string, dto: UpdateUserDto): Promise<UserResponseDto> {
     await this.findOne(id);
 
-    const data: Prisma.UserUpdateInput = {
+    const data: Prisma.UserUncheckedUpdateInput = {
       name: dto.name,
       email: dto.email,
       role: dto.role,
+      unitId: dto.unitId,
       isActive: dto.isActive,
     };
 

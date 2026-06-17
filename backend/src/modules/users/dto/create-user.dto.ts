@@ -1,9 +1,11 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsOptional,
   IsString,
+  IsUUID,
   MinLength,
 } from 'class-validator';
 
@@ -27,4 +29,12 @@ export class CreateUserDto {
   @ApiProperty({ enum: Role, example: Role.COORDENACAO })
   @IsEnum(Role, { message: 'Perfil inválido.' })
   role: Role;
+
+  @ApiPropertyOptional({
+    description:
+      'Id da unidade vinculada ao usuário (obrigatório para o perfil Conferente).',
+  })
+  @IsOptional()
+  @IsUUID('all', { message: 'Unidade inválida.' })
+  unitId?: string;
 }

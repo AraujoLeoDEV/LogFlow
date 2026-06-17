@@ -1,3 +1,5 @@
+import type { PaginationQuery } from './pagination';
+
 export type IncidentCategory = 'TRANSITO' | 'SINISTRO' | 'MECANICA' | 'OPERACIONAL' | 'OUTROS';
 
 export type IncidentType = 'MULTA' | 'ACIDENTE' | 'PANE' | 'ATRASO' | 'DANO_VEICULO' | 'OUTROS';
@@ -36,7 +38,7 @@ export interface CreateIncidentPayload {
   date: string;
 }
 
-export interface IncidentQuery {
+export interface IncidentQuery extends PaginationQuery {
   vehicleId?: string;
   driverId?: string;
   category?: IncidentCategory;

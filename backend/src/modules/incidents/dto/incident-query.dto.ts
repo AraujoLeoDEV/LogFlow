@@ -1,13 +1,14 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import {
   IncidentCategory,
   IncidentSeverity,
   IncidentType,
 } from '../../../../generated/prisma/client';
 
-export class IncidentQueryDto {
+export class IncidentQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Filtrar pelo id do veículo.' })
   @IsOptional()
   @IsUUID('all', { message: 'Veículo inválido.' })

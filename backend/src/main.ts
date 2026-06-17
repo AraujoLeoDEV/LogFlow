@@ -19,8 +19,13 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
 
+  const allowedOrigins = config
+    .get<string>('FRONTEND_URL', 'http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim());
+
   app.enableCors({
-    origin: config.get<string>('FRONTEND_URL', 'http://localhost:5173'),
+    origin: allowedOrigins,
     credentials: true,
   });
 

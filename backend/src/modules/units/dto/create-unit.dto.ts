@@ -12,6 +12,15 @@ export class CreateUnitDto {
   @IsNotEmpty({ message: 'O endereço é obrigatório.' })
   address: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Telefone/WhatsApp da unidade (com DDD), usado para compartilhamento de envios.',
+    example: '11987654321',
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
   @ApiPropertyOptional({ description: 'Indica se a unidade está ativa.' })
   @IsOptional()
   @IsBoolean()

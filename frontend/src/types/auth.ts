@@ -1,4 +1,4 @@
-export type Role = 'ADMIN' | 'COORDENACAO' | 'MOTORISTA' | 'FINANCEIRO';
+export type Role = 'ADMIN' | 'COORDENACAO' | 'MOTORISTA' | 'FINANCEIRO' | 'CONFERENTE';
 
 export interface AuthUser {
   id: string;

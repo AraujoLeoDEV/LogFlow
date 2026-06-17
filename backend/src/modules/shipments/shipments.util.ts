@@ -1,7 +1,10 @@
 import { ShipmentStatus } from '../../../generated/prisma/client';
 
 // Transições de status válidas para o envio (protocolo) - seção 4.9.
-// ENTREGUE e CANCELADO são estados finais (sem transições de saída).
+// ENTREGUE e CANCELADO são estados finais para o fluxo genérico de
+// updateStatus (sem transições de saída). ENTREGUE -> CONFIRMADO só ocorre
+// via confirmReceipt (confirmação de recebimento pelo Conferente), por isso
+// não aparece como transição genérica aqui.
 export const VALID_SHIPMENT_TRANSITIONS: Record<
   ShipmentStatus,
   ShipmentStatus[]
@@ -10,6 +13,7 @@ export const VALID_SHIPMENT_TRANSITIONS: Record<
   EM_TRANSITO: [ShipmentStatus.ENTREGUE, ShipmentStatus.CANCELADO],
   ENTREGUE: [],
   CANCELADO: [],
+  CONFIRMADO: [],
 };
 
 // Indica se o status atual do envio é final (não permite mais transições) -

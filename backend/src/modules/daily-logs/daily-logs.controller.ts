@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
+import type { PaginatedResult } from '../../common/utils/pagination.util';
 import { DailyLog, Role } from '../../../generated/prisma/client';
 import { DailyLogsService, DailyLogWithRelations } from './daily-logs.service';
 import { CreateDailyLogDto } from './dto/create-daily-log.dto';
@@ -33,7 +34,7 @@ export class DailyLogsController {
   findAll(
     @Query() query: DailyLogQueryDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<DailyLogWithRelations[]> {
+  ): Promise<PaginatedResult<DailyLogWithRelations>> {
     return this.dailyLogsService.findAll(query, user);
   }
 

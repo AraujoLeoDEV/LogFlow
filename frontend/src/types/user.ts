@@ -5,6 +5,7 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  unitId: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -15,6 +16,7 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   role: Role;
+  unitId?: string;
 }
 
 export interface UpdateUserPayload {
@@ -22,5 +24,6 @@ export interface UpdateUserPayload {
   email?: string;
   password?: string;
   role?: Role;
+  unitId?: string | null;
   isActive?: boolean;
 }

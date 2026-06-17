@@ -1,3 +1,5 @@
+import type { PaginationQuery } from './pagination';
+
 export type MaintenanceType = 'PREVENTIVA' | 'CORRETIVA';
 
 export type MaintenanceCategory = 'TROCA_OLEO' | 'TROCA_PNEUS' | 'REVISAO_GERAL' | 'OUTROS';
@@ -33,7 +35,7 @@ export interface CreateMaintenancePayload {
   performedDate?: string;
 }
 
-export interface MaintenanceQuery {
+export interface MaintenanceQuery extends PaginationQuery {
   vehicleId?: string;
   type?: MaintenanceType;
   category?: MaintenanceCategory;

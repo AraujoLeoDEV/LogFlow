@@ -15,6 +15,9 @@ export class UserResponseDto {
   @ApiProperty({ enum: Role })
   role: Role;
 
+  @ApiProperty({ nullable: true })
+  unitId: string | null;
+
   @ApiProperty()
   isActive: boolean;
 

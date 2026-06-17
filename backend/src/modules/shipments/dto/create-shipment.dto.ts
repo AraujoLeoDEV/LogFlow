@@ -3,6 +3,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsDateString,
   IsOptional,
   IsString,
   IsUUID,
@@ -12,13 +13,25 @@ import {
 import { ShipmentItemDto } from './shipment-item.dto';
 
 export class CreateShipmentDto {
+  @ApiPropertyOptional({ description: 'Id da unidade de origem do envio.' })
+  @IsOptional()
+  @IsUUID('all', { message: 'Unidade de origem inválida.' })
+  originUnitId?: string;
+
   @ApiProperty({ description: 'Id da unidade de destino do envio.' })
   @IsUUID('all', { message: 'Unidade de destino inválida.' })
   destinationUnitId: string;
 
+  @ApiPropertyOptional({
+    description: 'Data/hora do envio (default: agora).',
+  })
+  @IsOptional()
+  @IsDateString({}, { message: 'Data do envio inválida.' })
+  shippedAt?: string;
+
   @ApiProperty({
     type: [ShipmentItemDto],
-    description: 'Itens enviados (descrição e quantidade).',
+    description: 'Itens enviados (descrição, categoria, quantidade e unidade).',
   })
   @IsArray()
   @ArrayMinSize(1, { message: 'Informe ao menos um item no envio.' })

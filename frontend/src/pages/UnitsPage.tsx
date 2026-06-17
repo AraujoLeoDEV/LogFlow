@@ -98,6 +98,7 @@ export function UnitsPage() {
             <tr>
               <th className="px-4 py-2 font-medium">Nome</th>
               <th className="px-4 py-2 font-medium">Endereço</th>
+              <th className="px-4 py-2 font-medium">Telefone/WhatsApp</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium text-right">Ações</th>
             </tr>
@@ -105,14 +106,14 @@ export function UnitsPage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                   Carregando...
                 </td>
               </tr>
             )}
             {!isLoading && units?.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                   Nenhuma unidade cadastrada.
                 </td>
               </tr>
@@ -121,6 +122,7 @@ export function UnitsPage() {
               <tr key={unit.id} className="border-b last:border-0">
                 <td className="px-4 py-2 font-medium">{unit.name}</td>
                 <td className="px-4 py-2 text-muted-foreground">{unit.address}</td>
+                <td className="px-4 py-2 text-muted-foreground">{unit.phone || '—'}</td>
                 <td className="px-4 py-2">
                   <Badge variant={unit.active ? 'default' : 'outline'}>
                     {unit.active ? 'Ativa' : 'Inativa'}

@@ -39,6 +39,11 @@ export class CreateDailyLogDto {
   @Min(0, { message: 'O KM inicial não pode ser negativo.' })
   startKm: number;
 
+  @ApiPropertyOptional({ description: 'Destino da saída/viagem.' })
+  @IsOptional()
+  @IsString()
+  destination?: string;
+
   @ApiPropertyOptional({ description: 'Observações sobre a saída.' })
   @IsOptional()
   @IsString()

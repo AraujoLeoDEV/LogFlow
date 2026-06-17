@@ -17,7 +17,7 @@ export const KM_THRESHOLD_CRITICO = 100;
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-export type AlertReferenceType = 'VEHICLE' | 'DRIVER' | 'TRIP';
+export type AlertReferenceType = 'VEHICLE' | 'DRIVER' | 'TRIP' | 'SHIPMENT';
 
 export interface AlertCandidate {
   type: AlertType;
@@ -53,8 +53,8 @@ export interface DriverAlertSource {
 
 export interface TripAlertSource {
   id: string;
-  destination: string;
-  startedAt: Date;
+  destination: string | null;
+  departureAt: Date;
   estimatedDurationMinutes: number;
   driverName: string;
   driverUserId: string | null;
@@ -305,18 +305,23 @@ export function buildDriverCnhAlerts(
   ];
 }
 
-// Alerta de viagem em atraso - seção 4.10. Espera-se que o chamador filtre
-// apenas viagens com status ATRASADA (job da seção 4.5 já marca o status).
+// Alerta de viagem/saída em atraso - seção 4.10. Espera-se que o chamador
+// filtre apenas registros com status ATRASADO (job da seção 4.5 já marca o
+// status).
 export function buildTripDelayedAlert(trip: TripAlertSource): AlertCandidate {
   const deadline = new Date(
-    trip.startedAt.getTime() + trip.estimatedDurationMinutes * 60_000,
+    trip.departureAt.getTime() + trip.estimatedDurationMinutes * 60_000,
   );
+
+  const destinationPhrase = trip.destination
+    ? `, destino ${trip.destination}`
+    : '';
 
   return {
     type: AlertType.TRIP_DELAYED,
     referenceType: 'TRIP',
     referenceId: trip.id,
-    message: `Viagem do motorista ${trip.driverName} (veículo ${trip.vehiclePlate}, destino ${trip.destination}) está atrasada desde ${formatDateTime(deadline)}.`,
+    message: `Viagem do motorista ${trip.driverName} (veículo ${trip.vehiclePlate}${destinationPhrase}) está atrasada desde ${formatDateTime(deadline)}.`,
     severity: AlertSeverity.CRITICO,
     dueDate: deadline,
     targetRole: Role.COORDENACAO,

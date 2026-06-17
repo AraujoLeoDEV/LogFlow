@@ -15,7 +15,13 @@ export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.COORDENACAO, Role.MOTORISTA, Role.FINANCEIRO)
+  @Roles(
+    Role.ADMIN,
+    Role.COORDENACAO,
+    Role.MOTORISTA,
+    Role.FINANCEIRO,
+    Role.CONFERENTE,
+  )
   @ApiOperation({
     summary:
       'Lista os alertas visíveis para o usuário autenticado, com filtro opcional por status',
@@ -28,7 +34,13 @@ export class AlertsController {
   }
 
   @Patch(':id/read')
-  @Roles(Role.ADMIN, Role.COORDENACAO, Role.MOTORISTA, Role.FINANCEIRO)
+  @Roles(
+    Role.ADMIN,
+    Role.COORDENACAO,
+    Role.MOTORISTA,
+    Role.FINANCEIRO,
+    Role.CONFERENTE,
+  )
   @ApiOperation({ summary: 'Marca um alerta como lido' })
   markAsRead(
     @Param('id') id: string,

@@ -18,6 +18,7 @@ enum Role {
   COORDENACAO
   MOTORISTA
   FINANCEIRO
+  CONFERENTE
 }
 
 // Tipos de combustível dos veículos - seção 4.3 / 4.6
@@ -29,17 +30,11 @@ enum FuelType {
   GNV
 }
 
-// Status do registro diário de uso da frota - seção 4.4
+// Status do registro diário de uso da frota - seções 4.4 e 4.5
 enum DailyLogStatus {
   EM_ANDAMENTO
   FINALIZADO
-}
-
-// Status da viagem - seção 4.5
-enum TripStatus {
-  EM_ANDAMENTO
-  FINALIZADA
-  ATRASADA
+  ATRASADO
 }
 
 // Tipo de manutenção - seção 4.7
@@ -92,6 +87,21 @@ enum ShipmentStatus {
   EM_TRANSITO
   ENTREGUE
   CANCELADO
+  CONFIRMADO
+}
+
+// Unidade de medida do item do envio - seção 4.9
+enum ShipmentItemUnit {
+  UND
+  CX
+  ML
+  L
+}
+
+// Tipo de arquivo gerado/anexado a um envio - seção 4.9
+enum ShipmentFileType {
+  PDF
+  PHOTO
 }
 
 // Tipo de alerta automático - seção 4.10
@@ -103,6 +113,7 @@ enum AlertType {
   OIL_CHANGE
   TIRE_CHANGE
   TRIP_DELAYED
+  SHIPMENT_CREATED
 }
 
 // Gravidade do alerta - seção 4.10
@@ -169,12 +180,15 @@ model User {
   isActive            Boolean   @default(true) @map("is_active")
   failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
   lockedUntil         DateTime? @map("locked_until")
+  unitId              String?   @map("unit_id")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  driver        Driver?
-  sentShipments Shipment[] @relation("ShipmentSender")
+  unit             Unit?             @relation(fields: [unitId], references: [id])
+  driver           Driver?
+  sentShipments    Shipment[]        @relation("ShipmentSender")
+  shipmentReceipts ShipmentReceipt[]
 
   @@map("users")
 }
@@ -184,11 +198,14 @@ model Unit {
   id        String   @id @default(uuid())
   name      String
   address   String
+  phone     String?
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  shipments Shipment[]
+  users                  User[]
+  shipmentsAsOrigin      Shipment[] @relation("ShipmentOrigin")
+  shipmentsAsDestination Shipment[] @relation("ShipmentDestination")
 
   @@map("units")
 }
@@ -208,7 +225,6 @@ model Route {
   vehicles  Vehicle[]  @relation("VehicleMainRoute")
   drivers   Driver[]   @relation("DriverDefaultRoute")
   dailyLogs DailyLog[]
-  trips     Trip[]
 
   @@map("routes")
 }
@@ -245,7 +261,6 @@ model Vehicle {
   mainRoute    Route?        @relation("VehicleMainRoute", fields: [mainRouteId], references: [id])
   drivers      Driver[]
   dailyLogs    DailyLog[]
-  trips        Trip[]
   fuelRecords  Fuel[]
   maintenances Maintenance[]
   incidents    Incident[]
@@ -275,7 +290,6 @@ model Driver {
   defaultRoute         Route?     @relation("DriverDefaultRoute", fields: [defaultRouteId], references: [id])
   user                 User?      @relation(fields: [userId], references: [id])
   dailyLogs            DailyLog[]
-  trips                Trip[]
   fuelRecords          Fuel[]
   incidents            Incident[]
   transportedShipments Shipment[] @relation("ShipmentTransporter")
@@ -284,7 +298,7 @@ model Driver {
   @@map("drivers")
 }
 
-// Registro diário de uso da frota (saída/retorno) - seção 4.4
+// Registro diário de uso da frota (saída/retorno) - seções 4.4 e 4.5
 model DailyLog {
   id                   String         @id @default(uuid())
   vehicleId            String         @map("vehicle_id")
@@ -297,6 +311,7 @@ model DailyLog {
   kmDriven             Decimal?       @map("km_driven") @db.Decimal(10, 1)
   totalDurationMinutes Int?           @map("total_duration_minutes")
   avgSpeedKmh          Decimal?       @map("avg_speed_kmh") @db.Decimal(10, 2)
+  destination          String?
   observations         String?
   status               DailyLogStatus @default(EM_ANDAMENTO)
   createdBy            String?        @map("created_by")
@@ -309,30 +324,6 @@ model DailyLog {
   route   Route   @relation(fields: [routeId], references: [id])
 
   @@map("daily_logs")
-}
-
-// Viagens (trips) - seção 4.5
-model Trip {
-  id          String     @id @default(uuid())
-  vehicleId   String     @map("vehicle_id")
-  driverId    String     @map("driver_id")
-  routeId     String     @map("route_id")
-  status      TripStatus @default(EM_ANDAMENTO)
-  destination String
-  startKm     Decimal    @map("start_km") @db.Decimal(10, 1)
-  endKm       Decimal?   @map("end_km") @db.Decimal(10, 1)
-  startedAt   DateTime   @map("started_at")
-  finishedAt  DateTime?  @map("finished_at")
-  createdBy   String?    @map("created_by")
-  updatedBy   String?    @map("updated_by")
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
-
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id])
-  driver  Driver  @relation(fields: [driverId], references: [id])
-  route   Route   @relation(fields: [routeId], references: [id])
-
-  @@map("trips")
 }
 
 // Abastecimento - seção 4.6
@@ -417,22 +408,74 @@ model ProtocolCounter {
 model Shipment {
   id                String         @id @default(uuid())
   protocolNumber    String         @unique @map("protocol_number")
+  originUnitId      String?        @map("origin_unit_id")
   destinationUnitId String         @map("destination_unit_id")
-  items             Json
   senderId          String         @map("sender_id")
   transporterId     String?        @map("transporter_id")
+  shippedAt         DateTime       @default(now()) @map("shipped_at")
   observations      String?
   status            ShipmentStatus @default(PENDENTE)
   createdBy         String?        @map("created_by")
   createdAt         DateTime       @default(now()) @map("created_at")
   updatedAt         DateTime       @updatedAt @map("updated_at")
 
-  destinationUnit Unit                    @relation(fields: [destinationUnitId], references: [id])
+  originUnit      Unit?                   @relation("ShipmentOrigin", fields: [originUnitId], references: [id])
+  destinationUnit Unit                    @relation("ShipmentDestination", fields: [destinationUnitId], references: [id])
   sender          User                    @relation("ShipmentSender", fields: [senderId], references: [id])
   transporter     Driver?                 @relation("ShipmentTransporter", fields: [transporterId], references: [id])
+  items           ShipmentItem[]
+  files           ShipmentFile[]
+  receipt         ShipmentReceipt?
   statusHistory   ShipmentStatusHistory[]
 
   @@map("shipments")
+}
+
+// Itens de um envio - seção 4.9
+model ShipmentItem {
+  id          String           @id @default(uuid())
+  shipmentId  String           @map("shipment_id")
+  description String
+  category    String?
+  quantity    Decimal          @db.Decimal(10, 2)
+  unit        ShipmentItemUnit @default(UND)
+  notes       String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@map("shipment_items")
+}
+
+// Arquivos gerados/anexados a um envio (ex: PDF do comprovante) - seção 4.9
+model ShipmentFile {
+  id          String           @id @default(uuid())
+  shipmentId  String           @map("shipment_id")
+  type        ShipmentFileType @default(PDF)
+  filePath    String           @map("file_path")
+  publicToken String           @unique @map("public_token")
+  createdAt   DateTime         @default(now()) @map("created_at")
+
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@map("shipment_files")
+}
+
+// Confirmação de recebimento de um envio pelo conferente da unidade de
+// destino - seção 4.9
+model ShipmentReceipt {
+  id          String   @id @default(uuid())
+  shipmentId  String   @unique @map("shipment_id")
+  confirmedBy String   @map("confirmed_by")
+  confirmedAt DateTime @default(now()) @map("confirmed_at")
+  notes       String?
+  ipAddress   String?  @map("ip_address")
+
+  shipment        Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  confirmedByUser User     @relation(fields: [confirmedBy], references: [id])
+
+  @@map("shipment_receipts")
 }
 
 // Timeline de movimentações de status de um envio - seção 4.9
@@ -465,7 +508,7 @@ model Alert {
   targetUserId  String?       @map("target_user_id")
   createdAt     DateTime      @default(now()) @map("created_at")
 
-  @@unique([referenceType, referenceId, type, dueDate])
+  @@unique([referenceType, referenceId, type, dueDate, targetRole, targetUserId])
   @@map("alerts")
 }
 

@@ -158,6 +158,7 @@ async function buildDailyLogsTable(
       { key: 'vehicle', header: 'Veículo' },
       { key: 'driver', header: 'Motorista' },
       { key: 'route', header: 'Rota' },
+      { key: 'destination', header: 'Destino' },
       { key: 'startKm', header: 'KM Inicial' },
       { key: 'endKm', header: 'KM Final' },
       { key: 'kmDriven', header: 'KM Rodado' },
@@ -171,6 +172,7 @@ async function buildDailyLogsTable(
       vehicle: log.vehicle.plate,
       driver: log.driver.name,
       route: log.route.name,
+      destination: log.destination ?? '-',
       startKm: log.startKm.toNumber(),
       endKm: formatDecimal(log.endKm),
       kmDriven: formatDecimal(log.kmDriven),
@@ -452,7 +454,7 @@ const PDF_ROW_HEIGHT = 16;
 // Substitui caracteres que a fonte WinAnsi não consegue codificar (ex.: dados
 // com encoding corrompido no banco) por "?" para evitar falha na geração do
 // PDF - seção 4.14.
-function sanitizeForPdf(text: string, font: PDFFont): string {
+export function sanitizeForPdf(text: string, font: PDFFont): string {
   let result = '';
   for (const char of text) {
     try {
@@ -465,19 +467,20 @@ function sanitizeForPdf(text: string, font: PDFFont): string {
   return result;
 }
 
-function truncateToWidth(
+export function truncateToWidth(
   text: string,
   font: PDFFont,
+  fontSize: number,
   maxWidth: number,
 ): string {
-  if (font.widthOfTextAtSize(text, PDF_FONT_SIZE) <= maxWidth) {
+  if (font.widthOfTextAtSize(text, fontSize) <= maxWidth) {
     return text;
   }
 
   let truncated = text;
   while (
     truncated.length > 1 &&
-    font.widthOfTextAtSize(`${truncated}…`, PDF_FONT_SIZE) > maxWidth
+    font.widthOfTextAtSize(`${truncated}…`, fontSize) > maxWidth
   ) {
     truncated = truncated.slice(0, -1);
   }
@@ -501,12 +504,15 @@ export async function generateReportPdf(table: ReportTable): Promise<Buffer> {
   const drawRow = (values: string[], rowFont: PDFFont): void => {
     values.forEach((value, index) => {
       const sanitized = sanitizeForPdf(value, rowFont);
-      page.drawText(truncateToWidth(sanitized, rowFont, columnWidth - 4), {
-        x: PDF_MARGIN + index * columnWidth,
-        y,
-        size: PDF_FONT_SIZE,
-        font: rowFont,
-      });
+      page.drawText(
+        truncateToWidth(sanitized, rowFont, PDF_FONT_SIZE, columnWidth - 4),
+        {
+          x: PDF_MARGIN + index * columnWidth,
+          y,
+          size: PDF_FONT_SIZE,
+          font: rowFont,
+        },
+      );
     });
     y -= PDF_ROW_HEIGHT;
   };

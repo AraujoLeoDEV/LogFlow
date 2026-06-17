@@ -1,9 +1,11 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import type { Queue } from 'bullmq';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import {
@@ -11,13 +13,19 @@ import {
   Prisma,
   Role,
   Shipment,
+  ShipmentFile,
+  ShipmentItem,
+  ShipmentItemUnit,
+  ShipmentReceipt,
   ShipmentStatus,
   ShipmentStatusHistory,
   Unit,
   User,
 } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
+import { AlertsMailerService } from '../alerts/alerts-mailer.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
+import { GENERATE_SHIPMENT_PDF_JOB } from './shipment-pdf.constants';
 import { ShipmentsService } from './shipments.service';
 
 const adminUser: AuthenticatedUser = {
@@ -31,6 +39,7 @@ function buildUnit(overrides: Partial<Unit> = {}): Unit {
     id: 'unit-1',
     name: 'Unidade Central',
     address: 'Rua A, 100',
+    phone: null,
     active: true,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -45,6 +54,7 @@ function buildUser(overrides: Partial<User> = {}): User {
     email: 'admin@logflow.com',
     passwordHash: 'hash',
     role: Role.ADMIN,
+    unitId: null,
     isActive: true,
     failedLoginAttempts: 0,
     lockedUntil: null,
@@ -79,10 +89,11 @@ function buildShipment(overrides: Partial<Shipment> = {}): Shipment {
   return {
     id: 'shipment-1',
     protocolNumber: '20260610-0001',
+    originUnitId: null,
     destinationUnitId: 'unit-1',
-    items: [{ description: 'Caixa de documentos', quantity: 2 }],
     senderId: 'user-admin',
     transporterId: null,
+    shippedAt: new Date('2026-06-10T10:00:00Z'),
     observations: null,
     status: ShipmentStatus.PENDENTE,
     createdBy: 'user-admin',
@@ -92,12 +103,33 @@ function buildShipment(overrides: Partial<Shipment> = {}): Shipment {
   };
 }
 
-interface FindManyShipmentArgs {
-  where?: {
-    status?: ShipmentStatus;
-    destinationUnitId?: string;
-    createdAt?: { gte?: Date; lte?: Date };
+function buildShipmentItem(
+  overrides: Partial<ShipmentItem> = {},
+): ShipmentItem {
+  return {
+    id: 'item-1',
+    shipmentId: 'shipment-1',
+    description: 'Caixa de documentos',
+    category: null,
+    quantity: new Prisma.Decimal(2),
+    unit: ShipmentItemUnit.UND,
+    notes: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
   };
+}
+
+interface ShipmentWhere {
+  status?: ShipmentStatus;
+  destinationUnitId?: string;
+  createdAt?: { gte?: Date; lte?: Date };
+}
+
+interface FindManyShipmentArgs {
+  where?: ShipmentWhere;
+  skip?: number;
+  take?: number;
 }
 
 interface FindUniqueShipmentArgs {
@@ -113,6 +145,9 @@ interface UpdateShipmentArgs {
 function buildService(
   options: {
     shipments?: Shipment[];
+    items?: ShipmentItem[];
+    files?: ShipmentFile[];
+    receipts?: ShipmentReceipt[];
     units?: Unit[];
     drivers?: Driver[];
     users?: User[];
@@ -120,6 +155,9 @@ function buildService(
   } = {},
 ) {
   const shipments = [...(options.shipments ?? [])];
+  const items = [...(options.items ?? [])];
+  const files = [...(options.files ?? [])];
+  const receipts = [...(options.receipts ?? [])];
   const units = options.units ?? [buildUnit()];
   const drivers = options.drivers ?? [buildDriver()];
   const users = options.users ?? [buildUser()];
@@ -135,7 +173,14 @@ function buildService(
     destinationUnit: {
       id: shipment.destinationUnitId,
       name: findUnitById(shipment.destinationUnitId)?.name ?? 'UNKNOWN',
+      phone: findUnitById(shipment.destinationUnitId)?.phone ?? null,
     },
+    originUnit: shipment.originUnitId
+      ? {
+          id: shipment.originUnitId,
+          name: findUnitById(shipment.originUnitId)?.name ?? 'UNKNOWN',
+        }
+      : null,
     sender: {
       id: shipment.senderId,
       name: findUserById(shipment.senderId)?.name ?? 'UNKNOWN',
@@ -146,6 +191,21 @@ function buildService(
           name: findDriverById(shipment.transporterId)?.name ?? 'UNKNOWN',
         }
       : null,
+    items: items.filter((item) => item.shipmentId === shipment.id),
+    files: files.filter((file) => file.shipmentId === shipment.id),
+    receipt: (() => {
+      const receipt = receipts.find(
+        (entry) => entry.shipmentId === shipment.id,
+      );
+      if (!receipt) return null;
+      return {
+        ...receipt,
+        confirmedByUser: {
+          id: receipt.confirmedBy,
+          name: findUserById(receipt.confirmedBy)?.name ?? 'UNKNOWN',
+        },
+      };
+    })(),
   });
 
   const findFirstUnit = jest.fn(
@@ -171,6 +231,11 @@ function buildService(
     },
   );
 
+  const findUniqueUser = jest.fn((args: { where: { id: string } }) => {
+    const found = findUserById(args.where.id);
+    return Promise.resolve(found ? { unitId: found.unitId ?? null } : null);
+  });
+
   let protocolSeq = 0;
   const queryRaw = jest.fn(() => {
     protocolSeq += 1;
@@ -178,11 +243,30 @@ function buildService(
   });
 
   const createShipment = jest.fn((args: { data: Record<string, unknown> }) => {
+    const { items: itemsInput, ...rest } = args.data as Record<
+      string,
+      unknown
+    > & {
+      items?: { create: Array<Record<string, unknown>> };
+    };
+
     const created = buildShipment({
       id: `shipment-${shipments.length + 1}`,
-      ...args.data,
+      ...rest,
     });
     shipments.push(created);
+
+    (itemsInput?.create ?? []).forEach((itemData) => {
+      items.push(
+        buildShipmentItem({
+          id: `item-${items.length + 1}`,
+          shipmentId: created.id,
+          ...itemData,
+          quantity: new Prisma.Decimal(itemData.quantity as number),
+        }),
+      );
+    });
+
     return Promise.resolve(withRelations(created));
   });
 
@@ -201,16 +285,31 @@ function buildService(
     },
   );
 
-  const findManyShipment = jest.fn((args: FindManyShipmentArgs = {}) => {
+  const createShipmentReceipt = jest.fn(
+    (args: { data: Record<string, unknown> }) => {
+      const created: ShipmentReceipt = {
+        id: `receipt-${receipts.length + 1}`,
+        shipmentId: args.data.shipmentId as string,
+        confirmedBy: args.data.confirmedBy as string,
+        confirmedAt: new Date(),
+        notes: (args.data.notes as string | null) ?? null,
+        ipAddress: (args.data.ipAddress as string | null) ?? null,
+      };
+      receipts.push(created);
+      return Promise.resolve(created);
+    },
+  );
+
+  const filterShipments = (where?: ShipmentWhere) => {
     let results = [...shipments];
-    const where = args.where ?? {};
+    where = where ?? {};
 
     if (where.status) {
-      results = results.filter((item) => item.status === where.status);
+      results = results.filter((item) => item.status === where?.status);
     }
     if (where.destinationUnitId) {
       results = results.filter(
-        (item) => item.destinationUnitId === where.destinationUnitId,
+        (item) => item.destinationUnitId === where?.destinationUnitId,
       );
     }
     if (where.createdAt?.gte) {
@@ -222,12 +321,26 @@ function buildService(
       results = results.filter((item) => item.createdAt <= lte);
     }
 
-    return Promise.resolve(
-      [...results]
-        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-        .map(withRelations),
+    return [...results].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
     );
+  };
+
+  const findManyShipment = jest.fn((args: FindManyShipmentArgs = {}) => {
+    let results = filterShipments(args.where);
+
+    if (args.skip !== undefined || args.take !== undefined) {
+      const skip = args.skip ?? 0;
+      const take = args.take ?? results.length;
+      results = results.slice(skip, skip + take);
+    }
+
+    return Promise.resolve(results.map(withRelations));
   });
+
+  const countShipment = jest.fn((args: { where?: ShipmentWhere } = {}) =>
+    Promise.resolve(filterShipments(args.where).length),
+  );
 
   const findUniqueShipment = jest.fn((args: FindUniqueShipmentArgs) => {
     const found = shipments.find((item) =>
@@ -259,25 +372,67 @@ function buildService(
     if (index === -1) {
       throw new Error('Shipment não encontrado no mock.');
     }
-    shipments[index] = { ...shipments[index], ...args.data };
+
+    const { items: itemsInput, ...rest } = args.data as Record<
+      string,
+      unknown
+    > & {
+      items?: { create: Array<Record<string, unknown>> };
+    };
+
+    shipments[index] = { ...shipments[index], ...rest };
+
+    (itemsInput?.create ?? []).forEach((itemData) => {
+      items.push(
+        buildShipmentItem({
+          id: `item-${items.length + 1}`,
+          shipmentId: shipments[index].id,
+          ...itemData,
+          quantity: new Prisma.Decimal(itemData.quantity as number),
+        }),
+      );
+    });
+
     return Promise.resolve(withRelations(shipments[index]));
   });
+
+  const deleteManyShipmentItem = jest.fn(
+    (args: { where: { shipmentId: string } }) => {
+      const remaining = items.filter(
+        (item) => item.shipmentId !== args.where.shipmentId,
+      );
+      const removedCount = items.length - remaining.length;
+      items.length = 0;
+      items.push(...remaining);
+      return Promise.resolve({ count: removedCount });
+    },
+  );
 
   const prisma = {
     shipment: {
       create: createShipment,
       findMany: findManyShipment,
+      count: countShipment,
       findUnique: findUniqueShipment,
       update: updateShipment,
     },
+    shipmentItem: {
+      deleteMany: deleteManyShipmentItem,
+    },
     shipmentStatusHistory: {
       create: createStatusHistory,
+    },
+    shipmentReceipt: {
+      create: createShipmentReceipt,
     },
     unit: {
       findFirst: findFirstUnit,
     },
     driver: {
       findFirst: findFirstDriver,
+    },
+    user: {
+      findUnique: findUniqueUser,
     },
     $queryRaw: queryRaw,
     $transaction: jest.fn((arg: unknown) => {
@@ -288,14 +443,38 @@ function buildService(
     }),
   } as unknown as PrismaService;
 
-  const service = new ShipmentsService(prisma);
+  const pdfQueue = { add: jest.fn() } as unknown as Queue;
+  const mailer = {
+    isEnabled: jest.fn().mockReturnValue(false),
+    sendAlertEmail: jest.fn().mockResolvedValue(true),
+  } as unknown as AlertsMailerService;
 
-  return { service, prisma, shipments, units, drivers, users, statusHistory };
+  const service = new ShipmentsService(prisma, pdfQueue, mailer);
+
+  return {
+    service,
+    prisma,
+    pdfQueue,
+    shipments,
+    items,
+    files,
+    receipts,
+    units,
+    drivers,
+    users,
+    statusHistory,
+  };
 }
 
 const baseCreateDto: CreateShipmentDto = {
   destinationUnitId: 'unit-1',
-  items: [{ description: 'Caixa de documentos', quantity: 2 }],
+  items: [
+    {
+      description: 'Caixa de documentos',
+      quantity: 2,
+      unit: ShipmentItemUnit.UND,
+    },
+  ],
 };
 
 describe('ShipmentsService', () => {
@@ -319,20 +498,43 @@ describe('ShipmentsService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
-    it('registra o envio com protocolo AAAAMMDD-SEQ, status PENDENTE e timeline inicial', async () => {
+    it('registra o envio com protocolo AAAAMMDD-SEQ, status PENDENTE, itens estruturados e timeline inicial', async () => {
       const { service, statusHistory } = buildService();
 
-      const created = await service.create(baseCreateDto, adminUser);
+      const created = await service.create(
+        {
+          ...baseCreateDto,
+          items: [
+            {
+              description: 'Caixa de documentos',
+              category: 'Material de escritório',
+              quantity: 2,
+              unit: ShipmentItemUnit.CX,
+              notes: 'Frágil',
+            },
+          ],
+        },
+        adminUser,
+      );
 
       expect(created.protocolNumber).toMatch(/^\d{8}-0001$/);
       expect(created.status).toBe(ShipmentStatus.PENDENTE);
       expect(created.senderId).toBe(adminUser.sub);
       expect(created.createdBy).toBe(adminUser.sub);
-      expect(created.items).toEqual(baseCreateDto.items);
       expect(created.destinationUnit).toEqual({
         id: 'unit-1',
         name: 'Unidade Central',
+        phone: null,
       });
+
+      expect(created.items).toHaveLength(1);
+      expect(created.items[0]).toMatchObject({
+        description: 'Caixa de documentos',
+        category: 'Material de escritório',
+        unit: ShipmentItemUnit.CX,
+        notes: 'Frágil',
+      });
+      expect(created.items[0].quantity.toNumber()).toBe(2);
 
       expect(statusHistory).toHaveLength(1);
       expect(statusHistory[0]).toMatchObject({
@@ -340,6 +542,30 @@ describe('ShipmentsService', () => {
         status: ShipmentStatus.PENDENTE,
         changedBy: adminUser.sub,
       });
+    });
+
+    it('aceita unidade de origem e data do envio', async () => {
+      const { service } = buildService({
+        units: [
+          buildUnit(),
+          buildUnit({ id: 'unit-2', name: 'Unidade Norte' }),
+        ],
+      });
+
+      const created = await service.create(
+        {
+          ...baseCreateDto,
+          originUnitId: 'unit-2',
+          shippedAt: '2026-06-12T08:00:00Z',
+        },
+        adminUser,
+      );
+
+      expect(created.originUnit).toEqual({
+        id: 'unit-2',
+        name: 'Unidade Norte',
+      });
+      expect(created.shippedAt.toISOString()).toBe('2026-06-12T08:00:00.000Z');
     });
 
     it('gera protocolos únicos sob criação concorrente', async () => {
@@ -377,13 +603,17 @@ describe('ShipmentsService', () => {
         ],
       });
 
-      const byStatus = await service.findAll({
-        status: ShipmentStatus.ENTREGUE,
-      });
-      expect(byStatus.map((item) => item.id)).toEqual(['shipment-2']);
+      const byStatus = await service.findAll(
+        { status: ShipmentStatus.ENTREGUE },
+        adminUser,
+      );
+      expect(byStatus.data.map((item) => item.id)).toEqual(['shipment-2']);
 
-      const byUnit = await service.findAll({ destinationUnitId: 'unit-1' });
-      expect(byUnit.map((item) => item.id)).toEqual(['shipment-1']);
+      const byUnit = await service.findAll(
+        { destinationUnitId: 'unit-1' },
+        adminUser,
+      );
+      expect(byUnit.data.map((item) => item.id)).toEqual(['shipment-1']);
     });
 
     it('filtra por período de criação', async () => {
@@ -400,12 +630,73 @@ describe('ShipmentsService', () => {
         ],
       });
 
-      const result = await service.findAll({
-        from: '2026-06-05',
-        to: '2026-06-15',
+      const result = await service.findAll(
+        { from: '2026-06-05', to: '2026-06-15' },
+        adminUser,
+      );
+
+      expect(result.data.map((item) => item.id)).toEqual(['shipment-2']);
+    });
+
+    it('Conferente só vê envios destinados à sua unidade, ignorando outros filtros', async () => {
+      const conferenteUser: AuthenticatedUser = {
+        sub: 'user-conferente',
+        email: 'conf@logflow.com',
+        role: Role.CONFERENTE,
+      };
+
+      const { service } = buildService({
+        shipments: [
+          buildShipment({ id: 'shipment-1', destinationUnitId: 'unit-1' }),
+          buildShipment({ id: 'shipment-2', destinationUnitId: 'unit-2' }),
+        ],
+        units: [
+          buildUnit(),
+          buildUnit({ id: 'unit-2', name: 'Unidade Norte' }),
+        ],
+        users: [
+          buildUser(),
+          buildUser({
+            id: 'user-conferente',
+            name: 'Conferente Norte',
+            email: 'conf@logflow.com',
+            role: Role.CONFERENTE,
+            unitId: 'unit-2',
+          }),
+        ],
       });
 
-      expect(result.map((item) => item.id)).toEqual(['shipment-2']);
+      const result = await service.findAll(
+        { destinationUnitId: 'unit-1' },
+        conferenteUser,
+      );
+
+      expect(result.data.map((item) => item.id)).toEqual(['shipment-2']);
+    });
+
+    it('lança 403 se o Conferente não estiver vinculado a uma unidade', async () => {
+      const conferenteUser: AuthenticatedUser = {
+        sub: 'user-conferente',
+        email: 'conf@logflow.com',
+        role: Role.CONFERENTE,
+      };
+
+      const { service } = buildService({
+        users: [
+          buildUser(),
+          buildUser({
+            id: 'user-conferente',
+            name: 'Conferente sem unidade',
+            email: 'conf@logflow.com',
+            role: Role.CONFERENTE,
+            unitId: null,
+          }),
+        ],
+      });
+
+      await expect(service.findAll({}, conferenteUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -414,7 +705,7 @@ describe('ShipmentsService', () => {
       const { service } = buildService();
 
       await expect(
-        service.findByProtocolNumber('00000000-0000'),
+        service.findByProtocolNumber('00000000-0000', adminUser),
       ).rejects.toThrow(NotFoundException);
     });
 
@@ -444,12 +735,40 @@ describe('ShipmentsService', () => {
 
       const result = await service.findByProtocolNumber(
         shipment.protocolNumber,
+        adminUser,
       );
 
       expect(result.statusHistory.map((entry) => entry.status)).toEqual([
         ShipmentStatus.PENDENTE,
         ShipmentStatus.EM_TRANSITO,
       ]);
+    });
+
+    it('lança 403 quando o Conferente busca um envio de outra unidade', async () => {
+      const conferenteUser: AuthenticatedUser = {
+        sub: 'user-conferente',
+        email: 'conf@logflow.com',
+        role: Role.CONFERENTE,
+      };
+
+      const shipment = buildShipment({ destinationUnitId: 'unit-1' });
+      const { service } = buildService({
+        shipments: [shipment],
+        users: [
+          buildUser(),
+          buildUser({
+            id: 'user-conferente',
+            name: 'Conferente Norte',
+            email: 'conf@logflow.com',
+            role: Role.CONFERENTE,
+            unitId: 'unit-2',
+          }),
+        ],
+      });
+
+      await expect(
+        service.findByProtocolNumber(shipment.protocolNumber, conferenteUser),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -542,6 +861,297 @@ describe('ShipmentsService', () => {
       );
 
       expect(updated.status).toBe(ShipmentStatus.CANCELADO);
+    });
+
+    it('EM_TRANSITO -> ENTREGUE enfileira a geração do PDF de comprovante', async () => {
+      const { service, pdfQueue } = buildService({
+        shipments: [
+          buildShipment({
+            status: ShipmentStatus.EM_TRANSITO,
+            transporterId: 'driver-1',
+          }),
+        ],
+      });
+
+      const updated = await service.updateStatus(
+        'shipment-1',
+        { status: ShipmentStatus.ENTREGUE },
+        adminUser,
+      );
+
+      expect(updated.status).toBe(ShipmentStatus.ENTREGUE);
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(pdfQueue.add).toHaveBeenCalledWith(GENERATE_SHIPMENT_PDF_JOB, {
+        shipmentId: 'shipment-1',
+      });
+    });
+  });
+
+  describe('confirmReceipt', () => {
+    const conferenteUser: AuthenticatedUser = {
+      sub: 'user-conferente',
+      email: 'conf@logflow.com',
+      role: Role.CONFERENTE,
+    };
+
+    it('lança 404 para envio inexistente', async () => {
+      const { service } = buildService();
+
+      await expect(
+        service.confirmReceipt('nonexistent', {}, adminUser),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lança 409 quando o envio já está CONFIRMADO', async () => {
+      const { service } = buildService({
+        shipments: [buildShipment({ status: ShipmentStatus.CONFIRMADO })],
+      });
+
+      await expect(
+        service.confirmReceipt('shipment-1', {}, adminUser),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('lança 409 quando o envio está CANCELADO', async () => {
+      const { service } = buildService({
+        shipments: [buildShipment({ status: ShipmentStatus.CANCELADO })],
+      });
+
+      await expect(
+        service.confirmReceipt('shipment-1', {}, adminUser),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('lança 403 quando o Conferente não pertence à unidade de destino', async () => {
+      const { service } = buildService({
+        shipments: [
+          buildShipment({
+            status: ShipmentStatus.ENTREGUE,
+            destinationUnitId: 'unit-1',
+          }),
+        ],
+        users: [
+          buildUser(),
+          buildUser({
+            id: 'user-conferente',
+            name: 'Conferente Norte',
+            email: 'conf@logflow.com',
+            role: Role.CONFERENTE,
+            unitId: 'unit-2',
+          }),
+        ],
+      });
+
+      await expect(
+        service.confirmReceipt('shipment-1', {}, conferenteUser),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('confirma o recebimento, cria o ShipmentReceipt e registra CONFIRMADO na timeline', async () => {
+      const { service, receipts, statusHistory } = buildService({
+        shipments: [
+          buildShipment({
+            status: ShipmentStatus.ENTREGUE,
+            destinationUnitId: 'unit-1',
+          }),
+        ],
+        users: [
+          buildUser(),
+          buildUser({
+            id: 'user-conferente',
+            name: 'Conferente Central',
+            email: 'conf@logflow.com',
+            role: Role.CONFERENTE,
+            unitId: 'unit-1',
+          }),
+        ],
+      });
+
+      const updated = await service.confirmReceipt(
+        'shipment-1',
+        { notes: 'Recebido sem avarias' },
+        conferenteUser,
+        '127.0.0.1',
+      );
+
+      expect(updated.status).toBe(ShipmentStatus.CONFIRMADO);
+      expect(updated.receipt).toMatchObject({
+        shipmentId: 'shipment-1',
+        confirmedBy: 'user-conferente',
+        notes: 'Recebido sem avarias',
+        ipAddress: '127.0.0.1',
+      });
+
+      expect(receipts).toHaveLength(1);
+      expect(statusHistory).toHaveLength(1);
+      expect(statusHistory[0]).toMatchObject({
+        shipmentId: 'shipment-1',
+        status: ShipmentStatus.CONFIRMADO,
+        changedBy: 'user-conferente',
+        notes: 'Recebido sem avarias',
+      });
+    });
+
+    it('a partir de PENDENTE/EM_TRANSITO, marca como ENTREGUE e confirma o recebimento em uma única ação', async () => {
+      const { service, receipts, statusHistory, pdfQueue } = buildService({
+        shipments: [
+          buildShipment({
+            status: ShipmentStatus.PENDENTE,
+            destinationUnitId: 'unit-1',
+          }),
+        ],
+        users: [
+          buildUser(),
+          buildUser({
+            id: 'user-conferente',
+            name: 'Conferente Central',
+            email: 'conf@logflow.com',
+            role: Role.CONFERENTE,
+            unitId: 'unit-1',
+          }),
+        ],
+      });
+
+      const updated = await service.confirmReceipt(
+        'shipment-1',
+        { notes: 'Chegou na unidade' },
+        conferenteUser,
+        '127.0.0.1',
+      );
+
+      expect(updated.status).toBe(ShipmentStatus.CONFIRMADO);
+      expect(receipts).toHaveLength(1);
+      expect(statusHistory).toHaveLength(2);
+      expect(statusHistory[0]).toMatchObject({
+        shipmentId: 'shipment-1',
+        status: ShipmentStatus.ENTREGUE,
+        changedBy: 'user-conferente',
+      });
+      expect(statusHistory[1]).toMatchObject({
+        shipmentId: 'shipment-1',
+        status: ShipmentStatus.CONFIRMADO,
+        changedBy: 'user-conferente',
+        notes: 'Chegou na unidade',
+      });
+      // eslint-disable-next-line @typescript-eslint/unbound-method
+      expect(pdfQueue.add).toHaveBeenCalledWith(GENERATE_SHIPMENT_PDF_JOB, {
+        shipmentId: 'shipment-1',
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('lança 404 para envio inexistente', async () => {
+      const { service } = buildService();
+
+      await expect(
+        service.update(
+          'nonexistent',
+          { observations: 'Nova observação' },
+          adminUser,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('lança 409 quando o envio está CANCELADO', async () => {
+      const { service } = buildService({
+        shipments: [buildShipment({ status: ShipmentStatus.CANCELADO })],
+      });
+
+      await expect(
+        service.update(
+          'shipment-1',
+          { observations: 'Nova observação' },
+          adminUser,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('rejeita motorista (transportador) inexistente', async () => {
+      const { service } = buildService({
+        shipments: [buildShipment()],
+        items: [buildShipmentItem()],
+      });
+
+      await expect(
+        service.update('shipment-1', { transporterId: 'driver-x' }, adminUser),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('não altera nada e não cria entrada na timeline quando nenhum campo é informado', async () => {
+      const { service, statusHistory } = buildService({
+        shipments: [buildShipment()],
+        items: [buildShipmentItem()],
+      });
+
+      const result = await service.update('shipment-1', {}, adminUser);
+
+      expect(result.observations).toBeNull();
+      expect(statusHistory).toHaveLength(0);
+    });
+
+    it('atualiza itens, observações e transportador, registrando a edição na timeline com o status atual', async () => {
+      const { service, items, statusHistory } = buildService({
+        shipments: [buildShipment({ status: ShipmentStatus.EM_TRANSITO })],
+        items: [buildShipmentItem()],
+      });
+
+      const updated = await service.update(
+        'shipment-1',
+        {
+          items: [
+            {
+              description: 'Caixa revisada',
+              quantity: 3,
+              unit: ShipmentItemUnit.CX,
+            },
+          ],
+          observations: 'Corrigido endereço de entrega',
+          transporterId: 'driver-1',
+        },
+        adminUser,
+      );
+
+      expect(updated.observations).toBe('Corrigido endereço de entrega');
+      expect(updated.transporterId).toBe('driver-1');
+      expect(updated.items).toHaveLength(1);
+      expect(updated.items[0]).toMatchObject({
+        description: 'Caixa revisada',
+        unit: ShipmentItemUnit.CX,
+      });
+      expect(items).toHaveLength(1);
+
+      expect(statusHistory).toHaveLength(1);
+      expect(statusHistory[0]).toMatchObject({
+        shipmentId: 'shipment-1',
+        status: ShipmentStatus.EM_TRANSITO,
+        changedBy: adminUser.sub,
+        notes: 'Envio editado (itens, observações, transportador).',
+      });
+    });
+
+    it('permite editar um envio CONFIRMADO e registra a edição na timeline para auditoria', async () => {
+      const { service, statusHistory } = buildService({
+        shipments: [buildShipment({ status: ShipmentStatus.CONFIRMADO })],
+        items: [buildShipmentItem()],
+      });
+
+      const updated = await service.update(
+        'shipment-1',
+        { observations: 'Ajuste pós-confirmação' },
+        adminUser,
+      );
+
+      expect(updated.status).toBe(ShipmentStatus.CONFIRMADO);
+      expect(updated.observations).toBe('Ajuste pós-confirmação');
+
+      expect(statusHistory).toHaveLength(1);
+      expect(statusHistory[0]).toMatchObject({
+        shipmentId: 'shipment-1',
+        status: ShipmentStatus.CONFIRMADO,
+        changedBy: adminUser.sub,
+        notes: 'Envio editado (observações).',
+      });
     });
   });
 });

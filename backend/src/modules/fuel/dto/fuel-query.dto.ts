@@ -1,7 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsOptional, IsUUID } from 'class-validator';
 
-export class FuelQueryDto {
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+
+export class FuelQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ description: 'Filtrar pelo id do veículo.' })
   @IsOptional()
   @IsUUID('all', { message: 'Veículo inválido.' })

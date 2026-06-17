@@ -5,7 +5,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 import { DailyLogsPage } from '@/pages/DailyLogsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -20,7 +20,6 @@ import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { RoutesPage } from '@/pages/RoutesPage';
 import { ShipmentsPage } from '@/pages/ShipmentsPage';
-import { TripsPage } from '@/pages/TripsPage';
 import { UnitsPage } from '@/pages/UnitsPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { VehiclesPage } from '@/pages/VehiclesPage';
@@ -34,7 +33,6 @@ const PAGES_BY_PATH: Record<string, ReactNode> = {
   '/veiculos': <VehiclesPage />,
   '/motoristas': <DriversPage />,
   '/registro-diario': <DailyLogsPage />,
-  '/viagens': <TripsPage />,
   '/abastecimentos': <FuelPage />,
   '/manutencoes': <MaintenancePage />,
   '/ocorrencias': <IncidentsPage />,
@@ -43,6 +41,16 @@ const PAGES_BY_PATH: Record<string, ReactNode> = {
   '/metas': <GoalsPage />,
   '/relatorios': <ReportsPage />,
 };
+
+function RootRoute() {
+  const { hasRole } = useAuth();
+
+  if (hasRole('CONFERENTE')) {
+    return <Navigate to="/envios" replace />;
+  }
+
+  return <DashboardPage />;
+}
 
 function App() {
   return (
@@ -53,7 +61,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
-                <Route path="/" element={<DashboardPage />} />
+                <Route path="/" element={<RootRoute />} />
                 {navItems
                   .filter((item) => item.to !== '/')
                   .map((item) => (

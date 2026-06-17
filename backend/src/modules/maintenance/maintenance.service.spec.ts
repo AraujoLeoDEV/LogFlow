@@ -76,6 +76,19 @@ interface FindFirstVehicleArgs {
   where: { id: string; deletedAt?: Date | null };
 }
 
+interface MaintenanceWhere {
+  vehicleId?: string;
+  type?: MaintenanceType;
+  category?: MaintenanceCategory;
+  performedDate?: { gte?: Date; lte?: Date };
+}
+
+interface FindManyMaintenanceArgs {
+  where?: MaintenanceWhere;
+  skip?: number;
+  take?: number;
+}
+
 interface CreateMaintenanceArgs {
   data: Prisma.MaintenanceCreateInput;
 }
@@ -162,9 +175,44 @@ function buildService(
     },
   );
 
-  const findManyMaintenance = jest.fn(() =>
-    Promise.resolve(
-      maintenances.map((maintenance) => {
+  const filterMaintenance = (where?: MaintenanceWhere) => {
+    let results = [...maintenances];
+    if (where?.vehicleId) {
+      results = results.filter((item) => item.vehicleId === where.vehicleId);
+    }
+    if (where?.type) {
+      results = results.filter((item) => item.type === where.type);
+    }
+    if (where?.category) {
+      results = results.filter((item) => item.category === where.category);
+    }
+    if (where?.performedDate?.gte) {
+      const gte = where.performedDate.gte;
+      results = results.filter(
+        (item) => !!item.performedDate && item.performedDate >= gte,
+      );
+    }
+    if (where?.performedDate?.lte) {
+      const lte = where.performedDate.lte;
+      results = results.filter(
+        (item) => !!item.performedDate && item.performedDate <= lte,
+      );
+    }
+
+    return results;
+  };
+
+  const findManyMaintenance = jest.fn((args: FindManyMaintenanceArgs = {}) => {
+    let results = filterMaintenance(args.where);
+
+    if (args.skip !== undefined || args.take !== undefined) {
+      const skip = args.skip ?? 0;
+      const take = args.take ?? results.length;
+      results = results.slice(skip, skip + take);
+    }
+
+    return Promise.resolve(
+      results.map((maintenance) => {
         const vehicle = vehicles.find(
           (item) => item.id === maintenance.vehicleId,
         );
@@ -178,7 +226,11 @@ function buildService(
           },
         };
       }),
-    ),
+    );
+  });
+
+  const countMaintenance = jest.fn((args: { where?: MaintenanceWhere } = {}) =>
+    Promise.resolve(filterMaintenance(args.where).length),
   );
 
   const updateVehicle = jest.fn((args: UpdateVehicleArgs): Promise<Vehicle> => {
@@ -203,6 +255,7 @@ function buildService(
     maintenance: {
       create: createMaintenance,
       findMany: findManyMaintenance,
+      count: countMaintenance,
     },
     $transaction: transaction,
   } as unknown as PrismaService;
@@ -326,8 +379,9 @@ describe('MaintenanceService', () => {
 
       const result = await service.findAll({});
 
-      expect(result).toHaveLength(1);
-      expect(result[0].vehicle).toEqual({
+      expect(result.data).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.data[0].vehicle).toEqual({
         id: 'vehicle-1',
         plate: 'ABC1D23',
         model: 'Fiat Strada',

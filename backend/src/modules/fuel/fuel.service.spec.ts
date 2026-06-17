@@ -28,12 +28,16 @@ interface FindFirstFuelArgs {
   where: { vehicleId: string };
 }
 
+interface FuelWhere {
+  vehicleId?: string;
+  driverId?: string;
+  date?: { gte?: Date; lte?: Date };
+}
+
 interface FindManyFuelArgs {
-  where?: {
-    vehicleId?: string;
-    driverId?: string;
-    date?: { gte?: Date; lte?: Date };
-  };
+  where?: FuelWhere;
+  skip?: number;
+  take?: number;
 }
 
 interface CreateFuelArgs {
@@ -183,25 +187,33 @@ function buildService(
     },
   );
 
-  const findManyFuel = jest.fn((args: FindManyFuelArgs = {}) => {
+  const filterFuel = (where?: FuelWhere) => {
     let results = [...fuelRecords];
-    if (args.where?.vehicleId) {
-      results = results.filter(
-        (fuel) => fuel.vehicleId === args.where?.vehicleId,
-      );
+    if (where?.vehicleId) {
+      results = results.filter((fuel) => fuel.vehicleId === where.vehicleId);
     }
-    if (args.where?.driverId) {
-      results = results.filter(
-        (fuel) => fuel.driverId === args.where?.driverId,
-      );
+    if (where?.driverId) {
+      results = results.filter((fuel) => fuel.driverId === where.driverId);
     }
-    if (args.where?.date?.gte) {
-      const gte = args.where.date.gte;
+    if (where?.date?.gte) {
+      const gte = where.date.gte;
       results = results.filter((fuel) => fuel.date >= gte);
     }
-    if (args.where?.date?.lte) {
-      const lte = args.where.date.lte;
+    if (where?.date?.lte) {
+      const lte = where.date.lte;
       results = results.filter((fuel) => fuel.date <= lte);
+    }
+
+    return results;
+  };
+
+  const findManyFuel = jest.fn((args: FindManyFuelArgs = {}) => {
+    let results = filterFuel(args.where);
+
+    if (args.skip !== undefined || args.take !== undefined) {
+      const skip = args.skip ?? 0;
+      const take = args.take ?? results.length;
+      results = results.slice(skip, skip + take);
     }
 
     return Promise.resolve(
@@ -224,6 +236,10 @@ function buildService(
       })),
     );
   });
+
+  const countFuel = jest.fn((args: { where?: FuelWhere } = {}) =>
+    Promise.resolve(filterFuel(args.where).length),
+  );
 
   const createFuel = jest.fn((args: CreateFuelArgs): Promise<Fuel> => {
     const created = buildFuel({
@@ -251,6 +267,7 @@ function buildService(
     fuel: {
       findFirst: findFirstFuel,
       findMany: findManyFuel,
+      count: countFuel,
       create: createFuel,
     },
     vehicle: {
@@ -431,8 +448,9 @@ describe('FuelService', () => {
 
       const result = await service.findAll({}, motoristaUser);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('fuel-1');
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('fuel-1');
+      expect(result.total).toBe(1);
     });
   });
 

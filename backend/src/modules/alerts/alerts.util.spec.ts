@@ -278,11 +278,11 @@ describe('buildDriverCnhAlerts', () => {
 });
 
 describe('buildTripDelayedAlert', () => {
-  it('calcula o prazo a partir de startedAt + estimatedDurationMinutes e gera severidade CRITICO', () => {
+  it('calcula o prazo a partir de departureAt + estimatedDurationMinutes e gera severidade CRITICO', () => {
     const trip = {
       id: 't1',
       destination: 'Filial - Zona Sul',
-      startedAt: new Date('2026-06-12T08:00:00.000Z'),
+      departureAt: new Date('2026-06-12T08:00:00.000Z'),
       estimatedDurationMinutes: 120,
       driverName: 'Motorista Teste',
       driverUserId: 'user-1',
@@ -304,5 +304,22 @@ describe('buildTripDelayedAlert', () => {
     expect(alert.message).toContain('ABC1D23');
     expect(alert.message).toContain('Filial - Zona Sul');
     expect(alert.message).toContain('12/06/2026 10:00');
+  });
+
+  it('omite o destino da mensagem quando destination é null', () => {
+    const trip = {
+      id: 't1',
+      destination: null,
+      departureAt: new Date('2026-06-12T08:00:00.000Z'),
+      estimatedDurationMinutes: 120,
+      driverName: 'Motorista Teste',
+      driverUserId: 'user-1',
+      vehiclePlate: 'ABC1D23',
+    };
+
+    const alert = buildTripDelayedAlert(trip);
+
+    expect(alert.message).not.toContain('destino');
+    expect(alert.message).toContain('Motorista Teste');
   });
 });

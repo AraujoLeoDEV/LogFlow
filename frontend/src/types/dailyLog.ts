@@ -1,4 +1,6 @@
-export type DailyLogStatus = 'EM_ANDAMENTO' | 'FINALIZADO';
+import type { PaginationQuery } from './pagination';
+
+export type DailyLogStatus = 'EM_ANDAMENTO' | 'FINALIZADO' | 'ATRASADO';
 
 export interface DailyLog {
   id: string;
@@ -12,6 +14,7 @@ export interface DailyLog {
   kmDriven: string | null;
   totalDurationMinutes: number | null;
   avgSpeedKmh: string | null;
+  destination: string | null;
   observations: string | null;
   status: DailyLogStatus;
   createdAt: string;
@@ -30,6 +33,7 @@ export interface CreateDailyLogPayload {
   routeId?: string;
   departureAt?: string;
   startKm: number;
+  destination?: string;
   observations?: string;
 }
 
@@ -39,7 +43,7 @@ export interface ReturnDailyLogPayload {
   observations?: string;
 }
 
-export interface DailyLogQuery {
+export interface DailyLogQuery extends PaginationQuery {
   vehicleId?: string;
   driverId?: string;
   routeId?: string;

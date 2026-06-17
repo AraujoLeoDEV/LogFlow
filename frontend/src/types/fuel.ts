@@ -1,3 +1,4 @@
+import type { PaginationQuery } from './pagination';
 import type { FuelType } from './vehicle';
 
 export interface Fuel {
@@ -30,7 +31,7 @@ export interface CreateFuelPayload {
   date?: string;
 }
 
-export interface FuelQuery {
+export interface FuelQuery extends PaginationQuery {
   vehicleId?: string;
   driverId?: string;
   from?: string;

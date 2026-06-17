@@ -21,6 +21,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -34,6 +35,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { fuelTypeLabels, fuelTypeOptions } from '@/lib/fuelTypes';
 import type { CreateFuelPayload, FuelIndicators, FuelQuery, FuelWithRelations } from '@/types/fuel';
 import type { Driver } from '@/types/driver';
+import type { PaginatedResult } from '@/types/pagination';
 import type { FuelType, Vehicle } from '@/types/vehicle';
 
 const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -101,6 +103,7 @@ export function FuelPage() {
   const canViewIndicators = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
 
   const [filters, setFilters] = useState<FuelQuery>({});
+  const [page, setPage] = useState(1);
 
   const { data: vehicles } = useQuery({
     queryKey: ['vehicles'],
@@ -114,8 +117,13 @@ export function FuelPage() {
   });
 
   const { data: history, isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['fuel', 'history', filters],
-    queryFn: async () => (await api.get<FuelWithRelations[]>('/fuel', { params: filters })).data,
+    queryKey: ['fuel', 'history', filters, page],
+    queryFn: async () =>
+      (
+        await api.get<PaginatedResult<FuelWithRelations>>('/fuel', {
+          params: { ...filters, page },
+        })
+      ).data,
     enabled: canRegister,
   });
 
@@ -168,6 +176,7 @@ export function FuelPage() {
 
   function handleFilterChange<K extends keyof FuelQuery>(key: K, value: string) {
     setFilters((prev) => ({ ...prev, [key]: (value || undefined) as FuelQuery[K] }));
+    setPage(1);
   }
 
   return (
@@ -501,14 +510,14 @@ export function FuelPage() {
                     </td>
                   </tr>
                 )}
-                {!isLoadingHistory && history?.length === 0 && (
+                {!isLoadingHistory && history?.data.length === 0 && (
                   <tr>
                     <td colSpan={9} className="px-2 py-6 text-center text-muted-foreground">
                       Nenhum abastecimento encontrado.
                     </td>
                   </tr>
                 )}
-                {history?.map((fuel) => (
+                {history?.data.map((fuel) => (
                   <tr key={fuel.id} className="border-b last:border-0">
                     <td className="px-2 py-2 text-muted-foreground">{formatDateTime(fuel.date)}</td>
                     <td className="px-2 py-2 font-medium">
@@ -533,6 +542,12 @@ export function FuelPage() {
                 ))}
               </tbody>
             </table>
+
+            <Pagination
+              page={history?.page ?? page}
+              totalPages={history?.totalPages ?? 1}
+              onPageChange={setPage}
+            />
           </CardContent>
         </Card>
       )}

@@ -20,6 +20,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -37,6 +38,7 @@ import type {
   MaintenanceWithVehicle,
   ScheduleEntry,
 } from '@/types/maintenance';
+import type { PaginatedResult } from '@/types/pagination';
 import type { Vehicle } from '@/types/vehicle';
 
 const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' });
@@ -114,6 +116,7 @@ export function MaintenancePage() {
   const canViewHistory = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
 
   const [filters, setFilters] = useState<MaintenanceQuery>({});
+  const [page, setPage] = useState(1);
 
   const { data: vehicles } = useQuery({
     queryKey: ['vehicles'],
@@ -128,9 +131,13 @@ export function MaintenancePage() {
   });
 
   const { data: history, isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['maintenance', 'history', filters],
+    queryKey: ['maintenance', 'history', filters, page],
     queryFn: async () =>
-      (await api.get<MaintenanceWithVehicle[]>('/maintenance', { params: filters })).data,
+      (
+        await api.get<PaginatedResult<MaintenanceWithVehicle>>('/maintenance', {
+          params: { ...filters, page },
+        })
+      ).data,
     enabled: canViewHistory,
   });
 
@@ -174,6 +181,7 @@ export function MaintenancePage() {
 
   function handleFilterChange<K extends keyof MaintenanceQuery>(key: K, value: string) {
     setFilters((prev) => ({ ...prev, [key]: (value || undefined) as MaintenanceQuery[K] }));
+    setPage(1);
   }
 
   return (
@@ -519,14 +527,14 @@ export function MaintenancePage() {
                     </td>
                   </tr>
                 )}
-                {!isLoadingHistory && history?.length === 0 && (
+                {!isLoadingHistory && history?.data.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
                       Nenhuma manutenção encontrada.
                     </td>
                   </tr>
                 )}
-                {history?.map((maintenance) => (
+                {history?.data.map((maintenance) => (
                   <tr key={maintenance.id} className="border-b last:border-0">
                     <td className="px-2 py-2 text-muted-foreground">
                       {formatDateTime(maintenance.createdAt)}
@@ -551,6 +559,12 @@ export function MaintenancePage() {
                 ))}
               </tbody>
             </table>
+
+            <Pagination
+              page={history?.page ?? page}
+              totalPages={history?.totalPages ?? 1}
+              onPageChange={setPage}
+            />
           </CardContent>
         </Card>
       )}

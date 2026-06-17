@@ -1,9 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 
+import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
 import { ShipmentStatus } from '../../../../generated/prisma/client';
 
-export class ShipmentQueryDto {
+export class ShipmentQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({
     enum: ShipmentStatus,
     description: 'Filtrar pelo status.',

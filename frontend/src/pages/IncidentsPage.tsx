@@ -19,6 +19,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -41,6 +42,7 @@ import type {
   IncidentWithRelations,
 } from '@/types/incident';
 import type { Driver } from '@/types/driver';
+import type { PaginatedResult } from '@/types/pagination';
 import type { Vehicle } from '@/types/vehicle';
 
 const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
@@ -99,6 +101,7 @@ export function IncidentsPage() {
   const canViewIndicators = hasRole('ADMIN', 'COORDENACAO');
 
   const [filters, setFilters] = useState<IncidentQuery>({});
+  const [page, setPage] = useState(1);
 
   const { data: vehicles } = useQuery({
     queryKey: ['vehicles'],
@@ -112,9 +115,13 @@ export function IncidentsPage() {
   });
 
   const { data: history, isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['incidents', 'history', filters],
+    queryKey: ['incidents', 'history', filters, page],
     queryFn: async () =>
-      (await api.get<IncidentWithRelations[]>('/incidents', { params: filters })).data,
+      (
+        await api.get<PaginatedResult<IncidentWithRelations>>('/incidents', {
+          params: { ...filters, page },
+        })
+      ).data,
   });
 
   const { data: indicators, isLoading: isLoadingIndicators } = useQuery({
@@ -163,6 +170,7 @@ export function IncidentsPage() {
 
   function handleFilterChange<K extends keyof IncidentQuery>(key: K, value: string) {
     setFilters((prev) => ({ ...prev, [key]: (value || undefined) as IncidentQuery[K] }));
+    setPage(1);
   }
 
   return (
@@ -613,14 +621,14 @@ export function IncidentsPage() {
                   </td>
                 </tr>
               )}
-              {!isLoadingHistory && history?.length === 0 && (
+              {!isLoadingHistory && history?.data.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-2 py-6 text-center text-muted-foreground">
                     Nenhuma ocorrência encontrada.
                   </td>
                 </tr>
               )}
-              {history?.map((incident) => (
+              {history?.data.map((incident) => (
                 <tr key={incident.id} className="border-b last:border-0">
                   <td className="px-2 py-2 text-muted-foreground">
                     {formatDateTime(incident.date)}
@@ -645,6 +653,12 @@ export function IncidentsPage() {
               ))}
             </tbody>
           </table>
+
+          <Pagination
+            page={history?.page ?? page}
+            totalPages={history?.totalPages ?? 1}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
     </div>

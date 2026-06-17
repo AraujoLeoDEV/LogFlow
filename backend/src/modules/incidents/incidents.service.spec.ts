@@ -135,15 +135,19 @@ interface FindFirstDriverArgs {
   where: { id?: string; userId?: string; deletedAt?: Date | null };
 }
 
+interface IncidentWhere {
+  vehicleId?: string;
+  driverId?: string;
+  category?: IncidentCategory;
+  type?: IncidentType;
+  severity?: IncidentSeverity;
+  date?: { gte?: Date; lte?: Date };
+}
+
 interface FindManyIncidentArgs {
-  where?: {
-    vehicleId?: string;
-    driverId?: string;
-    category?: IncidentCategory;
-    type?: IncidentType;
-    severity?: IncidentSeverity;
-    date?: { gte?: Date; lte?: Date };
-  };
+  where?: IncidentWhere;
+  skip?: number;
+  take?: number;
 }
 
 interface CreateIncidentArgs {
@@ -237,24 +241,24 @@ function buildService(
     return Promise.resolve(withRelations(created));
   });
 
-  const findManyIncident = jest.fn((args: FindManyIncidentArgs = {}) => {
+  const filterIncidents = (where?: IncidentWhere) => {
     let results = [...incidents];
-    const where = args.where ?? {};
+    where = where ?? {};
 
     if (where.vehicleId) {
-      results = results.filter((item) => item.vehicleId === where.vehicleId);
+      results = results.filter((item) => item.vehicleId === where?.vehicleId);
     }
     if (where.driverId) {
-      results = results.filter((item) => item.driverId === where.driverId);
+      results = results.filter((item) => item.driverId === where?.driverId);
     }
     if (where.category) {
-      results = results.filter((item) => item.category === where.category);
+      results = results.filter((item) => item.category === where?.category);
     }
     if (where.type) {
-      results = results.filter((item) => item.type === where.type);
+      results = results.filter((item) => item.type === where?.type);
     }
     if (where.severity) {
-      results = results.filter((item) => item.severity === where.severity);
+      results = results.filter((item) => item.severity === where?.severity);
     }
     if (where.date?.gte) {
       const gte = where.date.gte;
@@ -265,12 +269,24 @@ function buildService(
       results = results.filter((item) => item.date <= lte);
     }
 
-    return Promise.resolve(
-      [...results]
-        .sort((a, b) => b.date.getTime() - a.date.getTime())
-        .map(withRelations),
-    );
+    return [...results].sort((a, b) => b.date.getTime() - a.date.getTime());
+  };
+
+  const findManyIncident = jest.fn((args: FindManyIncidentArgs = {}) => {
+    let results = filterIncidents(args.where);
+
+    if (args.skip !== undefined || args.take !== undefined) {
+      const skip = args.skip ?? 0;
+      const take = args.take ?? results.length;
+      results = results.slice(skip, skip + take);
+    }
+
+    return Promise.resolve(results.map(withRelations));
   });
+
+  const countIncident = jest.fn((args: { where?: IncidentWhere } = {}) =>
+    Promise.resolve(filterIncidents(args.where).length),
+  );
 
   const findUniqueIncident = jest.fn((args: { where: { id: string } }) => {
     const found = incidents.find((item) => item.id === args.where.id);
@@ -325,6 +341,7 @@ function buildService(
     incident: {
       create: createIncident,
       findMany: findManyIncident,
+      count: countIncident,
       findUnique: findUniqueIncident,
       update: updateIncident,
       delete: deleteIncident,
@@ -488,8 +505,9 @@ describe('IncidentsService', () => {
 
       const result = await service.findAll({}, motoristaUser);
 
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('incident-1');
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('incident-1');
+      expect(result.total).toBe(1);
     });
 
     it('MOTORISTA sem motorista vinculado recebe lista vazia', async () => {
@@ -500,7 +518,8 @@ describe('IncidentsService', () => {
 
       const result = await service.findAll({}, motoristaUser);
 
-      expect(result).toEqual([]);
+      expect(result.data).toEqual([]);
+      expect(result.total).toBe(0);
     });
 
     it('filtra pelo veículo informado', async () => {
@@ -516,8 +535,8 @@ describe('IncidentsService', () => {
         adminUser,
       );
 
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('incident-2');
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0].id).toBe('incident-2');
     });
   });
 

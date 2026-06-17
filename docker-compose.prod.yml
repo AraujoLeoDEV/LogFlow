@@ -4,8 +4,9 @@
 # Diferencas em relacao ao docker-compose.yml (dev):
 # - builds com target "production" (sem bind mount / hot-reload)
 # - postgres/redis nao expoem portas no host (somente rede interna)
-# - reverse proxy Caddy com HTTPS automatico (Let's Encrypt) na frente de
-#   frontend (estatico via Nginx) e backend
+# - reverse proxy Caddy na frente de frontend (estatico via Nginx, porta 443)
+#   e backend (porta 8443), com HTTPS via "tls internal" (certificado
+#   autoassinado pela CA local do Caddy - ver Caddyfile)
 # - servico de backup periodico do Postgres
 
 services:
@@ -72,11 +73,13 @@ services:
     ports:
       - '80:80'
       - '443:443'
+      - '8443:8443'
     environment:
       APP_DOMAIN: ${APP_DOMAIN}
       API_DOMAIN: ${API_DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/certs:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

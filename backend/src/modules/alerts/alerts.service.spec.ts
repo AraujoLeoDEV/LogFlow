@@ -6,9 +6,9 @@ import {
   AlertSeverity,
   AlertStatus,
   AlertType,
+  DailyLogStatus,
   Prisma,
   Role,
-  TripStatus,
 } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { AlertsMailerService } from './alerts-mailer.service';
@@ -53,7 +53,7 @@ function buildAlert(overrides: Partial<Alert> = {}): Alert {
 interface BuildServiceOptions {
   vehicles?: unknown[];
   drivers?: unknown[];
-  delayedTrips?: unknown[];
+  delayedLogs?: unknown[];
   pendingAlerts?: Alert[];
   alerts?: Alert[];
   mailerEnabled?: boolean;
@@ -64,7 +64,7 @@ interface BuildServiceOptions {
 function buildService(options: BuildServiceOptions = {}) {
   const vehicles = options.vehicles ?? [];
   const drivers = options.drivers ?? [];
-  const delayedTrips = options.delayedTrips ?? [];
+  const delayedLogs = options.delayedLogs ?? [];
   const pendingAlerts = options.pendingAlerts ?? [];
   const alerts = options.alerts ?? [];
   const coordEmails = options.coordEmails ?? ['coord@empresa.com'];
@@ -100,7 +100,7 @@ function buildService(options: BuildServiceOptions = {}) {
 
   const findManyVehicle = jest.fn(() => Promise.resolve(vehicles));
   const findManyDriver = jest.fn(() => Promise.resolve(drivers));
-  const findManyTrip = jest.fn(() => Promise.resolve(delayedTrips));
+  const findManyDailyLog = jest.fn(() => Promise.resolve(delayedLogs));
 
   const findManyUser = jest.fn((args: { where: { role: Role } }) => {
     if (args.where.role === Role.COORDENACAO) {
@@ -113,7 +113,7 @@ function buildService(options: BuildServiceOptions = {}) {
   const prisma = {
     vehicle: { findMany: findManyVehicle },
     driver: { findMany: findManyDriver },
-    trip: { findMany: findManyTrip },
+    dailyLog: { findMany: findManyDailyLog },
     user: { findMany: findManyUser, findFirst: findFirstUser },
     alert: {
       createMany: createManyAlert,
@@ -288,17 +288,17 @@ describe('AlertsService.generateAlerts', () => {
     expect(result.emailed).toBe(0);
   });
 
-  it('gera alerta TRIP_DELAYED para viagens com status ATRASADA', async () => {
-    const trip = {
+  it('gera alerta TRIP_DELAYED para registros com status ATRASADO', async () => {
+    const log = {
       id: 'trip-1',
       destination: 'Filial - Zona Sul',
-      startedAt: new Date('2026-06-12T08:00:00.000Z'),
-      status: TripStatus.ATRASADA,
+      departureAt: new Date('2026-06-12T08:00:00.000Z'),
+      status: DailyLogStatus.ATRASADO,
       driver: { name: 'Motorista Teste', userId: 'user-driver' },
       vehicle: { plate: 'ABC1D23' },
       route: { estimatedDurationMinutes: 120 },
     };
-    const { service, createManyAlert } = buildService({ delayedTrips: [trip] });
+    const { service, createManyAlert } = buildService({ delayedLogs: [log] });
 
     const result = await service.generateAlerts();
 

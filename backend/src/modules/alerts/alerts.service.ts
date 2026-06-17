@@ -5,9 +5,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import {
   Alert,
   AlertStatus,
+  DailyLogStatus,
   Prisma,
   Role,
-  TripStatus,
 } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { AlertQueryDto } from './dto/alert-query.dto';
@@ -111,8 +111,8 @@ export class AlertsService {
       candidates.push(...buildDriverCnhAlerts(driver, now));
     }
 
-    const delayedTrips = await this.prisma.trip.findMany({
-      where: { status: TripStatus.ATRASADA },
+    const delayedLogs = await this.prisma.dailyLog.findMany({
+      where: { status: DailyLogStatus.ATRASADO },
       include: {
         driver: { select: { name: true, userId: true } },
         vehicle: { select: { plate: true } },
@@ -120,16 +120,16 @@ export class AlertsService {
       },
     });
 
-    for (const trip of delayedTrips) {
+    for (const log of delayedLogs) {
       candidates.push(
         buildTripDelayedAlert({
-          id: trip.id,
-          destination: trip.destination,
-          startedAt: trip.startedAt,
-          estimatedDurationMinutes: trip.route.estimatedDurationMinutes,
-          driverName: trip.driver.name,
-          driverUserId: trip.driver.userId,
-          vehiclePlate: trip.vehicle.plate,
+          id: log.id,
+          destination: log.destination,
+          departureAt: log.departureAt,
+          estimatedDurationMinutes: log.route.estimatedDurationMinutes,
+          driverName: log.driver.name,
+          driverUserId: log.driver.userId,
+          vehiclePlate: log.vehicle.plate,
         }),
       );
     }

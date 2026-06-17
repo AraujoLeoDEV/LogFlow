@@ -5,7 +5,8 @@ export type AlertType =
   | 'REVIEW'
   | 'OIL_CHANGE'
   | 'TIRE_CHANGE'
-  | 'TRIP_DELAYED';
+  | 'TRIP_DELAYED'
+  | 'SHIPMENT_CREATED';
 
 export type AlertSeverity = 'INFO' | 'AVISO' | 'CRITICO';
 

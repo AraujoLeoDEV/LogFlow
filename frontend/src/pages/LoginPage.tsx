@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AxiosError } from 'axios';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -9,6 +9,13 @@ import logoIcon from '@/assets/logo-icon.png';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -19,6 +26,9 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { APP_VERSION, changelog } from '@/lib/changelog';
+
+const WHATS_NEW_STORAGE_KEY = 'whats-new-last-seen-version';
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Informe seu e-mail.').email('Informe um e-mail válido.'),
@@ -37,11 +47,25 @@ export function LoginPage() {
   const location = useLocation();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [whatsNewOpen, setWhatsNewOpen] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
   });
+
+  useEffect(() => {
+    const lastSeenVersion = localStorage.getItem(WHATS_NEW_STORAGE_KEY);
+    if (lastSeenVersion !== APP_VERSION) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWhatsNewOpen(true);
+    }
+  }, []);
+
+  function closeWhatsNew() {
+    localStorage.setItem(WHATS_NEW_STORAGE_KEY, APP_VERSION);
+    setWhatsNewOpen(false);
+  }
 
   if (!isLoading && user) {
     const redirectTo = (location.state as LocationState | null)?.from ?? '/';
@@ -133,6 +157,42 @@ export function LoginPage() {
           </Form>
         </CardContent>
       </Card>
+      <button
+        type="button"
+        onClick={() => setWhatsNewOpen(true)}
+        className="relative mt-4 text-sm text-white/70 underline-offset-4 hover:text-white hover:underline"
+      >
+        O que há de novo · {APP_VERSION}
+      </button>
+
+      <Dialog
+        open={whatsNewOpen}
+        onOpenChange={(open) => {
+          if (!open) closeWhatsNew();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>O que há de novo</DialogTitle>
+            <DialogDescription>Últimas melhorias e correções do sistema.</DialogDescription>
+          </DialogHeader>
+          <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto p-4 pt-0">
+            {changelog.map((entry) => (
+              <div key={entry.version}>
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <span className="font-medium">{entry.version}</span>
+                  <span className="text-xs text-muted-foreground">{entry.date}</span>
+                </div>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {entry.items.map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

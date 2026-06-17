@@ -1,13 +1,20 @@
-# Reverse proxy com HTTPS automatico (Let's Encrypt) - Fase 15 (Deploy e Producao).
+# Reverse proxy com HTTPS - Fase 15 (Deploy e Producao).
 # APP_DOMAIN e API_DOMAIN sao lidos do ambiente do container caddy
 # (definidos em .env.production e injetados via docker-compose.prod.yml).
+#
+# Implantacao em rede interna com IP fixo (sem dominio publico).
+# Certificado RSA autoassinado com IP SAN gerado via openssl e montado
+# em /certs — evita o problema RFC 6066 (navegadores nao enviam SNI
+# para URLs baseadas em IP, causando internal_error no TLS).
 
 {$APP_DOMAIN} {
 	encode gzip
+	tls /certs/cert.pem /certs/key.pem
 	reverse_proxy frontend:80
 }
 
 {$API_DOMAIN} {
 	encode gzip
+	tls /certs/cert.pem /certs/key.pem
 	reverse_proxy backend:3000
 }

@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
+import type { PaginatedResult } from '../../common/utils/pagination.util';
 import { Fuel, Role } from '../../../generated/prisma/client';
 import { CreateFuelDto } from './dto/create-fuel.dto';
 import { FuelQueryDto } from './dto/fuel-query.dto';
@@ -24,7 +25,7 @@ export class FuelController {
   findAll(
     @Query() query: FuelQueryDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<FuelWithRelations[]> {
+  ): Promise<PaginatedResult<FuelWithRelations>> {
     return this.fuelService.findAll(query, user);
   }
 

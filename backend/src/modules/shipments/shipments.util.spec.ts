@@ -91,10 +91,22 @@ describe('isValidShipmentTransition', () => {
 });
 
 describe('isFinalShipmentStatus', () => {
-  it('ENTREGUE e CANCELADO são finais; PENDENTE e EM_TRANSITO não são', () => {
+  it('ENTREGUE, CANCELADO e CONFIRMADO são finais; PENDENTE e EM_TRANSITO não são', () => {
     expect(isFinalShipmentStatus(ShipmentStatus.ENTREGUE)).toBe(true);
     expect(isFinalShipmentStatus(ShipmentStatus.CANCELADO)).toBe(true);
+    expect(isFinalShipmentStatus(ShipmentStatus.CONFIRMADO)).toBe(true);
     expect(isFinalShipmentStatus(ShipmentStatus.PENDENTE)).toBe(false);
     expect(isFinalShipmentStatus(ShipmentStatus.EM_TRANSITO)).toBe(false);
+  });
+});
+
+describe('VALID_SHIPMENT_TRANSITIONS', () => {
+  it('CONFIRMADO não permite nenhuma transição genérica (só via confirmReceipt)', () => {
+    expect(
+      isValidShipmentTransition(
+        ShipmentStatus.CONFIRMADO,
+        ShipmentStatus.PENDENTE,
+      ),
+    ).toBe(false);
   });
 });

@@ -28,3 +28,18 @@ Thumbs.db
 
 # Test coverage
 coverage/
+
+# Dev environment files
+.env.dev
+*.env.dev
+
+# Backups de banco
+backups/
+
+# E2E / scripts de teste ad-hoc
+e2e/
+migration/
+
+# Relatórios internos
+RELATORIO_QA_PENTEST.md
+DEPLOY_WINDOWS_SERVER_2019.md

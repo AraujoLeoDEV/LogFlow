@@ -7,6 +7,11 @@ import {
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { parseDateOnly } from '../../common/utils/date-range.util';
+import {
+  emptyPage,
+  paginate,
+  PaginatedResult,
+} from '../../common/utils/pagination.util';
 import { Driver, Fuel, Prisma, Role } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { CreateFuelDto } from './dto/create-fuel.dto';
@@ -121,7 +126,10 @@ export class FuelService {
   async findAll(
     query: FuelQueryDto,
     user: AuthenticatedUser,
-  ): Promise<FuelWithRelations[]> {
+  ): Promise<PaginatedResult<FuelWithRelations>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
     const where: Prisma.FuelWhereInput = {
       vehicleId: query.vehicleId,
       driverId: query.driverId,
@@ -140,17 +148,24 @@ export class FuelService {
       });
 
       if (!driver) {
-        return [];
+        return emptyPage(page, limit);
       }
 
       where.driverId = driver.id;
     }
 
-    return this.prisma.fuel.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      include: fuelInclude,
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.fuel.findMany({
+        where,
+        orderBy: { date: 'desc' },
+        include: fuelInclude,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.fuel.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   // Indicadores - seção 4.6

@@ -15,6 +15,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
+import type { PaginatedResult } from '../../common/utils/pagination.util';
 import { Role } from '../../../generated/prisma/client';
 import { CreateIncidentDto } from './dto/create-incident.dto';
 import { IncidentIndicatorsQueryDto } from './dto/incident-indicators-query.dto';
@@ -41,7 +42,7 @@ export class IncidentsController {
   findAll(
     @Query() query: IncidentQueryDto,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<IncidentWithRelations[]> {
+  ): Promise<PaginatedResult<IncidentWithRelations>> {
     return this.incidentsService.findAll(query, user);
   }
 

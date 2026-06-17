@@ -26,6 +26,7 @@ import type { CreateUnitPayload, Unit, UpdateUnitPayload } from '@/types/unit';
 const schema = z.object({
   name: z.string().min(1, 'Informe o nome.'),
   address: z.string().min(1, 'Informe o endereço.'),
+  phone: z.string(),
   active: z.boolean(),
 });
 
@@ -43,6 +44,7 @@ interface UnitFormSheetProps {
 const EMPTY_VALUES: UnitFormValues = {
   name: '',
   address: '',
+  phone: '',
   active: true,
 };
 
@@ -64,16 +66,24 @@ export function UnitFormSheet({
   useEffect(() => {
     if (open) {
       form.reset(
-        unit ? { name: unit.name, address: unit.address, active: unit.active } : EMPTY_VALUES,
+        unit
+          ? {
+              name: unit.name,
+              address: unit.address,
+              phone: unit.phone ?? '',
+              active: unit.active,
+            }
+          : EMPTY_VALUES,
       );
     }
   }, [open, unit, form]);
 
   function onSubmit(values: UnitFormValues) {
+    const payload = { ...values, phone: values.phone || undefined };
     if (isEditing && unit) {
-      onSubmitUpdate(unit.id, values);
+      onSubmitUpdate(unit.id, payload);
     } else {
-      onSubmitCreate(values);
+      onSubmitCreate(payload);
     }
   }
 
@@ -114,6 +124,19 @@ export function UnitFormSheet({
                   <FormLabel>Endereço</FormLabel>
                   <FormControl>
                     <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone/WhatsApp (opcional)</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Ex.: 11987654321" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

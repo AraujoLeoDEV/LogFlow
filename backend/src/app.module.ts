@@ -23,7 +23,6 @@ import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { RoutesModule } from './modules/routes/routes.module';
 import { ShipmentsModule } from './modules/shipments/shipments.module';
-import { TripsModule } from './modules/trips/trips.module';
 import { UnitsModule } from './modules/units/units.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
@@ -40,16 +39,9 @@ import { PrismaModule } from './prisma/prisma.module';
         pinoHttp: {
           level: config.get<string>('LOG_LEVEL', 'info'),
           transport:
-            config.get<string>('APP_ENV') === 'production'
-              ? {
-                  target: 'pino-roll',
-                  options: {
-                    file: 'logs/app.log',
-                    frequency: 'daily',
-                    mkdir: true,
-                  },
-                }
-              : { target: 'pino-pretty', options: { singleLine: true } },
+            config.get<string>('APP_ENV') !== 'production'
+              ? { target: 'pino-pretty', options: { singleLine: true } }
+              : undefined,
           redact: {
             paths: [
               'req.headers.authorization',
@@ -83,7 +75,6 @@ import { PrismaModule } from './prisma/prisma.module';
     DriversModule,
     DailyLogsModule,
     DashboardModule,
-    TripsModule,
     FuelModule,
     MaintenanceModule,
     IncidentsModule,

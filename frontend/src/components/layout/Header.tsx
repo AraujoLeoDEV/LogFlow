@@ -1,4 +1,4 @@
-import { LogOut, Menu, PackageSearch, Plus, Route, Truck, UserRound } from 'lucide-react';
+import { ClipboardList, LogOut, Menu, PackageSearch, Plus, Truck, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -38,7 +38,7 @@ const quickActions = [
     icon: PackageSearch,
     roles: ['ADMIN', 'COORDENACAO'] as const,
   },
-  { label: 'Nova viagem', to: '/viagens', icon: Route, roles: undefined },
+  { label: 'Novo registro diário', to: '/registro-diario', icon: ClipboardList, roles: undefined },
   {
     label: 'Novo veículo',
     to: '/veiculos',
@@ -74,9 +74,9 @@ export function Header() {
           <Menu className="size-5" />
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-0">
-          <SheetTitle className="flex items-center gap-2 px-4 pt-4 text-left">
+          <SheetTitle className="flex items-center justify-center gap-2 px-4 pt-4">
             <img src={logoIcon} alt="LogFlow" className="size-7 rounded-md" />
-            Sistema de Frota
+            LogFlow
           </SheetTitle>
           <Sidebar onNavigate={() => setMobileNavOpen(false)} />
         </SheetContent>

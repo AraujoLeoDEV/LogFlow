@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -22,21 +23,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { api } from '@/lib/api';
 import { roleOptions } from '@/lib/roles';
 import type { CreateUserPayload, UpdateUserPayload, User } from '@/types/user';
+import type { Unit } from '@/types/unit';
 
-const ROLE_VALUES = ['ADMIN', 'COORDENACAO', 'MOTORISTA', 'FINANCEIRO'] as const;
+const ROLE_VALUES = ['ADMIN', 'COORDENACAO', 'MOTORISTA', 'FINANCEIRO', 'CONFERENTE'] as const;
 
 function buildSchema(isEditing: boolean) {
-  return z.object({
-    name: z.string().min(1, 'Informe o nome.'),
-    email: z.string().min(1, 'Informe o e-mail.').email('Informe um e-mail válido.'),
-    role: z.enum(ROLE_VALUES, { message: 'Selecione um perfil.' }),
-    isActive: z.boolean(),
-    password: isEditing
-      ? z.union([z.literal(''), z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.')])
-      : z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.'),
-  });
+  return z
+    .object({
+      name: z.string().min(1, 'Informe o nome.'),
+      email: z.string().min(1, 'Informe o e-mail.').email('Informe um e-mail válido.'),
+      role: z.enum(ROLE_VALUES, { message: 'Selecione um perfil.' }),
+      unitId: z.string(),
+      isActive: z.boolean(),
+      password: isEditing
+        ? z.union([z.literal(''), z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.')])
+        : z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.'),
+    })
+    .refine((data) => data.role !== 'CONFERENTE' || data.unitId !== '', {
+      message: 'Selecione a unidade para o perfil Conferente.',
+      path: ['unitId'],
+    });
 }
 
 type UserFormValues = z.infer<ReturnType<typeof buildSchema>>;
@@ -54,6 +63,7 @@ const EMPTY_VALUES: UserFormValues = {
   name: '',
   email: '',
   role: 'MOTORISTA',
+  unitId: '',
   isActive: true,
   password: '',
 };
@@ -73,6 +83,17 @@ export function UserFormSheet({
     defaultValues: EMPTY_VALUES,
   });
 
+  const role = form.watch('role');
+  const showUnitField = role === 'CONFERENTE';
+
+  const { data: units } = useQuery({
+    queryKey: ['units'],
+    queryFn: async () => (await api.get<Unit[]>('/units')).data,
+    enabled: showUnitField,
+  });
+
+  const activeUnits = (units ?? []).filter((unit) => unit.active);
+
   useEffect(() => {
     if (open) {
       form.reset(
@@ -81,6 +102,7 @@ export function UserFormSheet({
               name: user.name,
               email: user.email,
               role: user.role,
+              unitId: user.unitId ?? '',
               isActive: user.isActive,
               password: '',
             }
@@ -90,11 +112,14 @@ export function UserFormSheet({
   }, [open, user, form]);
 
   function onSubmit(values: UserFormValues) {
+    const unitId = values.role === 'CONFERENTE' ? values.unitId : '';
+
     if (isEditing && user) {
       const payload: UpdateUserPayload = {
         name: values.name,
         email: values.email,
         role: values.role,
+        unitId: unitId || null,
         isActive: values.isActive,
       };
       if (values.password) {
@@ -106,6 +131,7 @@ export function UserFormSheet({
         name: values.name,
         email: values.email,
         role: values.role,
+        unitId: unitId || undefined,
         password: values.password,
       });
     }
@@ -172,6 +198,28 @@ export function UserFormSheet({
                 </FormItem>
               )}
             />
+            {showUnitField && (
+              <FormField
+                control={form.control}
+                name="unitId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade</FormLabel>
+                    <FormControl>
+                      <Select {...field}>
+                        <option value="">Selecione a unidade</option>
+                        {activeUnits.map((unit) => (
+                          <option key={unit.id} value={unit.id}>
+                            {unit.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="password"

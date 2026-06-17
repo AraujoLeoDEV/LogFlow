@@ -1,0 +1,5 @@
+-- AlterEnum
+ALTER TYPE "ShipmentStatus" ADD VALUE 'CONFIRMADO';
+
+-- AlterEnum
+ALTER TYPE "Role" ADD VALUE 'CONFERENTE';

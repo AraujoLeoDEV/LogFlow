@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -21,6 +21,7 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Pagination } from '@/components/ui/pagination';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
@@ -32,6 +33,7 @@ import type {
   ReturnDailyLogPayload,
 } from '@/types/dailyLog';
 import type { Driver } from '@/types/driver';
+import type { PaginatedResult } from '@/types/pagination';
 import type { Route } from '@/types/route';
 import type { Vehicle } from '@/types/vehicle';
 
@@ -55,10 +57,27 @@ function formatDuration(minutes: number | null): string {
   return hours > 0 ? `${hours}h ${mins}min` : `${mins}min`;
 }
 
+const statusLabels: Record<DailyLogWithRelations['status'], string> = {
+  EM_ANDAMENTO: 'Em andamento',
+  FINALIZADO: 'Finalizado',
+  ATRASADO: 'Atrasado',
+};
+
+function StatusBadge({ status }: { status: DailyLogWithRelations['status'] }) {
+  if (status === 'ATRASADO') {
+    return <Badge variant="destructive">{statusLabels[status]}</Badge>;
+  }
+  if (status === 'FINALIZADO') {
+    return <Badge variant="outline">{statusLabels[status]}</Badge>;
+  }
+  return <Badge variant="default">{statusLabels[status]}</Badge>;
+}
+
 const departureSchema = z.object({
   vehicleId: z.string().min(1, 'Selecione o veículo.'),
   driverId: z.string(),
   routeId: z.string(),
+  destination: z.string(),
   startKm: z
     .number({ message: 'Informe o KM inicial.' })
     .min(0, 'O KM inicial não pode ser negativo.'),
@@ -71,6 +90,7 @@ const EMPTY_DEPARTURE_VALUES: DepartureFormValues = {
   vehicleId: '',
   driverId: '',
   routeId: '',
+  destination: '',
   startKm: 0,
   observations: '',
 };
@@ -81,6 +101,7 @@ export function DailyLogsPage() {
   const canManageOthers = hasRole('ADMIN', 'COORDENACAO');
 
   const [filters, setFilters] = useState<DailyLogQuery>({});
+  const [page, setPage] = useState(1);
   const [returnSheetOpen, setReturnSheetOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<DailyLogWithRelations | null>(null);
 
@@ -100,20 +121,26 @@ export function DailyLogsPage() {
     queryFn: async () => (await api.get<Route[]>('/routes')).data,
   });
 
-  const { data: ongoingLogs, isLoading: isLoadingOngoing } = useQuery({
+  const { data: allLogs, isLoading: isLoadingOngoing } = useQuery({
     queryKey: ['daily-logs', 'ongoing'],
     queryFn: async () =>
       (
-        await api.get<DailyLogWithRelations[]>('/daily-logs', {
-          params: { status: 'EM_ANDAMENTO' } satisfies DailyLogQuery,
+        await api.get<PaginatedResult<DailyLogWithRelations>>('/daily-logs', {
+          params: { limit: 100 } satisfies DailyLogQuery,
         })
-      ).data,
+      ).data.data,
   });
 
+  const ongoingLogs = (allLogs ?? []).filter((log) => log.status !== 'FINALIZADO');
+
   const { data: history, isLoading: isLoadingHistory } = useQuery({
-    queryKey: ['daily-logs', 'history', filters],
+    queryKey: ['daily-logs', 'history', filters, page],
     queryFn: async () =>
-      (await api.get<DailyLogWithRelations[]>('/daily-logs', { params: filters })).data,
+      (
+        await api.get<PaginatedResult<DailyLogWithRelations>>('/daily-logs', {
+          params: { ...filters, page },
+        })
+      ).data,
   });
 
   const invalidateDailyLogs = () => queryClient.invalidateQueries({ queryKey: ['daily-logs'] });
@@ -149,18 +176,28 @@ export function DailyLogsPage() {
     },
   });
 
-  const ongoingVehicleIds = new Set((ongoingLogs ?? []).map((log) => log.vehicleId));
+  const ongoingVehicleIds = new Set(ongoingLogs.map((log) => log.vehicleId));
   const availableVehicles = (vehicles ?? []).filter(
     (vehicle) => vehicle.active && !ongoingVehicleIds.has(vehicle.id),
   );
   const activeDrivers = (drivers ?? []).filter((driver) => driver.active);
   const activeRoutes = (routes ?? []).filter((route) => route.active);
 
+  const selectedVehicleId = departureForm.watch('vehicleId');
+
+  useEffect(() => {
+    const vehicle = (vehicles ?? []).find((item) => item.id === selectedVehicleId);
+    if (vehicle) {
+      departureForm.setValue('startKm', Number(vehicle.currentKm));
+    }
+  }, [selectedVehicleId, vehicles, departureForm]);
+
   function onSubmitDeparture(values: DepartureFormValues) {
     createMutation.mutate({
       vehicleId: values.vehicleId,
       driverId: values.driverId || undefined,
       routeId: values.routeId || undefined,
+      destination: values.destination || undefined,
       startKm: values.startKm,
       observations: values.observations || undefined,
     });
@@ -177,6 +214,7 @@ export function DailyLogsPage() {
 
   function handleFilterChange<K extends keyof DailyLogQuery>(key: K, value: string) {
     setFilters((prev) => ({ ...prev, [key]: (value || undefined) as DailyLogQuery[K] }));
+    setPage(1);
   }
 
   return (
@@ -191,7 +229,10 @@ export function DailyLogsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Saídas em andamento</CardTitle>
-          <CardDescription>Veículos que ainda não tiveram o retorno registrado.</CardDescription>
+          <CardDescription>
+            Veículos que ainda não tiveram o retorno registrado, incluindo os marcados como
+            atrasados.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <table className="w-full text-sm">
@@ -200,37 +241,43 @@ export function DailyLogsPage() {
                 <th className="px-2 py-2 font-medium">Veículo</th>
                 <th className="px-2 py-2 font-medium">Motorista</th>
                 <th className="px-2 py-2 font-medium">Rota</th>
+                <th className="px-2 py-2 font-medium">Destino</th>
                 <th className="px-2 py-2 font-medium">Saída</th>
                 <th className="px-2 py-2 font-medium">KM inicial</th>
+                <th className="px-2 py-2 font-medium">Status</th>
                 <th className="px-2 py-2 font-medium text-right">Ações</th>
               </tr>
             </thead>
             <tbody>
               {isLoadingOngoing && (
                 <tr>
-                  <td colSpan={6} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               )}
-              {!isLoadingOngoing && ongoingLogs?.length === 0 && (
+              {!isLoadingOngoing && ongoingLogs.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
                     Nenhuma saída em andamento.
                   </td>
                 </tr>
               )}
-              {ongoingLogs?.map((log) => (
+              {ongoingLogs.map((log) => (
                 <tr key={log.id} className="border-b last:border-0">
                   <td className="px-2 py-2 font-medium">
                     <VehicleName vehicle={log.vehicle} />
                   </td>
                   <td className="px-2 py-2 text-muted-foreground">{log.driver.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{log.route.name}</td>
+                  <td className="px-2 py-2 text-muted-foreground">{log.destination ?? '—'}</td>
                   <td className="px-2 py-2 text-muted-foreground">
                     {formatDateTime(log.departureAt)}
                   </td>
                   <td className="px-2 py-2">{formatNumber(log.startKm)}</td>
+                  <td className="px-2 py-2">
+                    <StatusBadge status={log.status} />
+                  </td>
                   <td className="px-2 py-2 text-right">
                     <Button size="sm" onClick={() => openReturnSheet(log)}>
                       Registrar retorno
@@ -313,6 +360,19 @@ export function DailyLogsPage() {
                           </option>
                         ))}
                       </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={departureForm.control}
+                name="destination"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Destino (opcional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -420,6 +480,7 @@ export function DailyLogsPage() {
                 <option value="">Todos</option>
                 <option value="EM_ANDAMENTO">Em andamento</option>
                 <option value="FINALIZADO">Finalizado</option>
+                <option value="ATRASADO">Atrasado</option>
               </Select>
             </div>
             <div className="grid gap-1.5">
@@ -444,6 +505,7 @@ export function DailyLogsPage() {
                 <th className="px-2 py-2 font-medium">Veículo</th>
                 <th className="px-2 py-2 font-medium">Motorista</th>
                 <th className="px-2 py-2 font-medium">Rota</th>
+                <th className="px-2 py-2 font-medium">Destino</th>
                 <th className="px-2 py-2 font-medium">Saída</th>
                 <th className="px-2 py-2 font-medium">Retorno</th>
                 <th className="px-2 py-2 font-medium">KM rodado</th>
@@ -455,25 +517,26 @@ export function DailyLogsPage() {
             <tbody>
               {isLoadingHistory && (
                 <tr>
-                  <td colSpan={9} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-2 py-6 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               )}
-              {!isLoadingHistory && history?.length === 0 && (
+              {!isLoadingHistory && history?.data.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-2 py-6 text-center text-muted-foreground">
                     Nenhum registro encontrado.
                   </td>
                 </tr>
               )}
-              {history?.map((log) => (
+              {history?.data.map((log) => (
                 <tr key={log.id} className="border-b last:border-0">
                   <td className="px-2 py-2 font-medium">
                     <VehicleName vehicle={log.vehicle} />
                   </td>
                   <td className="px-2 py-2 text-muted-foreground">{log.driver.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">{log.route.name}</td>
+                  <td className="px-2 py-2 text-muted-foreground">{log.destination ?? '—'}</td>
                   <td className="px-2 py-2 text-muted-foreground">
                     {formatDateTime(log.departureAt)}
                   </td>
@@ -484,14 +547,18 @@ export function DailyLogsPage() {
                   <td className="px-2 py-2">{formatDuration(log.totalDurationMinutes)}</td>
                   <td className="px-2 py-2">{formatNumber(log.avgSpeedKmh)}</td>
                   <td className="px-2 py-2">
-                    <Badge variant={log.status === 'EM_ANDAMENTO' ? 'default' : 'outline'}>
-                      {log.status === 'EM_ANDAMENTO' ? 'Em andamento' : 'Finalizado'}
-                    </Badge>
+                    <StatusBadge status={log.status} />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          <Pagination
+            page={history?.page ?? page}
+            totalPages={history?.totalPages ?? 1}
+            onPageChange={setPage}
+          />
         </CardContent>
       </Card>
 
