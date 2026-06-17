@@ -14,7 +14,9 @@ import { FinancePage } from '@/pages/FinancePage';
 import { FuelPage } from '@/pages/FuelPage';
 import { GoalsPage } from '@/pages/GoalsPage';
 import { IncidentsPage } from '@/pages/IncidentsPage';
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import { MaintenancePage } from '@/pages/MaintenancePage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ReportsPage } from '@/pages/ReportsPage';
@@ -59,6 +61,8 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
+            <Route path="/reset-senha" element={<ResetPasswordPage />} />
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<RootRoute />} />

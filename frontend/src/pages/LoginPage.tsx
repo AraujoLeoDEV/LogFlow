@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 
 import logoIcon from '@/assets/logo-icon.png';
@@ -153,6 +153,12 @@ export function LoginPage() {
               <Button type="submit" disabled={isSubmitting} className="mt-2 w-full">
                 {isSubmitting ? 'Entrando...' : 'Entrar'}
               </Button>
+              <Link
+                to="/esqueci-senha"
+                className="text-center text-sm text-muted-foreground hover:text-foreground"
+              >
+                Esqueci minha senha
+              </Link>
             </form>
           </Form>
         </CardContent>

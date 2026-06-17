@@ -19,7 +19,9 @@ import { Public } from '../../common/decorators/public.decorator';
 import { parseDurationToMs } from '../../common/utils/duration.util';
 import { AuthService } from './auth.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 
@@ -73,6 +75,29 @@ export class AuthController {
     } = await this.authService.refresh(refreshToken);
     this.setRefreshTokenCookie(res, newRefreshToken);
     return { accessToken, user };
+  }
+
+  @Public()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary:
+      'Envia e-mail com link de redefinição de senha (resposta sempre 204 para não revelar e-mails cadastrados)',
+  })
+  forgotPassword(@Body() dto: ForgotPasswordDto): Promise<void> {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Redefine a senha usando o token recebido por e-mail',
+  })
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+    return this.authService.resetPassword(dto);
   }
 
   @Public()

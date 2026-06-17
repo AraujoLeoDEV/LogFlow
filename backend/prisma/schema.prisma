@@ -185,12 +185,26 @@ model User {
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  unit             Unit?             @relation(fields: [unitId], references: [id])
-  driver           Driver?
-  sentShipments    Shipment[]        @relation("ShipmentSender")
-  shipmentReceipts ShipmentReceipt[]
+  unit                 Unit?                @relation(fields: [unitId], references: [id])
+  driver               Driver?
+  sentShipments        Shipment[]           @relation("ShipmentSender")
+  shipmentReceipts     ShipmentReceipt[]
+  passwordResetTokens  PasswordResetToken[]
 
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
 }
 
 // Unidades de destino dos envios - seção 4.2 / 4.9 (usado também na Fase 8)

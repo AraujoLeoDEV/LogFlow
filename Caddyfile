@@ -3,18 +3,19 @@
 # (definidos em .env.production e injetados via docker-compose.prod.yml).
 #
 # Implantacao em rede interna com IP fixo (sem dominio publico).
-# Certificado RSA autoassinado com IP SAN gerado via openssl e montado
-# em /certs — evita o problema RFC 6066 (navegadores nao enviam SNI
-# para URLs baseadas em IP, causando internal_error no TLS).
+# default_sni e necessario pois clientes conectando por IP nao enviam SNI
+# no TLS handshake — sem ele o Caddy nao seleciona o certificado correto.
+
+{
+	default_sni {$APP_DOMAIN_HOST}
+}
 
 {$APP_DOMAIN} {
 	encode gzip
-	tls /certs/cert.pem /certs/key.pem
 	reverse_proxy frontend:80
 }
 
 {$API_DOMAIN} {
 	encode gzip
-	tls /certs/cert.pem /certs/key.pem
 	reverse_proxy backend:3000
 }

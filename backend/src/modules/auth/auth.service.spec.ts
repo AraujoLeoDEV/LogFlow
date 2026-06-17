@@ -78,7 +78,18 @@ function buildService(options: BuildOptions = {}) {
     ),
   } as unknown as ConfigService;
 
-  const service = new AuthService(prisma, jwtService, passwordService, config);
+  const mailer = {
+    isEnabled: jest.fn().mockReturnValue(false),
+    sendAlertEmail: jest.fn().mockResolvedValue(true),
+  } as unknown as import('../alerts/alerts-mailer.service').AlertsMailerService;
+
+  const service = new AuthService(
+    prisma,
+    jwtService,
+    passwordService,
+    config,
+    mailer,
+  );
 
   return {
     service,
