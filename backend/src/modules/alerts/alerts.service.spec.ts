@@ -70,6 +70,7 @@ function buildService(options: BuildServiceOptions = {}) {
   const coordEmails = options.coordEmails ?? ['coord@empresa.com'];
 
   const createManyAlert = jest.fn(() => Promise.resolve({ count: 1 }));
+  const updateManyAlert = jest.fn(() => Promise.resolve({ count: 1 }));
   const findManyAlertPending = jest.fn(() => Promise.resolve(pendingAlerts));
   const updateAlert = jest.fn(
     (args: { where: { id: string }; data: { status: AlertStatus } }) =>
@@ -117,6 +118,7 @@ function buildService(options: BuildServiceOptions = {}) {
     user: { findMany: findManyUser, findFirst: findFirstUser },
     alert: {
       createMany: createManyAlert,
+      updateMany: updateManyAlert,
       findMany: jest.fn((args: { where: { status?: AlertStatus } }) => {
         if (args.where?.status === AlertStatus.PENDENTE) {
           return findManyAlertPending();
@@ -149,6 +151,7 @@ function buildService(options: BuildServiceOptions = {}) {
     service,
     createManyAlert,
     updateAlert,
+    updateManyAlert,
     findFirstAlert,
     findManyAlertForFindAll,
     findManyUser,
@@ -247,6 +250,31 @@ describe('AlertsService.generateAlerts', () => {
     expect(result.emailed).toBe(1);
   });
 
+  it('não envia e-mail se outra execução já reivindicou o alerta (race condition)', async () => {
+    const pending = buildAlert({
+      id: 'alert-claimed-elsewhere',
+      targetRole: Role.COORDENACAO,
+      targetUserId: null,
+    });
+    const { service, sendAlertEmail, updateManyAlert } = buildService({
+      pendingAlerts: [pending],
+      mailerEnabled: true,
+      coordEmails: ['coord@empresa.com'],
+    });
+    // simula outra execução concorrente vencendo a corrida: a tentativa
+    // de reivindicar (PENDENTE -> ENVIANDO) não atualiza nenhuma linha.
+    updateManyAlert.mockResolvedValueOnce({ count: 0 });
+
+    const result = await service.generateAlerts();
+
+    expect(updateManyAlert).toHaveBeenCalledWith({
+      where: { id: 'alert-claimed-elsewhere', status: AlertStatus.PENDENTE },
+      data: { status: AlertStatus.ENVIANDO },
+    });
+    expect(sendAlertEmail).not.toHaveBeenCalled();
+    expect(result.emailed).toBe(0);
+  });
+
   it('marca como ENVIADO (sem enviar e-mail) quando não há destinatário com e-mail', async () => {
     const pending = buildAlert({
       id: 'alert-no-target',
@@ -284,7 +312,12 @@ describe('AlertsService.generateAlerts', () => {
 
     const result = await service.generateAlerts();
 
-    expect(updateAlert).not.toHaveBeenCalled();
+    // reivindicado (PENDENTE -> ENVIANDO) e revertido após falha no envio
+    // (ENVIANDO -> PENDENTE de volta), para retry no próximo job.
+    expect(updateAlert).toHaveBeenCalledWith({
+      where: { id: 'alert-fail' },
+      data: { status: AlertStatus.PENDENTE },
+    });
     expect(result.emailed).toBe(0);
   });
 

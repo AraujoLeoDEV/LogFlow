@@ -126,6 +126,7 @@ enum AlertSeverity {
 // Status do alerta (controle de envio/leitura) - seção 4.10
 enum AlertStatus {
   PENDENTE
+  ENVIANDO
   ENVIADO
   LIDO
 }

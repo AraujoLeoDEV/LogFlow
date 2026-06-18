@@ -14,7 +14,7 @@ import { existsSync, mkdirSync } from 'fs';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { AlertsMailerService } from '../alerts/alerts-mailer.service';
-import { parseDateOnly } from '../../common/utils/date-range.util';
+import { buildDateRangeFilter } from '../../common/utils/date-range.util';
 import { paginate, PaginatedResult } from '../../common/utils/pagination.util';
 import {
   AlertSeverity,
@@ -233,11 +233,9 @@ export class ShipmentsService {
       where.destinationUnitId = await this.getConferenteUnitId(user);
     }
 
-    if (query.from || query.to) {
-      where.createdAt = {
-        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
-        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
-      };
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
+    if (dateFilter) {
+      where.createdAt = dateFilter;
     }
 
     const [shipments, total] = await Promise.all([

@@ -549,14 +549,14 @@ describe('IncidentsService', () => {
       );
     });
 
-    it('MOTORISTA não pode acessar ocorrência de outro motorista', async () => {
+    it('MOTORISTA não pode acessar ocorrência de outro motorista (404, não revela existência)', async () => {
       const { service } = buildService({
         incidents: [buildIncident({ id: 'incident-1', driverId: 'driver-2' })],
       });
 
       await expect(
         service.findOne('incident-1', motoristaUser),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('retorna a ocorrência para ADMIN', async () => {

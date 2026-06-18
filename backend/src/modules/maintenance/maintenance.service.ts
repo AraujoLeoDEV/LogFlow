@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { parseDateOnly } from '../../common/utils/date-range.util';
+import { buildDateRangeFilter } from '../../common/utils/date-range.util';
 import { paginate, PaginatedResult } from '../../common/utils/pagination.util';
 import { Maintenance, Prisma } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
@@ -116,11 +116,9 @@ export class MaintenanceService {
       category: query.category,
     };
 
-    if (query.from || query.to) {
-      where.performedDate = {
-        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
-        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
-      };
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
+    if (dateFilter) {
+      where.performedDate = dateFilter;
     }
 
     const [data, total] = await Promise.all([

@@ -28,6 +28,7 @@ export const alertSeverityBadgeVariants: Record<
 
 export const alertStatusLabels: Record<AlertStatus, string> = {
   PENDENTE: 'Pendente',
+  ENVIANDO: 'Enviando',
   ENVIADO: 'Enviado',
   LIDO: 'Lido',
 };

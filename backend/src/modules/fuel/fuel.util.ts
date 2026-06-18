@@ -40,13 +40,14 @@ export function calculateFuelMetrics({
   }
 
   const kmDriven = new Prisma.Decimal(currentKm).minus(previousKm);
+  const litersDecimal = new Prisma.Decimal(liters);
 
-  if (kmDriven.lessThanOrEqualTo(0)) {
+  if (kmDriven.lessThanOrEqualTo(0) || litersDecimal.lessThanOrEqualTo(0)) {
     return { consumptionKmL: null, costPerKm: null };
   }
 
   return {
-    consumptionKmL: kmDriven.dividedBy(liters),
+    consumptionKmL: kmDriven.dividedBy(litersDecimal),
     costPerKm: new Prisma.Decimal(amountPaid).dividedBy(kmDriven),
   };
 }

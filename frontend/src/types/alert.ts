@@ -10,7 +10,7 @@ export type AlertType =
 
 export type AlertSeverity = 'INFO' | 'AVISO' | 'CRITICO';
 
-export type AlertStatus = 'PENDENTE' | 'ENVIADO' | 'LIDO';
+export type AlertStatus = 'PENDENTE' | 'ENVIANDO' | 'ENVIADO' | 'LIDO';
 
 export interface Alert {
   id: string;

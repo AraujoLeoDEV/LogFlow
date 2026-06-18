@@ -1,18 +1,21 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   UnprocessableEntityException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { parseDateOnly } from '../../common/utils/date-range.util';
+import { buildDateRangeFilter } from '../../common/utils/date-range.util';
+import {
+  findOwnDriver,
+  resolveDriverForCreate,
+} from '../../common/utils/driver-scope.util';
 import {
   emptyPage,
   paginate,
   PaginatedResult,
 } from '../../common/utils/pagination.util';
-import { Driver, Fuel, Prisma, Role } from '../../../generated/prisma/client';
+import { Fuel, Prisma, Role } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { CreateFuelDto } from './dto/create-fuel.dto';
 import { FuelQueryDto } from './dto/fuel-query.dto';
@@ -53,7 +56,12 @@ export class FuelService {
 
   // Regras da seção 4.6 - registro de abastecimento
   async create(dto: CreateFuelDto, user: AuthenticatedUser): Promise<Fuel> {
-    const driver = await this.resolveDriverForCreate(dto, user);
+    const driver = await resolveDriverForCreate(
+      this.prisma,
+      user,
+      dto.driverId,
+      'Informe o motorista responsável.',
+    );
 
     const vehicle = await this.prisma.vehicle.findFirst({
       where: { id: dto.vehicleId, deletedAt: null },
@@ -135,17 +143,13 @@ export class FuelService {
       driverId: query.driverId,
     };
 
-    if (query.from || query.to) {
-      where.date = {
-        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
-        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
-      };
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
+    if (dateFilter) {
+      where.date = dateFilter;
     }
 
     if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
+      const driver = await findOwnDriver(this.prisma, user);
 
       if (!driver) {
         return emptyPage(page, limit);
@@ -253,39 +257,6 @@ export class FuelService {
       .sort((a, b) => a.month.localeCompare(b.month));
 
     return { vehicles, mostEconomical, mostExpensive, monthlySpend };
-  }
-
-  private async resolveDriverForCreate(
-    dto: CreateFuelDto,
-    user: AuthenticatedUser,
-  ): Promise<Driver> {
-    if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
-
-      if (!driver) {
-        throw new ForbiddenException(
-          'Usuário autenticado não está vinculado a um motorista.',
-        );
-      }
-
-      return driver;
-    }
-
-    if (!dto.driverId) {
-      throw new BadRequestException('Informe o motorista responsável.');
-    }
-
-    const driver = await this.prisma.driver.findFirst({
-      where: { id: dto.driverId, deletedAt: null },
-    });
-
-    if (!driver) {
-      throw new BadRequestException('Motorista informado não existe.');
-    }
-
-    return driver;
   }
 
   private toFriendlyError(error: unknown): unknown {

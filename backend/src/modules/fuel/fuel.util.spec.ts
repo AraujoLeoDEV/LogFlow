@@ -57,4 +57,16 @@ describe('calculateFuelMetrics', () => {
     expect(result.consumptionKmL).toBeNull();
     expect(result.costPerKm).toBeNull();
   });
+
+  it('retorna nulos quando liters é zero (evita divisão por zero)', () => {
+    const result = calculateFuelMetrics({
+      currentKm: 1400,
+      previousKm: 1000,
+      liters: 0,
+      amountPaid: 200,
+    });
+
+    expect(result.consumptionKmL).toBeNull();
+    expect(result.costPerKm).toBeNull();
+  });
 });

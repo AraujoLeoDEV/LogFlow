@@ -165,8 +165,14 @@ export class AlertsService {
 
   // Envia e-mails para alertas PENDENTE - seção 4.10. Alertas sem
   // destinatário com e-mail cadastrado são marcados ENVIADO (nada a
-  // enviar); falhas de envio mantêm o alerta PENDENTE para nova tentativa
+  // enviar); falhas de envio voltam para PENDENTE para nova tentativa
   // no próximo job (retry implícito).
+  //
+  // Antes de enviar, cada alerta é "reivindicado" individualmente via
+  // updateMany PENDENTE -> ENVIANDO (count=1 confirma que este processo
+  // venceu a corrida). Isso evita e-mail duplicado se o job rodar
+  // concorrentemente (deploy com múltiplas instâncias, ou execução
+  // anterior ainda em andamento).
   private async sendPendingEmails(): Promise<number> {
     if (!this.mailer.isEnabled()) {
       return 0;
@@ -179,6 +185,16 @@ export class AlertsService {
     let emailed = 0;
 
     for (const alert of pending) {
+      const claimed = await this.prisma.alert.updateMany({
+        where: { id: alert.id, status: AlertStatus.PENDENTE },
+        data: { status: AlertStatus.ENVIANDO },
+      });
+
+      if (claimed.count === 0) {
+        // outra execução já reivindicou este alerta
+        continue;
+      }
+
       const recipients = await this.resolveRecipients(
         alert.targetRole,
         alert.targetUserId,
@@ -205,6 +221,11 @@ export class AlertsService {
           data: { status: AlertStatus.ENVIADO },
         });
         emailed += 1;
+      } else {
+        await this.prisma.alert.update({
+          where: { id: alert.id },
+          data: { status: AlertStatus.PENDENTE },
+        });
       }
     }
 

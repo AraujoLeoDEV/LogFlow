@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { parseDateOnly } from '../../common/utils/date-range.util';
+import { buildDateRangeFilter } from '../../common/utils/date-range.util';
+import { groupAndAccumulate } from '../../common/utils/group.util';
 import { DailyLogStatus, Prisma } from '../../../generated/prisma/client';
 import { calculateIncidentRate } from '../incidents/incidents.util';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
@@ -52,7 +53,7 @@ export class DashboardService {
   async getDriverIndicators(
     query: DashboardQueryDto,
   ): Promise<DriverIndicator[]> {
-    const dateFilter = this.buildDateFilter(query);
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
 
     const [drivers, dailyLogs, incidents] = await Promise.all([
       this.prisma.driver.findMany({
@@ -73,27 +74,23 @@ export class DashboardService {
       }),
     ]);
 
-    const usageByDriver = new Map<
-      string,
-      { kmTotal: number; minutes: number }
-    >();
-    for (const log of dailyLogs) {
-      const entry = usageByDriver.get(log.driverId) ?? {
-        kmTotal: 0,
-        minutes: 0,
-      };
-      entry.kmTotal += log.kmDriven?.toNumber() ?? 0;
-      entry.minutes += log.totalDurationMinutes ?? 0;
-      usageByDriver.set(log.driverId, entry);
-    }
+    const usageByDriver = groupAndAccumulate(
+      dailyLogs,
+      (log) => log.driverId,
+      () => ({ kmTotal: 0, minutes: 0 }),
+      (entry, log) => {
+        entry.kmTotal += log.kmDriven?.toNumber() ?? 0;
+        entry.minutes += log.totalDurationMinutes ?? 0;
+        return entry;
+      },
+    );
 
-    const incidentsByDriver = new Map<string, number>();
-    for (const incident of incidents) {
-      incidentsByDriver.set(
-        incident.driverId,
-        (incidentsByDriver.get(incident.driverId) ?? 0) + 1,
-      );
-    }
+    const incidentsByDriver = groupAndAccumulate(
+      incidents,
+      (incident) => incident.driverId,
+      () => 0,
+      (count) => count + 1,
+    );
 
     const indicators = drivers.map((driver) => {
       const usage = usageByDriver.get(driver.id) ?? { kmTotal: 0, minutes: 0 };
@@ -121,7 +118,7 @@ export class DashboardService {
   async getVehicleIndicators(
     query: DashboardQueryDto,
   ): Promise<VehicleIndicators> {
-    const dateFilter = this.buildDateFilter(query);
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
 
     const [vehicles, dailyLogs, fuelRecords, maintenances] = await Promise.all([
       this.prisma.vehicle.findMany({
@@ -146,39 +143,27 @@ export class DashboardService {
       }),
     ]);
 
-    const usageByVehicle = new Map<
-      string,
-      { kmTotal: number; minutes: number; count: number }
-    >();
-    for (const log of dailyLogs) {
-      const entry = usageByVehicle.get(log.vehicleId) ?? {
-        kmTotal: 0,
-        minutes: 0,
-        count: 0,
-      };
-      entry.kmTotal += log.kmDriven?.toNumber() ?? 0;
-      entry.minutes += log.totalDurationMinutes ?? 0;
-      entry.count += 1;
-      usageByVehicle.set(log.vehicleId, entry);
-    }
+    const usageByVehicle = groupAndAccumulate(
+      dailyLogs,
+      (log) => log.vehicleId,
+      () => ({ kmTotal: 0, minutes: 0, count: 0 }),
+      (entry, log) => {
+        entry.kmTotal += log.kmDriven?.toNumber() ?? 0;
+        entry.minutes += log.totalDurationMinutes ?? 0;
+        entry.count += 1;
+        return entry;
+      },
+    );
 
-    const costByVehicle = new Map<string, Prisma.Decimal>();
-    for (const fuel of fuelRecords) {
-      costByVehicle.set(
-        fuel.vehicleId,
-        (costByVehicle.get(fuel.vehicleId) ?? new Prisma.Decimal(0)).plus(
-          fuel.amountPaid,
-        ),
-      );
-    }
-    for (const maintenance of maintenances) {
-      costByVehicle.set(
-        maintenance.vehicleId,
-        (
-          costByVehicle.get(maintenance.vehicleId) ?? new Prisma.Decimal(0)
-        ).plus(maintenance.cost),
-      );
-    }
+    // Combustível + manutenção somados no mesmo Map por veículo;
+    // distingue a origem do registro por qual campo de valor ele tem.
+    const costByVehicle = groupAndAccumulate(
+      [...fuelRecords, ...maintenances],
+      (record) => record.vehicleId,
+      () => new Prisma.Decimal(0),
+      (total, record) =>
+        total.plus('amountPaid' in record ? record.amountPaid : record.cost),
+    );
 
     const indicators: VehicleIndicator[] = vehicles.map((vehicle) => {
       const usage = usageByVehicle.get(vehicle.id) ?? {
@@ -231,7 +216,7 @@ export class DashboardService {
   async getRouteIndicators(
     query: DashboardQueryDto,
   ): Promise<RouteIndicator[]> {
-    const dateFilter = this.buildDateFilter(query);
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
 
     const [routes, dailyLogs, vehicleIndicators] = await Promise.all([
       this.prisma.route.findMany({
@@ -249,21 +234,17 @@ export class DashboardService {
       this.getVehicleIndicators(query),
     ]);
 
-    const usageByRoute = new Map<
-      string,
-      { kmTotal: number; minutes: number; count: number }
-    >();
-    for (const log of dailyLogs) {
-      const entry = usageByRoute.get(log.routeId) ?? {
-        kmTotal: 0,
-        minutes: 0,
-        count: 0,
-      };
-      entry.kmTotal += log.kmDriven?.toNumber() ?? 0;
-      entry.minutes += log.totalDurationMinutes ?? 0;
-      entry.count += 1;
-      usageByRoute.set(log.routeId, entry);
-    }
+    const usageByRoute = groupAndAccumulate(
+      dailyLogs,
+      (log) => log.routeId,
+      () => ({ kmTotal: 0, minutes: 0, count: 0 }),
+      (entry, log) => {
+        entry.kmTotal += log.kmDriven?.toNumber() ?? 0;
+        entry.minutes += log.totalDurationMinutes ?? 0;
+        entry.count += 1;
+        return entry;
+      },
+    );
 
     const fleetKmTotal = vehicleIndicators.vehicles.reduce(
       (sum, vehicle) => sum + vehicle.kmTotal,
@@ -301,18 +282,5 @@ export class DashboardService {
     });
 
     return indicators.sort((a, b) => b.usageCount - a.usageCount);
-  }
-
-  private buildDateFilter(
-    query: DashboardQueryDto,
-  ): Prisma.DateTimeFilter | undefined {
-    if (!query.from && !query.to) {
-      return undefined;
-    }
-
-    return {
-      ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
-      ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
-    };
   }
 }

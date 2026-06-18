@@ -1,12 +1,16 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { parseDateOnly } from '../../common/utils/date-range.util';
+import { buildDateRangeFilter } from '../../common/utils/date-range.util';
+import {
+  findOwnDriver,
+  resolveDriverForCreate,
+} from '../../common/utils/driver-scope.util';
+import { groupAndAccumulate } from '../../common/utils/group.util';
 import {
   emptyPage,
   paginate,
@@ -14,7 +18,6 @@ import {
 } from '../../common/utils/pagination.util';
 import {
   DailyLogStatus,
-  Driver,
   Incident,
   Prisma,
   Role,
@@ -78,7 +81,12 @@ export class IncidentsService {
     dto: CreateIncidentDto,
     user: AuthenticatedUser,
   ): Promise<IncidentWithRelations> {
-    const driver = await this.resolveDriverForCreate(dto, user);
+    const driver = await resolveDriverForCreate(
+      this.prisma,
+      user,
+      dto.driverId,
+      'Informe o motorista envolvido.',
+    );
 
     const vehicle = await this.prisma.vehicle.findFirst({
       where: { id: dto.vehicleId, deletedAt: null },
@@ -148,12 +156,12 @@ export class IncidentsService {
     }
 
     if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
+      const driver = await findOwnDriver(this.prisma, user);
 
       if (!driver || incident.driverId !== driver.id) {
-        throw new ForbiddenException('Acesso não permitido a esta ocorrência.');
+        // Mesmo padrão de daily-logs/fuel: não revela a existência do
+        // registro de outro motorista.
+        throw new NotFoundException('Ocorrência não encontrada.');
       }
     }
 
@@ -211,51 +219,52 @@ export class IncidentsService {
   async getIndicators(
     query: IncidentIndicatorsQueryDto,
   ): Promise<IncidentIndicators> {
-    const dateFilter = this.buildDateFilter(query);
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
 
     const incidents = await this.prisma.incident.findMany({
       where: dateFilter ? { date: dateFilter } : undefined,
       include: incidentInclude,
     });
 
-    const byDriverMap = new Map<
-      string,
-      { driverName: string; count: number; totalCost: Prisma.Decimal }
-    >();
-    const byVehicleMap = new Map<
-      string,
-      {
-        plate: string;
-        model: string;
-        currentKm: string;
-        count: number;
-        totalCost: Prisma.Decimal;
-      }
-    >();
-
-    for (const incident of incidents) {
-      const cost = incident.cost ?? new Prisma.Decimal(0);
-
-      const driverEntry = byDriverMap.get(incident.driverId) ?? {
-        driverName: incident.driver.name,
+    const byDriverMap = groupAndAccumulate(
+      incidents,
+      (incident) => incident.driverId,
+      () => ({
+        driverName: '',
         count: 0,
         totalCost: new Prisma.Decimal(0),
-      };
-      driverEntry.count += 1;
-      driverEntry.totalCost = driverEntry.totalCost.plus(cost);
-      byDriverMap.set(incident.driverId, driverEntry);
+      }),
+      (entry, incident) => {
+        entry.driverName = incident.driver.name;
+        entry.count += 1;
+        entry.totalCost = entry.totalCost.plus(
+          incident.cost ?? new Prisma.Decimal(0),
+        );
+        return entry;
+      },
+    );
 
-      const vehicleEntry = byVehicleMap.get(incident.vehicleId) ?? {
-        plate: incident.vehicle.plate,
-        model: incident.vehicle.model,
-        currentKm: incident.vehicle.currentKm.toString(),
+    const byVehicleMap = groupAndAccumulate(
+      incidents,
+      (incident) => incident.vehicleId,
+      () => ({
+        plate: '',
+        model: '',
+        currentKm: '',
         count: 0,
         totalCost: new Prisma.Decimal(0),
-      };
-      vehicleEntry.count += 1;
-      vehicleEntry.totalCost = vehicleEntry.totalCost.plus(cost);
-      byVehicleMap.set(incident.vehicleId, vehicleEntry);
-    }
+      }),
+      (entry, incident) => {
+        entry.plate = incident.vehicle.plate;
+        entry.model = incident.vehicle.model;
+        entry.currentKm = incident.vehicle.currentKm.toString();
+        entry.count += 1;
+        entry.totalCost = entry.totalCost.plus(
+          incident.cost ?? new Prisma.Decimal(0),
+        );
+        return entry;
+      },
+    );
 
     const byDriver: IncidentsByDriver[] = [...byDriverMap.entries()].map(
       ([driverId, entry]) => ({
@@ -323,7 +332,7 @@ export class IncidentsService {
   ): Promise<
     Map<string, { plate: string; model: string; currentKm: string; km: number }>
   > {
-    const dateFilter = this.buildDateFilter(query);
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
 
     const dailyLogs = await this.prisma.dailyLog.findMany({
       where: {
@@ -338,37 +347,20 @@ export class IncidentsService {
       },
     });
 
-    const result = new Map<
-      string,
-      { plate: string; model: string; currentKm: string; km: number }
-    >();
-
-    for (const log of dailyLogs) {
-      const entry = result.get(log.vehicleId) ?? {
-        plate: log.vehicle.plate,
-        model: log.vehicle.model,
-        currentKm: log.vehicle.currentKm.toString(),
-        km: 0,
-      };
-      entry.km += log.kmDriven?.toNumber() ?? 0;
-      result.set(log.vehicleId, entry);
-    }
+    const result = groupAndAccumulate(
+      dailyLogs,
+      (log) => log.vehicleId,
+      () => ({ plate: '', model: '', currentKm: '', km: 0 }),
+      (entry, log) => {
+        entry.plate = log.vehicle.plate;
+        entry.model = log.vehicle.model;
+        entry.currentKm = log.vehicle.currentKm.toString();
+        entry.km += log.kmDriven?.toNumber() ?? 0;
+        return entry;
+      },
+    );
 
     return result;
-  }
-
-  private buildDateFilter(query: {
-    from?: string;
-    to?: string;
-  }): Prisma.DateTimeFilter | undefined {
-    if (!query.from && !query.to) {
-      return undefined;
-    }
-
-    return {
-      ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
-      ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
-    };
   }
 
   private async buildWhere(
@@ -383,15 +375,13 @@ export class IncidentsService {
       severity: query.severity,
     };
 
-    const dateFilter = this.buildDateFilter(query);
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
     if (dateFilter) {
       where.date = dateFilter;
     }
 
     if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
+      const driver = await findOwnDriver(this.prisma, user);
 
       if (!driver) {
         return null;
@@ -401,39 +391,6 @@ export class IncidentsService {
     }
 
     return where;
-  }
-
-  private async resolveDriverForCreate(
-    dto: CreateIncidentDto,
-    user: AuthenticatedUser,
-  ): Promise<Driver> {
-    if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
-
-      if (!driver) {
-        throw new ForbiddenException(
-          'Usuário autenticado não está vinculado a um motorista.',
-        );
-      }
-
-      return driver;
-    }
-
-    if (!dto.driverId) {
-      throw new BadRequestException('Informe o motorista envolvido.');
-    }
-
-    const driver = await this.prisma.driver.findFirst({
-      where: { id: dto.driverId, deletedAt: null },
-    });
-
-    if (!driver) {
-      throw new BadRequestException('Motorista informado não existe.');
-    }
-
-    return driver;
   }
 
   private async ensureExists(id: string): Promise<void> {

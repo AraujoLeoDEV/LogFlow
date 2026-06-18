@@ -17,3 +17,21 @@ export function parseDateOnly(value: string, endOfDay = false): Date {
     ? new Date(Number(year), Number(month) - 1, Number(day), 23, 59, 59, 999)
     : new Date(Number(year), Number(month) - 1, Number(day));
 }
+
+// Monta o filtro `gte`/`lte` de um período `from`/`to` (ambos opcionais)
+// para uso direto em `where.<campoDeData>` do Prisma. Retorna `undefined`
+// quando nenhum dos dois é informado, para não sobrescrever o campo no
+// `where` com um objeto vazio.
+export function buildDateRangeFilter(
+  from?: string,
+  to?: string,
+): { gte?: Date; lte?: Date } | undefined {
+  if (!from && !to) {
+    return undefined;
+  }
+
+  return {
+    ...(from ? { gte: parseDateOnly(from) } : {}),
+    ...(to ? { lte: parseDateOnly(to, true) } : {}),
+  };
+}

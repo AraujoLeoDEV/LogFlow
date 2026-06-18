@@ -1,14 +1,17 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { parseDateOnly } from '../../common/utils/date-range.util';
+import { buildDateRangeFilter } from '../../common/utils/date-range.util';
+import {
+  findOwnDriver,
+  resolveDriverForCreate,
+} from '../../common/utils/driver-scope.util';
 import {
   emptyPage,
   paginate,
@@ -17,7 +20,6 @@ import {
 import {
   DailyLog,
   DailyLogStatus,
-  Driver,
   Prisma,
   Role,
 } from '../../../generated/prisma/client';
@@ -48,7 +50,12 @@ export class DailyLogsService {
     dto: CreateDailyLogDto,
     user: AuthenticatedUser,
   ): Promise<DailyLog> {
-    const driver = await this.resolveDriverForCreate(dto, user);
+    const driver = await resolveDriverForCreate(
+      this.prisma,
+      user,
+      dto.driverId,
+      'Informe o motorista responsável.',
+    );
 
     const routeId = dto.routeId ?? driver.defaultRouteId;
     if (!routeId) {
@@ -142,20 +149,16 @@ export class DailyLogsService {
       status: query.status,
     };
 
-    if (query.from || query.to) {
-      where.departureAt = {
-        ...(query.from ? { gte: parseDateOnly(query.from) } : {}),
-        ...(query.to ? { lte: parseDateOnly(query.to, true) } : {}),
-      };
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
+    if (dateFilter) {
+      where.departureAt = dateFilter;
     }
 
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
 
     if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
+      const driver = await findOwnDriver(this.prisma, user);
 
       if (!driver) {
         return emptyPage(page, limit);
@@ -209,39 +212,6 @@ export class DailyLogsService {
     return result.count;
   }
 
-  private async resolveDriverForCreate(
-    dto: CreateDailyLogDto,
-    user: AuthenticatedUser,
-  ): Promise<Driver> {
-    if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
-
-      if (!driver) {
-        throw new ForbiddenException(
-          'Usuário autenticado não está vinculado a um motorista.',
-        );
-      }
-
-      return driver;
-    }
-
-    if (!dto.driverId) {
-      throw new BadRequestException('Informe o motorista responsável.');
-    }
-
-    const driver = await this.prisma.driver.findFirst({
-      where: { id: dto.driverId, deletedAt: null },
-    });
-
-    if (!driver) {
-      throw new BadRequestException('Motorista informado não existe.');
-    }
-
-    return driver;
-  }
-
   private async findOneForUser(
     id: string,
     user: AuthenticatedUser,
@@ -253,9 +223,7 @@ export class DailyLogsService {
     }
 
     if (user.role === Role.MOTORISTA) {
-      const driver = await this.prisma.driver.findFirst({
-        where: { userId: user.sub, deletedAt: null },
-      });
+      const driver = await findOwnDriver(this.prisma, user);
 
       if (!driver || dailyLog.driverId !== driver.id) {
         throw new NotFoundException('Registro não encontrado.');
