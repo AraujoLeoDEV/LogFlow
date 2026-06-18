@@ -28,6 +28,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
+import { formatDateTime, formatNumber } from '@/lib/formatters';
 import type {
   CreateDailyLogPayload,
   DailyLogQuery,
@@ -38,19 +39,6 @@ import type { Driver } from '@/types/driver';
 import type { PaginatedResult } from '@/types/pagination';
 import type { Route } from '@/types/route';
 import type { Vehicle } from '@/types/vehicle';
-
-const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-
-function formatDateTime(value: string | null): string {
-  return value ? dateTimeFormatter.format(new Date(value)) : '—';
-}
-
-function formatNumber(value: string | null): string {
-  return value !== null ? Number(value).toFixed(1) : '—';
-}
 
 function formatDuration(minutes: number | null): string {
   if (minutes === null) return '—';

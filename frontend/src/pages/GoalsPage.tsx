@@ -25,6 +25,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
+import { formatCurrency } from '@/lib/formatters';
 import type { Driver } from '@/types/driver';
 import type {
   CreateGoalPayload,
@@ -52,15 +53,6 @@ function statusBadgeVariant(status: GoalStatus): 'secondary' | 'default' | 'dest
   if (status === 'ATINGIDA') return 'default';
   if (status === 'NAO_ATINGIDA') return 'destructive';
   return 'secondary';
-}
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-function formatCurrency(value: string | number | null): string {
-  return value !== null ? currencyFormatter.format(Number(value)) : '—';
 }
 
 function formatConsumption(value: string | number | null): string {

@@ -27,6 +27,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
+import { formatCurrency, formatDate, formatDateTime } from '@/lib/formatters';
 import {
   maintenanceCategoryOptions,
   maintenanceTypeOptions,
@@ -42,28 +43,6 @@ import type {
 } from '@/types/maintenance';
 import type { PaginatedResult } from '@/types/pagination';
 import type { Vehicle } from '@/types/vehicle';
-
-const dateFormatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' });
-const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-function formatDate(value: string | null): string {
-  return value ? dateFormatter.format(new Date(value)) : '—';
-}
-
-function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
-}
-
-function formatCurrency(value: string | number): string {
-  return currencyFormatter.format(Number(value));
-}
 
 function formatKm(value: string | number | null): string {
   return value !== null ? `${Number(value).toFixed(1)} km` : '—';

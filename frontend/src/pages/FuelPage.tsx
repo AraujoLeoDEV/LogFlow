@@ -34,33 +34,12 @@ import {
   chartTooltipProps,
 } from '@/lib/chartTheme';
 import { getErrorMessage } from '@/lib/errors';
+import { formatCurrency, formatDateTime, formatNumber } from '@/lib/formatters';
 import { fuelTypeLabels, fuelTypeOptions } from '@/lib/fuelTypes';
 import type { CreateFuelPayload, FuelIndicators, FuelQuery, FuelWithRelations } from '@/types/fuel';
 import type { Driver } from '@/types/driver';
 import type { PaginatedResult } from '@/types/pagination';
 import type { FuelType, Vehicle } from '@/types/vehicle';
-
-const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
-}
-
-function formatCurrency(value: number): string {
-  return currencyFormatter.format(value);
-}
-
-function formatNumber(value: string, fractionDigits = 1): string {
-  return Number(value).toFixed(fractionDigits);
-}
 
 function formatConsumption(value: number | null): string {
   return value !== null ? `${value.toFixed(2)} km/l` : '—';

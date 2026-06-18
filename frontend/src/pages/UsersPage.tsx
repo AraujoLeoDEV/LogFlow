@@ -1,83 +1,40 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2, Users } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { UserFormSheet } from '@/components/users/UserFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { api } from '@/lib/api';
-import { getErrorMessage } from '@/lib/errors';
+import { useCrudResource } from '@/hooks/useCrudResource';
 import { roleLabels } from '@/lib/roles';
 import type { CreateUserPayload, UpdateUserPayload, User } from '@/types/user';
 
 export function UsersPage() {
-  const queryClient = useQueryClient();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => (await api.get<User[]>('/users')).data,
+  const {
+    items: users,
+    isLoading,
+    sheetOpen,
+    setSheetOpen,
+    editingItem: editingUser,
+    openCreateSheet,
+    openEditSheet,
+    handleDelete,
+    createMutation,
+    updateMutation,
+    isSubmitting,
+  } = useCrudResource<User, CreateUserPayload, UpdateUserPayload>({
+    queryKey: 'users',
+    basePath: '/users',
+    messages: {
+      created: 'Usuário criado com sucesso.',
+      updated: 'Usuário atualizado com sucesso.',
+      deleted: 'Usuário removido com sucesso.',
+      createError: 'Não foi possível criar o usuário.',
+      updateError: 'Não foi possível atualizar o usuário.',
+      deleteError: 'Não foi possível remover o usuário.',
+    },
+    confirmDelete: (user) => `Remover o usuário "${user.name}"?`,
   });
-
-  const invalidateUsers = () => queryClient.invalidateQueries({ queryKey: ['users'] });
-
-  const createMutation = useMutation({
-    mutationFn: async (payload: CreateUserPayload) => api.post('/users', payload),
-    onSuccess: () => {
-      toast.success('Usuário criado com sucesso.');
-      setSheetOpen(false);
-      invalidateUsers();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível criar o usuário.'));
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: UpdateUserPayload }) =>
-      api.patch(`/users/${id}`, payload),
-    onSuccess: () => {
-      toast.success('Usuário atualizado com sucesso.');
-      setSheetOpen(false);
-      invalidateUsers();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível atualizar o usuário.'));
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/users/${id}`),
-    onSuccess: () => {
-      toast.success('Usuário removido com sucesso.');
-      invalidateUsers();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível remover o usuário.'));
-    },
-  });
-
-  function openCreateSheet() {
-    setEditingUser(null);
-    setSheetOpen(true);
-  }
-
-  function openEditSheet(user: User) {
-    setEditingUser(user);
-    setSheetOpen(true);
-  }
-
-  function handleDelete(user: User) {
-    if (window.confirm(`Remover o usuário "${user.name}"?`)) {
-      deleteMutation.mutate(user.id);
-    }
-  }
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-col gap-4">

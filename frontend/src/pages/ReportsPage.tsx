@@ -24,6 +24,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
+import { formatDateTime } from '@/lib/formatters';
 import type {
   CreateReportPayload,
   Report,
@@ -72,15 +73,6 @@ function statusBadgeVariant(status: ReportStatus): 'secondary' | 'success' | 'de
 }
 
 const REPORTS_PAGE_SIZE = 10;
-
-const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-
-function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
-}
 
 const reportTypeOptions: { value: ReportType; label: string }[] = Object.entries(
   reportTypeLabels,

@@ -34,6 +34,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
+import { formatDateTime } from '@/lib/formatters';
 import {
   shipmentItemUnitLabels,
   shipmentItemUnitOptions,
@@ -58,15 +59,6 @@ import type { PaginatedResult } from '@/types/pagination';
 import type { Unit } from '@/types/unit';
 
 const API_URL = import.meta.env.VITE_API_URL as string;
-
-const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
-  dateStyle: 'short',
-  timeStyle: 'short',
-});
-
-function formatDateTime(value: string): string {
-  return dateTimeFormatter.format(new Date(value));
-}
 
 function todayDateOnly(): string {
   const now = new Date();

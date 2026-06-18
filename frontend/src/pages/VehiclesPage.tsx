@@ -1,32 +1,43 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2, Truck } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { VehicleFormSheet } from '@/components/vehicles/VehicleFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useCrudResource } from '@/hooks/useCrudResource';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { getErrorMessage } from '@/lib/errors';
+import { formatCurrency } from '@/lib/formatters';
 import { fuelTypeLabels } from '@/lib/fuelTypes';
 import type { Route } from '@/types/route';
 import type { CreateVehiclePayload, UpdateVehiclePayload, Vehicle } from '@/types/vehicle';
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
 export function VehiclesPage() {
-  const queryClient = useQueryClient();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-
-  const { data: vehicles, isLoading } = useQuery({
-    queryKey: ['vehicles'],
-    queryFn: async () => (await api.get<Vehicle[]>('/vehicles')).data,
+  const {
+    items: vehicles,
+    isLoading,
+    sheetOpen,
+    setSheetOpen,
+    editingItem: editingVehicle,
+    openCreateSheet,
+    openEditSheet,
+    handleDelete,
+    createMutation,
+    updateMutation,
+    isSubmitting,
+  } = useCrudResource<Vehicle, CreateVehiclePayload, UpdateVehiclePayload>({
+    queryKey: 'vehicles',
+    basePath: '/vehicles',
+    messages: {
+      created: 'Veículo criado com sucesso.',
+      updated: 'Veículo atualizado com sucesso.',
+      deleted: 'Veículo removido com sucesso.',
+      createError: 'Não foi possível criar o veículo.',
+      updateError: 'Não foi possível atualizar o veículo.',
+      deleteError: 'Não foi possível remover o veículo.',
+    },
+    confirmDelete: (vehicle) => `Remover o veículo "${vehicle.plate}"?`,
   });
 
   const { data: routes } = useQuery({
@@ -35,62 +46,6 @@ export function VehiclesPage() {
   });
 
   const routeNameById = new Map((routes ?? []).map((route) => [route.id, route.name]));
-
-  const invalidateVehicles = () => queryClient.invalidateQueries({ queryKey: ['vehicles'] });
-
-  const createMutation = useMutation({
-    mutationFn: async (payload: CreateVehiclePayload) => api.post('/vehicles', payload),
-    onSuccess: () => {
-      toast.success('Veículo criado com sucesso.');
-      setSheetOpen(false);
-      invalidateVehicles();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível criar o veículo.'));
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: UpdateVehiclePayload }) =>
-      api.patch(`/vehicles/${id}`, payload),
-    onSuccess: () => {
-      toast.success('Veículo atualizado com sucesso.');
-      setSheetOpen(false);
-      invalidateVehicles();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível atualizar o veículo.'));
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/vehicles/${id}`),
-    onSuccess: () => {
-      toast.success('Veículo removido com sucesso.');
-      invalidateVehicles();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível remover o veículo.'));
-    },
-  });
-
-  function openCreateSheet() {
-    setEditingVehicle(null);
-    setSheetOpen(true);
-  }
-
-  function openEditSheet(vehicle: Vehicle) {
-    setEditingVehicle(vehicle);
-    setSheetOpen(true);
-  }
-
-  function handleDelete(vehicle: Vehicle) {
-    if (window.confirm(`Remover o veículo "${vehicle.plate}"?`)) {
-      deleteMutation.mutate(vehicle.id);
-    }
-  }
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-col gap-4">
@@ -148,9 +103,7 @@ export function VehiclesPage() {
                   {vehicle.mainRouteId ? (routeNameById.get(vehicle.mainRouteId) ?? '—') : '—'}
                 </td>
                 <td className="px-4 py-2">{Number(vehicle.currentKm).toFixed(1)}</td>
-                <td className="px-4 py-2">
-                  {currencyFormatter.format(vehicle.monthlyDepreciation)}
-                </td>
+                <td className="px-4 py-2">{formatCurrency(vehicle.monthlyDepreciation)}</td>
                 <td className="px-4 py-2">
                   <Badge variant={vehicle.active ? 'success' : 'outline'}>
                     {vehicle.active ? 'Ativo' : 'Inativo'}

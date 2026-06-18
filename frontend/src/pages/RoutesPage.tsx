@@ -1,82 +1,39 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Map, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { RouteFormSheet } from '@/components/routes/RouteFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { api } from '@/lib/api';
-import { getErrorMessage } from '@/lib/errors';
+import { useCrudResource } from '@/hooks/useCrudResource';
 import type { CreateRoutePayload, Route, UpdateRoutePayload } from '@/types/route';
 
 export function RoutesPage() {
-  const queryClient = useQueryClient();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingRoute, setEditingRoute] = useState<Route | null>(null);
-
-  const { data: routes, isLoading } = useQuery({
-    queryKey: ['routes'],
-    queryFn: async () => (await api.get<Route[]>('/routes')).data,
+  const {
+    items: routes,
+    isLoading,
+    sheetOpen,
+    setSheetOpen,
+    editingItem: editingRoute,
+    openCreateSheet,
+    openEditSheet,
+    handleDelete,
+    createMutation,
+    updateMutation,
+    isSubmitting,
+  } = useCrudResource<Route, CreateRoutePayload, UpdateRoutePayload>({
+    queryKey: 'routes',
+    basePath: '/routes',
+    messages: {
+      created: 'Rota criada com sucesso.',
+      updated: 'Rota atualizada com sucesso.',
+      deleted: 'Rota inativada com sucesso.',
+      createError: 'Não foi possível criar a rota.',
+      updateError: 'Não foi possível atualizar a rota.',
+      deleteError: 'Não foi possível inativar a rota.',
+    },
+    confirmDelete: (route) => `Inativar a rota "${route.name}"?`,
   });
-
-  const invalidateRoutes = () => queryClient.invalidateQueries({ queryKey: ['routes'] });
-
-  const createMutation = useMutation({
-    mutationFn: async (payload: CreateRoutePayload) => api.post('/routes', payload),
-    onSuccess: () => {
-      toast.success('Rota criada com sucesso.');
-      setSheetOpen(false);
-      invalidateRoutes();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível criar a rota.'));
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: UpdateRoutePayload }) =>
-      api.patch(`/routes/${id}`, payload),
-    onSuccess: () => {
-      toast.success('Rota atualizada com sucesso.');
-      setSheetOpen(false);
-      invalidateRoutes();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível atualizar a rota.'));
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/routes/${id}`),
-    onSuccess: () => {
-      toast.success('Rota inativada com sucesso.');
-      invalidateRoutes();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível inativar a rota.'));
-    },
-  });
-
-  function openCreateSheet() {
-    setEditingRoute(null);
-    setSheetOpen(true);
-  }
-
-  function openEditSheet(route: Route) {
-    setEditingRoute(route);
-    setSheetOpen(true);
-  }
-
-  function handleDelete(route: Route) {
-    if (window.confirm(`Inativar a rota "${route.name}"?`)) {
-      deleteMutation.mutate(route.id);
-    }
-  }
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-col gap-4">

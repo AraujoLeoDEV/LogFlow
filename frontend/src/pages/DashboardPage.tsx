@@ -19,6 +19,7 @@ import {
   chartGridProps,
   chartTooltipProps,
 } from '@/lib/chartTheme';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 import type {
   DashboardQuery,
   DriverIndicator,
@@ -26,23 +27,8 @@ import type {
   VehicleIndicators,
 } from '@/types/dashboard';
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-const numberFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
-
-function formatCurrency(value: number | null): string {
-  return value !== null ? currencyFormatter.format(value) : '—';
-}
-
-function formatNumber(value: number, fractionDigits = 1): string {
-  return value.toLocaleString('pt-BR', { maximumFractionDigits: fractionDigits });
-}
-
 function formatRate(value: number | null): string {
-  return value !== null ? `${numberFormatter.format(value)} / 1.000 km` : '—';
+  return value !== null ? `${formatNumber(value)} / 1.000 km` : '—';
 }
 
 export function DashboardPage() {

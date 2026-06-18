@@ -1,7 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Pencil, Plus, Trash2, UserRound } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { DriverFormSheet } from '@/components/drivers/DriverFormSheet';
 import { VehicleName } from '@/components/vehicles/VehicleName';
@@ -9,8 +7,8 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useCrudResource } from '@/hooks/useCrudResource';
 import { api } from '@/lib/api';
-import { getErrorMessage } from '@/lib/errors';
 import type { CreateDriverPayload, Driver, UpdateDriverPayload } from '@/types/driver';
 import type { Route } from '@/types/route';
 import type { Vehicle } from '@/types/vehicle';
@@ -18,13 +16,30 @@ import type { Vehicle } from '@/types/vehicle';
 const dateFormatter = new Intl.DateTimeFormat('pt-BR');
 
 export function DriversPage() {
-  const queryClient = useQueryClient();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
-
-  const { data: drivers, isLoading } = useQuery({
-    queryKey: ['drivers'],
-    queryFn: async () => (await api.get<Driver[]>('/drivers')).data,
+  const {
+    items: drivers,
+    isLoading,
+    sheetOpen,
+    setSheetOpen,
+    editingItem: editingDriver,
+    openCreateSheet,
+    openEditSheet,
+    handleDelete,
+    createMutation,
+    updateMutation,
+    isSubmitting,
+  } = useCrudResource<Driver, CreateDriverPayload, UpdateDriverPayload>({
+    queryKey: 'drivers',
+    basePath: '/drivers',
+    messages: {
+      created: 'Motorista criado com sucesso.',
+      updated: 'Motorista atualizado com sucesso.',
+      deleted: 'Motorista removido com sucesso.',
+      createError: 'Não foi possível criar o motorista.',
+      updateError: 'Não foi possível atualizar o motorista.',
+      deleteError: 'Não foi possível remover o motorista.',
+    },
+    confirmDelete: (driver) => `Remover o motorista "${driver.name}"?`,
   });
 
   const { data: vehicles } = useQuery({
@@ -39,62 +54,6 @@ export function DriversPage() {
 
   const vehicleById = new Map((vehicles ?? []).map((vehicle) => [vehicle.id, vehicle]));
   const routeNameById = new Map((routes ?? []).map((route) => [route.id, route.name]));
-
-  const invalidateDrivers = () => queryClient.invalidateQueries({ queryKey: ['drivers'] });
-
-  const createMutation = useMutation({
-    mutationFn: async (payload: CreateDriverPayload) => api.post('/drivers', payload),
-    onSuccess: () => {
-      toast.success('Motorista criado com sucesso.');
-      setSheetOpen(false);
-      invalidateDrivers();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível criar o motorista.'));
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: UpdateDriverPayload }) =>
-      api.patch(`/drivers/${id}`, payload),
-    onSuccess: () => {
-      toast.success('Motorista atualizado com sucesso.');
-      setSheetOpen(false);
-      invalidateDrivers();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível atualizar o motorista.'));
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/drivers/${id}`),
-    onSuccess: () => {
-      toast.success('Motorista removido com sucesso.');
-      invalidateDrivers();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível remover o motorista.'));
-    },
-  });
-
-  function openCreateSheet() {
-    setEditingDriver(null);
-    setSheetOpen(true);
-  }
-
-  function openEditSheet(driver: Driver) {
-    setEditingDriver(driver);
-    setSheetOpen(true);
-  }
-
-  function handleDelete(driver: Driver) {
-    if (window.confirm(`Remover o motorista "${driver.name}"?`)) {
-      deleteMutation.mutate(driver.id);
-    }
-  }
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-col gap-4">

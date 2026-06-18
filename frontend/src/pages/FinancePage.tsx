@@ -25,6 +25,7 @@ import {
   chartGridProps,
   chartTooltipProps,
 } from '@/lib/chartTheme';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 import type {
   CostPerKmResult,
   FinanceQuery,
@@ -32,25 +33,10 @@ import type {
   MonthlyFinanceSummary,
 } from '@/types/finance';
 
-const currencyFormatter = new Intl.NumberFormat('pt-BR', {
-  style: 'currency',
-  currency: 'BRL',
-});
-
-const numberFormatter = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 });
-
-function formatCurrency(value: number | null): string {
-  return value !== null ? currencyFormatter.format(value) : '—';
-}
-
-function formatNumber(value: number, fractionDigits = 2): string {
-  return value.toLocaleString('pt-BR', { maximumFractionDigits: fractionDigits });
-}
-
 function formatVariation(value: number | null): string {
   if (value === null) return '—';
   const sign = value > 0 ? '+' : '';
-  return `${sign}${numberFormatter.format(value)}%`;
+  return `${sign}${formatNumber(value, 2)}%`;
 }
 
 export function FinancePage() {

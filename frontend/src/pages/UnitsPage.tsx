@@ -1,82 +1,39 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Building2, Pencil, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { UnitFormSheet } from '@/components/units/UnitFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { api } from '@/lib/api';
-import { getErrorMessage } from '@/lib/errors';
+import { useCrudResource } from '@/hooks/useCrudResource';
 import type { CreateUnitPayload, Unit, UpdateUnitPayload } from '@/types/unit';
 
 export function UnitsPage() {
-  const queryClient = useQueryClient();
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
-
-  const { data: units, isLoading } = useQuery({
-    queryKey: ['units'],
-    queryFn: async () => (await api.get<Unit[]>('/units')).data,
+  const {
+    items: units,
+    isLoading,
+    sheetOpen,
+    setSheetOpen,
+    editingItem: editingUnit,
+    openCreateSheet,
+    openEditSheet,
+    handleDelete,
+    createMutation,
+    updateMutation,
+    isSubmitting,
+  } = useCrudResource<Unit, CreateUnitPayload, UpdateUnitPayload>({
+    queryKey: 'units',
+    basePath: '/units',
+    messages: {
+      created: 'Unidade criada com sucesso.',
+      updated: 'Unidade atualizada com sucesso.',
+      deleted: 'Unidade inativada com sucesso.',
+      createError: 'Não foi possível criar a unidade.',
+      updateError: 'Não foi possível atualizar a unidade.',
+      deleteError: 'Não foi possível inativar a unidade.',
+    },
+    confirmDelete: (unit) => `Inativar a unidade "${unit.name}"?`,
   });
-
-  const invalidateUnits = () => queryClient.invalidateQueries({ queryKey: ['units'] });
-
-  const createMutation = useMutation({
-    mutationFn: async (payload: CreateUnitPayload) => api.post('/units', payload),
-    onSuccess: () => {
-      toast.success('Unidade criada com sucesso.');
-      setSheetOpen(false);
-      invalidateUnits();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível criar a unidade.'));
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, payload }: { id: string; payload: UpdateUnitPayload }) =>
-      api.patch(`/units/${id}`, payload),
-    onSuccess: () => {
-      toast.success('Unidade atualizada com sucesso.');
-      setSheetOpen(false);
-      invalidateUnits();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível atualizar a unidade.'));
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => api.delete(`/units/${id}`),
-    onSuccess: () => {
-      toast.success('Unidade inativada com sucesso.');
-      invalidateUnits();
-    },
-    onError: (error) => {
-      toast.error(getErrorMessage(error, 'Não foi possível inativar a unidade.'));
-    },
-  });
-
-  function openCreateSheet() {
-    setEditingUnit(null);
-    setSheetOpen(true);
-  }
-
-  function openEditSheet(unit: Unit) {
-    setEditingUnit(unit);
-    setSheetOpen(true);
-  }
-
-  function handleDelete(unit: Unit) {
-    if (window.confirm(`Inativar a unidade "${unit.name}"?`)) {
-      deleteMutation.mutate(unit.id);
-    }
-  }
-
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="flex flex-col gap-4">
