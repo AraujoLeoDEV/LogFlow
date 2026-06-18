@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.2.2026';
+export const APP_VERSION = 'V0.3.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.3.2026',
+    date: '18/06/2026',
+    items: [
+      'Melhoria: alertas por e-mail mais confiáveis, eliminando risco de envio duplicado.',
+      'Correção: cálculo de consumo de combustível ajustado para evitar erro em casos extremos.',
+      'Melhoria: regras de acesso mais consistentes entre as telas de Ocorrências e Registro Diário.',
+    ],
+  },
   {
     version: 'V0.2.2026',
     date: '18/06/2026',
