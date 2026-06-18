@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { AxiosError } from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -47,6 +47,7 @@ export function LoginPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -96,7 +97,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthHero>
+    <AuthHero containerRef={heroRef}>
       <Card className="relative w-full max-w-sm border-white/10 bg-white/[0.04] shadow-2xl backdrop-blur-xl">
         <CardHeader className="text-center">
           <p className="font-mono mb-1 text-xs font-medium tracking-widest text-violet-300/70 uppercase">
@@ -171,7 +172,7 @@ export function LoginPage() {
           if (!open) closeWhatsNew();
         }}
       >
-        <DialogContent>
+        <DialogContent container={heroRef}>
           <DialogHeader>
             <DialogTitle>O que há de novo</DialogTitle>
             <DialogDescription>Últimas melhorias e correções do sistema.</DialogDescription>

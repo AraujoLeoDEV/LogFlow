@@ -1,14 +1,18 @@
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 import logoIcon from '@/assets/logo-icon.png';
 
 interface AuthHeroProps {
   children: ReactNode;
+  containerRef?: Ref<HTMLDivElement>;
 }
 
-export function AuthHero({ children }: AuthHeroProps) {
+export function AuthHero({ children, containerRef }: AuthHeroProps) {
   return (
-    <div className="dark relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#221a45] to-[#0c0e1c] p-4">
+    <div
+      ref={containerRef}
+      className="dark relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#221a45] to-[#0c0e1c] p-4"
+    >
       <div
         aria-hidden
         className="absolute inset-0 opacity-[0.07]"
