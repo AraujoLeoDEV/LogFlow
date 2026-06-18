@@ -21,6 +21,7 @@ import { roleLabels } from '@/lib/roles';
 
 import { NotificationsMenu } from './NotificationsMenu';
 import { Sidebar } from './Sidebar';
+import { ThemeToggle } from './ThemeToggle';
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/);
@@ -106,6 +107,8 @@ export function Header() {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
+
+      <ThemeToggle />
 
       <NotificationsMenu />
 

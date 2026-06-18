@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -242,25 +244,22 @@ export function ReportsPage() {
   if (!canManage) {
     return (
       <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Central de Relatórios</h2>
-          <p className="text-sm text-muted-foreground">
-            Você não tem permissão para acessar esta página.
-          </p>
-        </div>
+        <PageHeader
+          icon={FileText}
+          title="Central de Relatórios"
+          description="Você não tem permissão para acessar esta página."
+        />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Central de Relatórios</h2>
-        <p className="text-sm text-muted-foreground">
-          Solicite a geração de relatórios em PDF, Excel ou CSV. A geração é feita em segundo plano
-          - acompanhe o status e baixe o arquivo quando estiver concluído.
-        </p>
-      </div>
+      <PageHeader
+        icon={FileText}
+        title="Central de Relatórios"
+        description="Solicite a geração de relatórios em PDF, Excel ou CSV. A geração é feita em segundo plano - acompanhe o status e baixe o arquivo quando estiver concluído."
+      />
 
       <Card>
         <CardHeader>

@@ -17,11 +17,11 @@ export const chartTooltipProps = {
     color: 'var(--popover-foreground)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius-lg)',
-    boxShadow: '0 4px 16px rgb(0 0 0 / 0.12)',
+    boxShadow: '0 8px 24px -4px rgb(0 0 0 / 0.18)',
     fontSize: '0.8125rem',
     padding: '0.5rem 0.75rem',
   },
-  labelStyle: { fontWeight: 600, marginBottom: '0.25rem' },
+  labelStyle: { fontWeight: 600, marginBottom: '0.25rem', fontFamily: 'var(--font-heading)' },
 };
 
 export function chartGradientId(color: string) {

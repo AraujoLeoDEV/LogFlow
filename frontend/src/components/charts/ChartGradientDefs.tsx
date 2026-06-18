@@ -11,6 +11,12 @@ export function ChartGradientDefs() {
           <stop offset="100%" style={{ stopColor: `var(--${color})`, stopOpacity: 0.55 }} />
         </linearGradient>
       ))}
+      {/* gradiente "rota": percorre o mesmo azul→violeta→magenta da identidade LogFlow */}
+      <linearGradient id={chartGradientId('route')} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" style={{ stopColor: 'var(--chart-1)', stopOpacity: 1 }} />
+        <stop offset="55%" style={{ stopColor: 'var(--chart-3)', stopOpacity: 0.92 }} />
+        <stop offset="100%" style={{ stopColor: 'var(--chart-5)', stopOpacity: 0.85 }} />
+      </linearGradient>
     </defs>
   );
 }

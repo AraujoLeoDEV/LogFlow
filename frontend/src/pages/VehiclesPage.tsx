@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, Truck } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { VehicleFormSheet } from '@/components/vehicles/VehicleFormSheet';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -93,18 +94,17 @@ export function VehiclesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Veículos</h2>
-          <p className="text-sm text-muted-foreground">
-            Gerencie a frota e acompanhe a depreciação mensal calculada de cada veículo.
-          </p>
-        </div>
-        <Button onClick={openCreateSheet}>
-          <Plus />
-          Novo veículo
-        </Button>
-      </div>
+      <PageHeader
+        icon={Truck}
+        title="Veículos"
+        description="Gerencie a frota e acompanhe a depreciação mensal calculada de cada veículo."
+        action={
+          <Button onClick={openCreateSheet}>
+            <Plus />
+            Novo veículo
+          </Button>
+        }
+      />
 
       <Card className="overflow-hidden p-0">
         <table className="w-full text-sm">

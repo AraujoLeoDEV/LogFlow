@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Building2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { UnitFormSheet } from '@/components/units/UnitFormSheet';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -79,18 +80,17 @@ export function UnitsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Unidades</h2>
-          <p className="text-sm text-muted-foreground">
-            Gerencie as unidades cadastradas para envios e operações.
-          </p>
-        </div>
-        <Button onClick={openCreateSheet}>
-          <Plus />
-          Nova unidade
-        </Button>
-      </div>
+      <PageHeader
+        icon={Building2}
+        title="Unidades"
+        description="Gerencie as unidades cadastradas para envios e operações."
+        action={
+          <Button onClick={openCreateSheet}>
+            <Plus />
+            Nova unidade
+          </Button>
+        }
+      />
 
       <Card className="overflow-hidden p-0">
         <table className="w-full text-sm">

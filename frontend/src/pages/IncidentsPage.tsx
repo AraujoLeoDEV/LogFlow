@@ -1,11 +1,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertTriangle } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -175,12 +177,11 @@ export function IncidentsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Ocorrências</h2>
-        <p className="text-sm text-muted-foreground">
-          Registre ocorrências da frota e acompanhe indicadores por motorista e por veículo.
-        </p>
-      </div>
+      <PageHeader
+        icon={AlertTriangle}
+        title="Ocorrências"
+        description="Registre ocorrências da frota e acompanhe indicadores por motorista e por veículo."
+      />
 
       {canViewIndicators && (
         <Card>

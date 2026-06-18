@@ -1,13 +1,16 @@
 import { useQuery } from '@tanstack/react-query';
+import { Gauge, LayoutDashboard, Route as RouteIcon, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
-import { VehicleName } from '@/components/vehicles/VehicleName';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
+import { StatCard } from '@/components/ui/stat-card';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs';
+import { VehicleName } from '@/components/vehicles/VehicleName';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import {
@@ -92,11 +95,36 @@ export function DashboardPage() {
 
   const defaultTab = canViewDrivers ? 'drivers' : canViewVehicles ? 'vehicles' : 'routes';
 
+  const totalKmFleet = (vehicleIndicators?.vehicles ?? []).reduce((sum, v) => sum + v.kmTotal, 0);
+  const activeDriversCount = (driverIndicators ?? []).filter((d) => d.kmTotal > 0).length;
+  const totalRouteUsage = (routeIndicators ?? []).reduce((sum, r) => sum + r.usageCount, 0);
+
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">Indicadores gerais da frota.</p>
+      <PageHeader
+        icon={LayoutDashboard}
+        title="Dashboard"
+        description="Indicadores gerais da frota."
+      />
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        {canViewVehicles && (
+          <StatCard
+            icon={Gauge}
+            label="KM total da frota"
+            value={`${formatNumber(totalKmFleet, 0)} km`}
+          />
+        )}
+        {canViewDrivers && (
+          <StatCard
+            icon={UserRound}
+            label="Motoristas em atividade"
+            value={String(activeDriversCount)}
+          />
+        )}
+        {canViewRoutes && (
+          <StatCard icon={RouteIcon} label="Viagens no período" value={String(totalRouteUsage)} />
+        )}
       </div>
 
       <Card>
@@ -195,7 +223,7 @@ export function DashboardPage() {
                               <Bar
                                 dataKey="kmTotal"
                                 name="KM total"
-                                fill={chartGradientUrl('primary')}
+                                fill={chartGradientUrl('route')}
                                 radius={[6, 6, 0, 0]}
                               />
                             </BarChart>
@@ -307,7 +335,7 @@ export function DashboardPage() {
                               <Bar
                                 dataKey="kmTotal"
                                 name="KM total"
-                                fill={chartGradientUrl('primary')}
+                                fill={chartGradientUrl('route')}
                                 radius={[6, 6, 0, 0]}
                               />
                             </BarChart>
@@ -387,7 +415,7 @@ export function DashboardPage() {
                               <Bar
                                 dataKey="usageCount"
                                 name="Usos"
-                                fill={chartGradientUrl('primary')}
+                                fill={chartGradientUrl('route')}
                                 radius={[6, 6, 0, 0]}
                               />
                             </BarChart>

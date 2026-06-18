@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Target } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { VehicleName } from '@/components/vehicles/VehicleName';
 import { Button } from '@/components/ui/button';
@@ -245,25 +247,22 @@ export function GoalsPage() {
   if (!canManage) {
     return (
       <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Metas e Comissão</h2>
-          <p className="text-sm text-muted-foreground">
-            Você não tem permissão para acessar esta página.
-          </p>
-        </div>
+        <PageHeader
+          icon={Target}
+          title="Metas e Comissão"
+          description="Você não tem permissão para acessar esta página."
+        />
       </div>
     );
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Metas e Comissão</h2>
-        <p className="text-sm text-muted-foreground">
-          Defina metas de redução de consumo por motorista ou veículo e acompanhe o resultado real e
-          a comissão apurada ao final de cada período.
-        </p>
-      </div>
+      <PageHeader
+        icon={Target}
+        title="Metas e Comissão"
+        description="Defina metas de redução de consumo por motorista ou veículo e acompanhe o resultado real e a comissão apurada ao final de cada período."
+      />
 
       <Card>
         <CardHeader>

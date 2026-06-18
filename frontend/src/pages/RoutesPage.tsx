@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Map, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { RouteFormSheet } from '@/components/routes/RouteFormSheet';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -79,18 +80,17 @@ export function RoutesPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">Rotas</h2>
-          <p className="text-sm text-muted-foreground">
-            Gerencie as rotas cadastradas, com distância e duração estimadas.
-          </p>
-        </div>
-        <Button onClick={openCreateSheet}>
-          <Plus />
-          Nova rota
-        </Button>
-      </div>
+      <PageHeader
+        icon={Map}
+        title="Rotas"
+        description="Gerencie as rotas cadastradas, com distância e duração estimadas."
+        action={
+          <Button onClick={openCreateSheet}>
+            <Plus />
+            Nova rota
+          </Button>
+        }
+      />
 
       <Card className="overflow-hidden p-0">
         <table className="w-full text-sm">

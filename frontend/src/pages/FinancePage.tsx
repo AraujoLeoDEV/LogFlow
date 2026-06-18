@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { Fuel, Gauge, TrendingDown, Wallet, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import {
   Bar,
@@ -12,9 +13,11 @@ import {
 } from 'recharts';
 
 import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
+import { StatCard } from '@/components/ui/stat-card';
 import { api } from '@/lib/api';
 import {
   chartAxisProps,
@@ -88,12 +91,11 @@ export function FinancePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Financeiro</h2>
-        <p className="text-muted-foreground">
-          Custos da frota: combustível, manutenção e depreciação.
-        </p>
-      </div>
+      <PageHeader
+        icon={Wallet}
+        title="Financeiro"
+        description="Custos da frota: combustível, manutenção e depreciação."
+      />
 
       <Card>
         <CardHeader>
@@ -121,38 +123,26 @@ export function FinancePage() {
       </Card>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardDescription>Combustível</CardDescription>
-            <CardTitle className="text-xl">
-              {isLoadingMonthly ? '...' : formatCurrency(currentMonth?.fuelCost ?? 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Manutenção</CardDescription>
-            <CardTitle className="text-xl">
-              {isLoadingMonthly ? '...' : formatCurrency(currentMonth?.maintenanceCost ?? 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Depreciação mensal da frota</CardDescription>
-            <CardTitle className="text-xl">
-              {isLoadingMonthly ? '...' : formatCurrency(currentMonth?.depreciation ?? 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Custo total do mês</CardDescription>
-            <CardTitle className="text-xl">
-              {isLoadingMonthly ? '...' : formatCurrency(currentMonth?.total ?? 0)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+        <StatCard
+          icon={Fuel}
+          label="Combustível"
+          value={isLoadingMonthly ? '...' : formatCurrency(currentMonth?.fuelCost ?? 0)}
+        />
+        <StatCard
+          icon={Wrench}
+          label="Manutenção"
+          value={isLoadingMonthly ? '...' : formatCurrency(currentMonth?.maintenanceCost ?? 0)}
+        />
+        <StatCard
+          icon={TrendingDown}
+          label="Depreciação mensal"
+          value={isLoadingMonthly ? '...' : formatCurrency(currentMonth?.depreciation ?? 0)}
+        />
+        <StatCard
+          icon={Gauge}
+          label="Custo total do mês"
+          value={isLoadingMonthly ? '...' : formatCurrency(currentMonth?.total ?? 0)}
+        />
       </div>
 
       <Card>

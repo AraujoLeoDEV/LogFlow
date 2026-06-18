@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ClipboardList } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import { z } from 'zod';
 
 import { ReturnDailyLogSheet } from '@/components/daily-logs/ReturnDailyLogSheet';
 import { VehicleName } from '@/components/vehicles/VehicleName';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -219,12 +221,11 @@ export function DailyLogsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Registro Diário</h2>
-        <p className="text-sm text-muted-foreground">
-          Registre a saída e o retorno dos veículos e acompanhe o histórico de uso da frota.
-        </p>
-      </div>
+      <PageHeader
+        icon={ClipboardList}
+        title="Registro Diário"
+        description="Registre a saída e o retorno dos veículos e acompanhe o histórico de uso da frota."
+      />
 
       <Card>
         <CardHeader>

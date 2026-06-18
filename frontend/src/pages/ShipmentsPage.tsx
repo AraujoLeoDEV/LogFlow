@@ -1,10 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { PackageSearch } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -440,46 +442,65 @@ export function ShipmentsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-2xl font-semibold tracking-tight">
-            {isConferente ? 'Confirmação de recebimento' : 'Envios'}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {isConferente
-              ? 'Confira e confirme o recebimento dos envios destinados à sua unidade.'
-              : 'Acompanhe envios de itens entre unidades, com protocolo automático, comprovante em PDF e timeline de status.'}
-          </p>
-        </div>
-        {canCreate && (
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <Button type="button" onClick={() => setCreateDialogOpen(true)}>
-              Novo envio
-            </Button>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Registrar envio</DialogTitle>
-                <DialogDescription>
-                  Informe origem, destino e os itens enviados. O número de protocolo e o status
-                  inicial ("Pendente") são definidos automaticamente.
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form
-                  onSubmit={form.handleSubmit(onSubmit)}
-                  className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto px-4 pb-4"
-                >
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {canManage && (
+      <PageHeader
+        icon={PackageSearch}
+        title={isConferente ? 'Confirmação de recebimento' : 'Envios'}
+        description={
+          isConferente
+            ? 'Confira e confirme o recebimento dos envios destinados à sua unidade.'
+            : 'Acompanhe envios de itens entre unidades, com protocolo automático, comprovante em PDF e timeline de status.'
+        }
+        action={
+          canCreate && (
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <Button type="button" onClick={() => setCreateDialogOpen(true)}>
+                Novo envio
+              </Button>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Registrar envio</DialogTitle>
+                  <DialogDescription>
+                    Informe origem, destino e os itens enviados. O número de protocolo e o status
+                    inicial ("Pendente") são definidos automaticamente.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onSubmit)}
+                    className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto px-4 pb-4"
+                  >
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      {canManage && (
+                        <FormField
+                          control={form.control}
+                          name="originUnitId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Unidade de origem (opcional)</FormLabel>
+                              <FormControl>
+                                <Select {...field}>
+                                  <option value="">Não definida</option>
+                                  {activeUnits.map((unit) => (
+                                    <option key={unit.id} value={unit.id}>
+                                      {unit.name}
+                                    </option>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                       <FormField
                         control={form.control}
-                        name="originUnitId"
+                        name="destinationUnitId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Unidade de origem (opcional)</FormLabel>
+                            <FormLabel>Unidade de destino</FormLabel>
                             <FormControl>
-                              <Select {...field}>
-                                <option value="">Não definida</option>
+                              <Select {...field} required>
+                                <option value="">Selecione...</option>
                                 {activeUnits.map((unit) => (
                                   <option key={unit.id} value={unit.id}>
                                     {unit.name}
@@ -491,221 +512,203 @@ export function ShipmentsPage() {
                           </FormItem>
                         )}
                       />
-                    )}
+                      <FormField
+                        control={form.control}
+                        name="shippedAt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data do envio</FormLabel>
+                            <FormControl>
+                              <DatePicker value={field.value} onChange={field.onChange} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="transporterId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Transportador (opcional)</FormLabel>
+                            <FormControl>
+                              <Select {...field}>
+                                <option value="">Não definido</option>
+                                {activeDrivers.map((driver) => (
+                                  <option key={driver.id} value={driver.id}>
+                                    {driver.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid gap-1.5">
+                      <Label>Status inicial</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Pendente (definido automaticamente)
+                      </p>
+                    </div>
+
                     <FormField
                       control={form.control}
-                      name="destinationUnitId"
+                      name="observations"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Unidade de destino</FormLabel>
+                          <FormLabel>Observações</FormLabel>
                           <FormControl>
-                            <Select {...field} required>
-                              <option value="">Selecione...</option>
-                              {activeUnits.map((unit) => (
-                                <option key={unit.id} value={unit.id}>
-                                  {unit.name}
-                                </option>
-                              ))}
-                            </Select>
+                            <Input {...field} placeholder="Observações sobre o envio" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="shippedAt"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Data do envio</FormLabel>
-                          <FormControl>
-                            <DatePicker value={field.value} onChange={field.onChange} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="transporterId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Transportador (opcional)</FormLabel>
-                          <FormControl>
-                            <Select {...field}>
-                              <option value="">Não definido</option>
-                              {activeDrivers.map((driver) => (
-                                <option key={driver.id} value={driver.id}>
-                                  {driver.name}
-                                </option>
-                              ))}
-                            </Select>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
 
-                  <div className="grid gap-1.5">
-                    <Label>Status inicial</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Pendente (definido automaticamente)
-                    </p>
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="observations"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Observações</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Observações sobre o envio" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex flex-col gap-2">
-                    <Label>Itens</Label>
-                    {fields.map((item, index) => (
-                      <div key={item.id} className="grid items-start gap-2 sm:grid-cols-12">
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.description`}
-                          render={({ field }) => (
-                            <FormItem className="sm:col-span-4">
-                              <FormControl>
-                                <Input {...field} placeholder="Descrição do item" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.category`}
-                          render={({ field }) => (
-                            <FormItem className="sm:col-span-2">
-                              <FormControl>
-                                <Input {...field} placeholder="Categoria" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.quantity`}
-                          render={({ field }) => (
-                            <FormItem className="sm:col-span-1">
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  min="0.01"
-                                  step="0.01"
-                                  value={field.value ?? ''}
-                                  onChange={(event) =>
-                                    field.onChange(
-                                      event.target.value === ''
-                                        ? undefined
-                                        : event.target.valueAsNumber,
-                                    )
-                                  }
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.unit`}
-                          render={({ field }) => (
-                            <FormItem className="sm:col-span-2">
-                              <FormControl>
-                                <Select {...field}>
-                                  {shipmentItemUnitOptions.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </Select>
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`items.${index}.notes`}
-                          render={({ field }) => (
-                            <FormItem className="sm:col-span-2">
-                              <FormControl>
-                                <Input {...field} placeholder="Observação" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                    <div className="flex flex-col gap-2">
+                      <Label>Itens</Label>
+                      {fields.map((item, index) => (
+                        <div key={item.id} className="grid items-start gap-2 sm:grid-cols-12">
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.description`}
+                            render={({ field }) => (
+                              <FormItem className="sm:col-span-4">
+                                <FormControl>
+                                  <Input {...field} placeholder="Descrição do item" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.category`}
+                            render={({ field }) => (
+                              <FormItem className="sm:col-span-2">
+                                <FormControl>
+                                  <Input {...field} placeholder="Categoria" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.quantity`}
+                            render={({ field }) => (
+                              <FormItem className="sm:col-span-1">
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    value={field.value ?? ''}
+                                    onChange={(event) =>
+                                      field.onChange(
+                                        event.target.value === ''
+                                          ? undefined
+                                          : event.target.valueAsNumber,
+                                      )
+                                    }
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.unit`}
+                            render={({ field }) => (
+                              <FormItem className="sm:col-span-2">
+                                <FormControl>
+                                  <Select {...field}>
+                                    {shipmentItemUnitOptions.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                  </Select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`items.${index}.notes`}
+                            render={({ field }) => (
+                              <FormItem className="sm:col-span-2">
+                                <FormControl>
+                                  <Input {...field} placeholder="Observação" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="sm:col-span-1"
+                            onClick={() => remove(index)}
+                            disabled={fields.length === 1}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      ))}
+                      <div>
                         <Button
                           type="button"
                           variant="outline"
-                          className="sm:col-span-1"
-                          onClick={() => remove(index)}
-                          disabled={fields.length === 1}
+                          onClick={() => append({ ...EMPTY_ITEM })}
                         >
-                          Remover
+                          Adicionar item
                         </Button>
                       </div>
-                    ))}
-                    <div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => append({ ...EMPTY_ITEM })}
-                      >
-                        Adicionar item
-                      </Button>
                     </div>
-                  </div>
 
-                  <div className="grid gap-1.5">
-                    <Label htmlFor="photo-upload">
-                      Foto{' '}
-                      {isConferente ? <span className="text-destructive">*</span> : '(opcional)'}
-                    </Label>
-                    <input
-                      id="photo-upload"
-                      ref={photoInputRef}
-                      type="file"
-                      accept="image/*"
-                      title="Foto do envio"
-                      required={isConferente}
-                      className="text-sm file:mr-2 file:rounded file:border file:px-2 file:py-1 file:text-xs"
-                      onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
-                    />
-                    {photoFile && <p className="text-xs text-muted-foreground">{photoFile.name}</p>}
-                  </div>
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="photo-upload">
+                        Foto{' '}
+                        {isConferente ? <span className="text-destructive">*</span> : '(opcional)'}
+                      </Label>
+                      <input
+                        id="photo-upload"
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        title="Foto do envio"
+                        required={isConferente}
+                        className="text-sm file:mr-2 file:rounded file:border file:px-2 file:py-1 file:text-xs"
+                        onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+                      />
+                      {photoFile && (
+                        <p className="text-xs text-muted-foreground">{photoFile.name}</p>
+                      )}
+                    </div>
 
-                  <DialogFooter>
-                    <Button
-                      type="submit"
-                      disabled={createMutation.isPending || uploadPhotoMutation.isPending}
-                    >
-                      {createMutation.isPending || uploadPhotoMutation.isPending
-                        ? 'Registrando...'
-                        : 'Registrar envio'}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        )}
-      </div>
+                    <DialogFooter>
+                      <Button
+                        type="submit"
+                        disabled={createMutation.isPending || uploadPhotoMutation.isPending}
+                      >
+                        {createMutation.isPending || uploadPhotoMutation.isPending
+                          ? 'Registrando...'
+                          : 'Registrar envio'}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
+          )
+        }
+      />
 
       <Card>
         <CardHeader>

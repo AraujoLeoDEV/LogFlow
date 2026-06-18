@@ -5,8 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { z } from 'zod';
 
-import logoIcon from '@/assets/logo-icon.png';
-
+import { AuthHero } from '@/components/layout/AuthHero';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -54,16 +53,8 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#221a45] to-[#0c0e1c] p-4">
-      <div className="pointer-events-none absolute -top-32 -left-32 size-96 rounded-full bg-primary/40 blur-3xl" />
-      <div className="pointer-events-none absolute -right-32 -bottom-32 size-96 rounded-full bg-[#5b3df5]/30 blur-3xl" />
-      <div className="relative mb-6 flex flex-col items-center gap-2">
-        <img src={logoIcon} alt="" className="size-16 rounded-2xl shadow-lg" />
-        <span className="bg-gradient-to-r from-blue-400 to-violet-400 bg-clip-text text-2xl font-bold text-transparent">
-          LogFlow
-        </span>
-      </div>
-      <Card className="relative w-full max-w-sm shadow-2xl">
+    <AuthHero>
+      <Card className="relative w-full max-w-sm border-white/10 bg-white/[0.04] shadow-2xl backdrop-blur-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Esqueci minha senha</CardTitle>
           <CardDescription>
@@ -123,6 +114,6 @@ export function ForgotPasswordPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AuthHero>
   );
 }

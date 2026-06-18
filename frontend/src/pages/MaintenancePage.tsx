@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -7,6 +8,7 @@ import { z } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
 import { VehicleName } from '@/components/vehicles/VehicleName';
+import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -186,12 +188,11 @@ export function MaintenancePage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-2xl font-semibold tracking-tight">Manutenções</h2>
-        <p className="text-sm text-muted-foreground">
-          Registre manutenções, acompanhe o histórico e a agenda de próximas revisões da frota.
-        </p>
-      </div>
+      <PageHeader
+        icon={Wrench}
+        title="Manutenções"
+        description="Registre manutenções, acompanhe o histórico e a agenda de próximas revisões da frota."
+      />
 
       {canManage && (
         <Card>
