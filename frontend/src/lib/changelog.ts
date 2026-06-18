@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.1.2026';
+export const APP_VERSION = 'V0.2.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.2.2026',
+    date: '18/06/2026',
+    items: [
+      'Melhoria: redesign visual completo do sistema — nova tipografia, paleta refinada e modo escuro com alternância (sol/lua no topo).',
+      'Melhoria: gráficos do Dashboard e do Financeiro com gradiente da marca e indicadores em destaque (KPIs).',
+      'Melhoria: navegação lateral com indicador animado e botões com mais destaque visual.',
+    ],
+  },
   {
     version: 'V0.1.2026',
     date: '17/06/2026',
