@@ -4,9 +4,17 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.3.2026';
+export const APP_VERSION = 'V0.4.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.4.2026',
+    date: '19/06/2026',
+    items: [
+      'Correção: opções dos campos de seleção ficavam difíceis de ler no modo escuro.',
+      'Melhoria: cadastro de Rotas simplificado — sem campos de origem/destino, agora mostra quantas vezes cada rota foi utilizada.',
+    ],
+  },
   {
     version: 'V0.3.2026',
     date: '18/06/2026',
