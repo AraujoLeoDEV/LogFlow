@@ -229,8 +229,6 @@ model Unit {
 model Route {
   id                       String   @id @default(uuid())
   name                     String
-  origin                   String
-  destination              String
   estimatedDistanceKm      Decimal  @map("estimated_distance_km") @db.Decimal(10, 2)
   estimatedDurationMinutes Int      @map("estimated_duration_minutes")
   active                   Boolean  @default(true)

@@ -15,7 +15,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { Role, Route } from '../../../generated/prisma/client';
 import { CreateRouteDto } from './dto/create-route.dto';
 import { UpdateRouteDto } from './dto/update-route.dto';
-import { RoutesService } from './routes.service';
+import { RoutesService, RouteWithUsageCount } from './routes.service';
 
 @ApiTags('routes')
 @ApiBearerAuth()
@@ -26,7 +26,7 @@ export class RoutesController {
 
   @Get()
   @ApiOperation({ summary: 'Lista todas as rotas cadastradas' })
-  findAll(): Promise<Route[]> {
+  findAll(): Promise<RouteWithUsageCount[]> {
     return this.routesService.findAll();
   }
 

@@ -54,10 +54,9 @@ export function RoutesPage() {
           <thead className="border-b bg-muted/50 text-left text-xs text-muted-foreground uppercase">
             <tr>
               <th className="px-4 py-2 font-medium">Nome</th>
-              <th className="px-4 py-2 font-medium">Origem</th>
-              <th className="px-4 py-2 font-medium">Destino</th>
               <th className="px-4 py-2 font-medium">Distância (km)</th>
               <th className="px-4 py-2 font-medium">Duração (min)</th>
+              <th className="px-4 py-2 font-medium">Usos</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium text-right">Ações</th>
             </tr>
@@ -65,14 +64,14 @@ export function RoutesPage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
                   Carregando...
                 </td>
               </tr>
             )}
             {!isLoading && routes?.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
                   Nenhuma rota cadastrada.
                 </td>
               </tr>
@@ -80,10 +79,9 @@ export function RoutesPage() {
             {routes?.map((route) => (
               <tr key={route.id} className="border-b last:border-0">
                 <td className="px-4 py-2 font-medium">{route.name}</td>
-                <td className="px-4 py-2 text-muted-foreground">{route.origin}</td>
-                <td className="px-4 py-2 text-muted-foreground">{route.destination}</td>
                 <td className="px-4 py-2">{Number(route.estimatedDistanceKm).toFixed(1)}</td>
                 <td className="px-4 py-2">{route.estimatedDurationMinutes}</td>
+                <td className="px-4 py-2 font-mono tabular-nums">{route.usageCount}</td>
                 <td className="px-4 py-2">
                   <Badge variant={route.active ? 'default' : 'outline'}>
                     {route.active ? 'Ativa' : 'Inativa'}

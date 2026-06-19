@@ -1,19 +1,16 @@
 export interface Route {
   id: string;
   name: string;
-  origin: string;
-  destination: string;
   estimatedDistanceKm: string;
   estimatedDurationMinutes: number;
   active: boolean;
+  usageCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface CreateRoutePayload {
   name: string;
-  origin: string;
-  destination: string;
   estimatedDistanceKm: number;
   estimatedDurationMinutes: number;
   active?: boolean;

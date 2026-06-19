@@ -73,8 +73,6 @@ function buildRoute(overrides: Partial<Route> = {}): Route {
   return {
     id: 'route-1',
     name: 'Centro - Filial',
-    origin: 'Centro',
-    destination: 'Filial',
     estimatedDistanceKm: new Prisma.Decimal(50),
     estimatedDurationMinutes: 90,
     active: true,

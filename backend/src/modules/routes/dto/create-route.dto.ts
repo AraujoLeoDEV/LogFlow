@@ -14,16 +14,6 @@ export class CreateRouteDto {
   @IsNotEmpty({ message: 'O nome é obrigatório.' })
   name: string;
 
-  @ApiProperty({ example: 'Centro' })
-  @IsString()
-  @IsNotEmpty({ message: 'A origem é obrigatória.' })
-  origin: string;
-
-  @ApiProperty({ example: 'Bairro Industrial' })
-  @IsString()
-  @IsNotEmpty({ message: 'O destino é obrigatório.' })
-  destination: string;
-
   @ApiProperty({
     example: 18.5,
     description: 'Distância estimada em quilômetros.',

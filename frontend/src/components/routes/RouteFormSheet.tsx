@@ -25,8 +25,6 @@ import type { CreateRoutePayload, Route, UpdateRoutePayload } from '@/types/rout
 
 const schema = z.object({
   name: z.string().min(1, 'Informe o nome.'),
-  origin: z.string().min(1, 'Informe a origem.'),
-  destination: z.string().min(1, 'Informe o destino.'),
   estimatedDistanceKm: z
     .number({ message: 'Informe a distância estimada.' })
     .positive('A distância estimada deve ser maior que zero.'),
@@ -50,8 +48,6 @@ interface RouteFormSheetProps {
 
 const EMPTY_VALUES: RouteFormValues = {
   name: '',
-  origin: '',
-  destination: '',
   estimatedDistanceKm: 0,
   estimatedDurationMinutes: 0,
   active: true,
@@ -78,8 +74,6 @@ export function RouteFormSheet({
         route
           ? {
               name: route.name,
-              origin: route.origin,
-              destination: route.destination,
               estimatedDistanceKm: Number(route.estimatedDistanceKm),
               estimatedDurationMinutes: route.estimatedDurationMinutes,
               active: route.active,
@@ -119,32 +113,6 @@ export function RouteFormSheet({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="origin"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Origem</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="destination"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Destino</FormLabel>
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
