@@ -53,6 +53,7 @@
 }
 
 :root {
+    color-scheme: light;
     --background: oklch(0.995 0.003 270);
     --foreground: oklch(0.18 0.02 265);
     --card: oklch(1 0 0);
@@ -90,6 +91,7 @@
 }
 
 .dark {
+    color-scheme: dark;
     --background: oklch(0.16 0.02 265);
     --foreground: oklch(0.97 0.005 270);
     --card: oklch(0.21 0.02 265);
@@ -139,6 +141,14 @@
     }
   html {
     @apply font-sans;
+    }
+  /* <option> herda a cor de texto clara do tema dark, mas o popup do
+     <select> nativo é renderizado pelo navegador/SO com fundo branco -
+     sem isso, o texto fica quase ilegível. Usa as mesmas variáveis do
+     popover, que já trocam corretamente entre claro/escuro. */
+  select option {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
     }
   h1, h2, h3 {
     @apply font-heading tracking-tight;
