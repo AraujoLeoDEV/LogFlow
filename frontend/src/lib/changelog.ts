@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.4.2026';
+export const APP_VERSION = 'V0.5.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.5.2026',
+    date: '26/06/2026',
+    items: [
+      'Novo: envios agora têm criticidade (Urgente, Moderado ou Baixo), definida no cadastro e editável pela Coordenação/ADM.',
+      'Melhoria: clicar em uma notificação leva direto para o envio, veículo, motorista ou registro relacionado.',
+      'Novo: abastecimentos agora permitem escolher a data, e a Coordenação/ADM podem editar um abastecimento já registrado.',
+    ],
+  },
   {
     version: 'V0.4.2026',
     date: '19/06/2026',

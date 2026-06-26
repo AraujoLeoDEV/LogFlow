@@ -157,6 +157,7 @@ export class ShipmentsService {
           transporterId: dto.transporterId,
           observations: dto.observations,
           status: ShipmentStatus.PENDENTE,
+          priority: dto.priority,
           createdBy: user.sub,
         },
         include: shipmentInclude,
@@ -264,6 +265,33 @@ export class ShipmentsService {
         ...shipmentInclude,
         statusHistory: { orderBy: { changedAt: 'asc' } },
       },
+    });
+
+    if (!shipment) {
+      throw new NotFoundException('Envio não encontrado.');
+    }
+
+    if (user.role === Role.CONFERENTE) {
+      const unitId = await this.getConferenteUnitId(user);
+
+      if (shipment.destinationUnitId !== unitId) {
+        throw new ForbiddenException('Você não tem acesso a este envio.');
+      }
+    }
+
+    return shipment;
+  }
+
+  // Busca um envio pelo id (usado para resolver o link de uma notificação de
+  // envio até o protocolo correspondente). Usuários Conferente só podem
+  // acessar envios destinados à sua unidade.
+  async findById(
+    id: string,
+    user: AuthenticatedUser,
+  ): Promise<ShipmentWithRelations> {
+    const shipment = await this.prisma.shipment.findUnique({
+      where: { id },
+      include: shipmentInclude,
     });
 
     if (!shipment) {
@@ -464,6 +492,9 @@ export class ShipmentsService {
     ) {
       changes.push('transportador');
     }
+    if (dto.priority !== undefined && dto.priority !== shipment.priority) {
+      changes.push('criticidade');
+    }
 
     if (changes.length === 0) {
       const current = await this.prisma.shipment.findUnique({
@@ -483,6 +514,7 @@ export class ShipmentsService {
         data: {
           observations: dto.observations,
           transporterId: dto.transporterId,
+          priority: dto.priority,
           ...(dto.items
             ? {
                 items: {

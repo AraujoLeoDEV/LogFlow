@@ -2,6 +2,8 @@ import type { PaginationQuery } from './pagination';
 
 export type ShipmentStatus = 'PENDENTE' | 'EM_TRANSITO' | 'ENTREGUE' | 'CANCELADO' | 'CONFIRMADO';
 
+export type ShipmentPriority = 'URGENTE' | 'MODERADO' | 'BAIXO';
+
 export type ShipmentItemUnit = 'UND' | 'CX' | 'ML' | 'L';
 
 export interface ShipmentItem {
@@ -44,6 +46,7 @@ export interface Shipment {
   shippedAt: string;
   observations: string | null;
   status: ShipmentStatus;
+  priority: ShipmentPriority;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -87,6 +90,7 @@ export interface CreateShipmentPayload {
   items: CreateShipmentItemPayload[];
   transporterId?: string;
   observations?: string;
+  priority?: ShipmentPriority;
 }
 
 export interface UpdateShipmentStatusPayload {
@@ -103,6 +107,7 @@ export interface UpdateShipmentPayload {
   items?: CreateShipmentItemPayload[];
   observations?: string;
   transporterId?: string;
+  priority?: ShipmentPriority;
 }
 
 export interface ShipmentQuery extends PaginationQuery {

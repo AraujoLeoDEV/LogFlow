@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Fuel as FuelIcon } from 'lucide-react';
+import { Fuel as FuelIcon, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -12,6 +12,14 @@ import { VehicleName } from '@/components/vehicles/VehicleName';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -36,7 +44,13 @@ import {
 import { getErrorMessage } from '@/lib/errors';
 import { formatCurrency, formatDateTime, formatNumber } from '@/lib/formatters';
 import { fuelTypeLabels, fuelTypeOptions } from '@/lib/fuelTypes';
-import type { CreateFuelPayload, FuelIndicators, FuelQuery, FuelWithRelations } from '@/types/fuel';
+import type {
+  CreateFuelPayload,
+  FuelIndicators,
+  FuelQuery,
+  FuelWithRelations,
+  UpdateFuelPayload,
+} from '@/types/fuel';
 import type { Driver } from '@/types/driver';
 import type { PaginatedResult } from '@/types/pagination';
 import type { FuelType, Vehicle } from '@/types/vehicle';
@@ -48,6 +62,17 @@ function formatConsumption(value: number | null): string {
 function formatMonth(month: string): string {
   const [year, monthNumber] = month.split('-');
   return `${monthNumber}/${year}`;
+}
+
+function todayDateOnly(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+}
+
+function dateOnly(value: string): string {
+  return value.slice(0, 10);
 }
 
 const fuelSchema = z.object({
@@ -63,6 +88,7 @@ const fuelSchema = z.object({
     .number({ message: 'Informe o KM atual.' })
     .min(0, 'O KM atual não pode ser negativo.'),
   fuelType: z.string().min(1, 'Selecione o tipo de combustível.'),
+  date: z.string().min(1, 'Selecione a data do abastecimento.'),
 });
 
 type FuelFormValues = z.infer<typeof fuelSchema>;
@@ -74,7 +100,25 @@ const EMPTY_FUEL_VALUES: FuelFormValues = {
   amountPaid: 0,
   currentKm: 0,
   fuelType: '',
+  date: todayDateOnly(),
 };
+
+const editFuelSchema = z.object({
+  driverId: z.string().min(1, 'Selecione o motorista.'),
+  liters: z
+    .number({ message: 'Informe a quantidade de litros.' })
+    .min(0.01, 'A quantidade de litros deve ser maior que zero.'),
+  amountPaid: z
+    .number({ message: 'Informe o valor pago.' })
+    .min(0, 'O valor pago não pode ser negativo.'),
+  currentKm: z
+    .number({ message: 'Informe o KM atual.' })
+    .min(0, 'O KM atual não pode ser negativo.'),
+  fuelType: z.string().min(1, 'Selecione o tipo de combustível.'),
+  date: z.string().min(1, 'Selecione a data do abastecimento.'),
+});
+
+type EditFuelFormValues = z.infer<typeof editFuelSchema>;
 
 export function FuelPage() {
   const queryClient = useQueryClient();
@@ -85,6 +129,7 @@ export function FuelPage() {
 
   const [filters, setFilters] = useState<FuelQuery>({});
   const [page, setPage] = useState(1);
+  const [editingFuel, setEditingFuel] = useState<FuelWithRelations | null>(null);
 
   const { data: vehicles } = useQuery({
     queryKey: ['vehicles'],
@@ -128,13 +173,65 @@ export function FuelPage() {
     mutationFn: async (payload: CreateFuelPayload) => api.post('/fuel', payload),
     onSuccess: () => {
       toast.success('Abastecimento registrado com sucesso.');
-      fuelForm.reset(EMPTY_FUEL_VALUES);
+      fuelForm.reset({ ...EMPTY_FUEL_VALUES, date: todayDateOnly() });
       invalidateFuel();
     },
     onError: (error) => {
       toast.error(getErrorMessage(error, 'Não foi possível registrar o abastecimento.'));
     },
   });
+
+  const editForm = useForm<EditFuelFormValues>({
+    resolver: zodResolver(editFuelSchema),
+    defaultValues: {
+      driverId: '',
+      liters: 0,
+      amountPaid: 0,
+      currentKm: 0,
+      fuelType: '',
+      date: todayDateOnly(),
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (payload: { id: string; data: UpdateFuelPayload }) =>
+      api.patch(`/fuel/${payload.id}`, payload.data),
+    onSuccess: () => {
+      toast.success('Abastecimento atualizado com sucesso.');
+      setEditingFuel(null);
+      invalidateFuel();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Não foi possível atualizar o abastecimento.'));
+    },
+  });
+
+  function openEditDialog(fuel: FuelWithRelations) {
+    setEditingFuel(fuel);
+    editForm.reset({
+      driverId: fuel.driverId,
+      liters: Number(fuel.liters),
+      amountPaid: Number(fuel.amountPaid),
+      currentKm: Number(fuel.currentKm),
+      fuelType: fuel.fuelType,
+      date: dateOnly(fuel.date),
+    });
+  }
+
+  function onSubmitEditFuel(values: EditFuelFormValues) {
+    if (!editingFuel) return;
+    updateMutation.mutate({
+      id: editingFuel.id,
+      data: {
+        driverId: values.driverId,
+        liters: values.liters,
+        amountPaid: values.amountPaid,
+        currentKm: values.currentKm,
+        fuelType: values.fuelType as FuelType,
+        date: new Date(`${values.date}T00:00:00`).toISOString(),
+      },
+    });
+  }
 
   const activeVehicles = (vehicles ?? []).filter((vehicle) => vehicle.active);
   const activeDrivers = (drivers ?? []).filter((driver) => driver.active);
@@ -152,6 +249,7 @@ export function FuelPage() {
       amountPaid: values.amountPaid,
       currentKm: values.currentKm,
       fuelType: values.fuelType as FuelType,
+      date: new Date(`${values.date}T00:00:00`).toISOString(),
     });
   }
 
@@ -403,6 +501,19 @@ export function FuelPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={fuelForm.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data do abastecimento</FormLabel>
+                      <FormControl>
+                        <DatePicker value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="sm:col-span-2 lg:col-span-3">
                   <Button type="submit" disabled={createMutation.isPending}>
                     {createMutation.isPending ? 'Registrando...' : 'Registrar abastecimento'}
@@ -480,19 +591,26 @@ export function FuelPage() {
                   <th className="px-2 py-2 font-medium">KM atual</th>
                   <th className="px-2 py-2 font-medium">Consumo</th>
                   <th className="px-2 py-2 font-medium">Custo/KM</th>
+                  {canManageOthers && <th className="px-2 py-2 font-medium">Ações</th>}
                 </tr>
               </thead>
               <tbody>
                 {isLoadingHistory && (
                   <tr>
-                    <td colSpan={9} className="px-2 py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={canManageOthers ? 10 : 9}
+                      className="px-2 py-6 text-center text-muted-foreground"
+                    >
                       Carregando...
                     </td>
                   </tr>
                 )}
                 {!isLoadingHistory && history?.data.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-2 py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={canManageOthers ? 10 : 9}
+                      className="px-2 py-6 text-center text-muted-foreground"
+                    >
                       Nenhum abastecimento encontrado.
                     </td>
                   </tr>
@@ -518,6 +636,19 @@ export function FuelPage() {
                     <td className="px-2 py-2">
                       {fuel.costPerKm !== null ? formatCurrency(Number(fuel.costPerKm)) : '—'}
                     </td>
+                    {canManageOthers && (
+                      <td className="px-2 py-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => openEditDialog(fuel)}
+                        >
+                          <Pencil />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -531,6 +662,140 @@ export function FuelPage() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={!!editingFuel} onOpenChange={(open) => !open && setEditingFuel(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar abastecimento</DialogTitle>
+            <DialogDescription>
+              Atualize os dados do abastecimento de{' '}
+              {editingFuel && <VehicleName vehicle={editingFuel.vehicle} />}.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form
+              onSubmit={editForm.handleSubmit(onSubmitEditFuel)}
+              className="grid gap-4 px-4 pb-4 sm:grid-cols-2"
+            >
+              <FormField
+                control={editForm.control}
+                name="driverId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Motorista</FormLabel>
+                    <FormControl>
+                      <Select {...field} required>
+                        <option value="">Selecione...</option>
+                        {activeDrivers.map((driver) => (
+                          <option key={driver.id} value={driver.id}>
+                            {driver.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="fuelType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de combustível</FormLabel>
+                    <FormControl>
+                      <Select {...field} required>
+                        <option value="">Selecione...</option>
+                        {fuelTypeOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="liters"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Litros</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        {...field}
+                        onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="amountPaid"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor pago (R$)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        {...field}
+                        onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="currentKm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>KM atual</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        {...field}
+                        onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data do abastecimento</FormLabel>
+                    <FormControl>
+                      <DatePicker value={field.value} onChange={field.onChange} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="sm:col-span-2">
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? 'Salvando...' : 'Salvar alterações'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

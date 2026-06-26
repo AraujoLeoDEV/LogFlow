@@ -1,5 +1,6 @@
 import { Bell } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +28,26 @@ const dateTimeFormatter = new Intl.DateTimeFormat('pt-BR', {
 const POLL_INTERVAL_MS = 60_000;
 const MAX_VISIBLE_ALERTS = 10;
 
+// Para onde navegar ao clicar em um alerta, de acordo com o tipo de
+// referência gravado pelo backend (alerts.util.ts / shipments.service.ts).
+function buildAlertLink(alert: Alert): string | null {
+  switch (alert.referenceType) {
+    case 'SHIPMENT':
+      return `/envios?envioId=${alert.referenceId}`;
+    case 'VEHICLE':
+      return '/veiculos';
+    case 'DRIVER':
+      return '/motoristas';
+    case 'TRIP':
+      return '/registro-diario';
+    default:
+      return null;
+  }
+}
+
 export function NotificationsMenu() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: alerts = [] } = useQuery({
     queryKey: ['alerts'],
@@ -78,6 +97,8 @@ export function NotificationsMenu() {
                 if (alert.status !== 'LIDO') {
                   markAsReadMutation.mutate(alert.id);
                 }
+                const link = buildAlertLink(alert);
+                if (link) navigate(link);
               }}
             >
               <div className="flex w-full items-center justify-between gap-2">

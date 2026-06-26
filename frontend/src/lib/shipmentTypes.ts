@@ -1,4 +1,4 @@
-import type { ShipmentItemUnit, ShipmentStatus } from '@/types/shipment';
+import type { ShipmentItemUnit, ShipmentPriority, ShipmentStatus } from '@/types/shipment';
 
 export const shipmentStatusLabels: Record<ShipmentStatus, string> = {
   PENDENTE: 'Pendente',
@@ -30,6 +30,25 @@ export const validShipmentTransitions: Record<ShipmentStatus, ShipmentStatus[]> 
   ENTREGUE: [],
   CANCELADO: [],
   CONFIRMADO: [],
+};
+
+export const shipmentPriorityLabels: Record<ShipmentPriority, string> = {
+  URGENTE: 'Urgente',
+  MODERADO: 'Moderado',
+  BAIXO: 'Baixo',
+};
+
+export const shipmentPriorityOptions: { value: ShipmentPriority; label: string }[] = Object.entries(
+  shipmentPriorityLabels,
+).map(([value, label]) => ({ value: value as ShipmentPriority, label }));
+
+export const shipmentPriorityBadgeVariants: Record<
+  ShipmentPriority,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  URGENTE: 'destructive',
+  MODERADO: 'secondary',
+  BAIXO: 'outline',
 };
 
 export const shipmentItemUnitLabels: Record<ShipmentItemUnit, string> = {

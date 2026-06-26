@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -8,6 +16,7 @@ import type { PaginatedResult } from '../../common/utils/pagination.util';
 import { Fuel, Role } from '../../../generated/prisma/client';
 import { CreateFuelDto } from './dto/create-fuel.dto';
 import { FuelQueryDto } from './dto/fuel-query.dto';
+import { UpdateFuelDto } from './dto/update-fuel.dto';
 import { FuelIndicators, FuelService, FuelWithRelations } from './fuel.service';
 
 @ApiTags('fuel')
@@ -37,6 +46,19 @@ export class FuelController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<Fuel> {
     return this.fuelService.create(dto, user);
+  }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN, Role.COORDENACAO)
+  @ApiOperation({
+    summary: 'Edita um abastecimento (somente ADMIN/COORDENACAO)',
+  })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateFuelDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<Fuel> {
+    return this.fuelService.update(id, dto, user);
   }
 
   @Get('indicators')

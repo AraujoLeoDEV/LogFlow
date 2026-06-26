@@ -90,6 +90,13 @@ enum ShipmentStatus {
   CONFIRMADO
 }
 
+// Criticidade do envio, definida por quem cria o envio
+enum ShipmentPriority {
+  URGENTE
+  MODERADO
+  BAIXO
+}
+
 // Unidade de medida do item do envio - seção 4.9
 enum ShipmentItemUnit {
   UND
@@ -186,11 +193,11 @@ model User {
   updatedAt           DateTime  @updatedAt @map("updated_at")
   deletedAt           DateTime? @map("deleted_at")
 
-  unit                 Unit?                @relation(fields: [unitId], references: [id])
-  driver               Driver?
-  sentShipments        Shipment[]           @relation("ShipmentSender")
-  shipmentReceipts     ShipmentReceipt[]
-  passwordResetTokens  PasswordResetToken[]
+  unit                Unit?                @relation(fields: [unitId], references: [id])
+  driver              Driver?
+  sentShipments       Shipment[]           @relation("ShipmentSender")
+  shipmentReceipts    ShipmentReceipt[]
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
@@ -419,18 +426,19 @@ model ProtocolCounter {
 
 // Envios de itens entre unidades, identificados por protocolo único - seção 4.9
 model Shipment {
-  id                String         @id @default(uuid())
-  protocolNumber    String         @unique @map("protocol_number")
-  originUnitId      String?        @map("origin_unit_id")
-  destinationUnitId String         @map("destination_unit_id")
-  senderId          String         @map("sender_id")
-  transporterId     String?        @map("transporter_id")
-  shippedAt         DateTime       @default(now()) @map("shipped_at")
+  id                String           @id @default(uuid())
+  protocolNumber    String           @unique @map("protocol_number")
+  originUnitId      String?          @map("origin_unit_id")
+  destinationUnitId String           @map("destination_unit_id")
+  senderId          String           @map("sender_id")
+  transporterId     String?          @map("transporter_id")
+  shippedAt         DateTime         @default(now()) @map("shipped_at")
   observations      String?
-  status            ShipmentStatus @default(PENDENTE)
-  createdBy         String?        @map("created_by")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
+  status            ShipmentStatus   @default(PENDENTE)
+  priority          ShipmentPriority @default(MODERADO)
+  createdBy         String?          @map("created_by")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
 
   originUnit      Unit?                   @relation("ShipmentOrigin", fields: [originUnitId], references: [id])
   destinationUnit Unit                    @relation("ShipmentDestination", fields: [destinationUnitId], references: [id])

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 
@@ -19,6 +20,7 @@ import { Fuel, Prisma, Role } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { CreateFuelDto } from './dto/create-fuel.dto';
 import { FuelQueryDto } from './dto/fuel-query.dto';
+import { UpdateFuelDto } from './dto/update-fuel.dto';
 import { calculateFuelMetrics, isFuelTypeCompatible } from './fuel.util';
 
 export interface FuelWithRelations extends Fuel {
@@ -125,6 +127,105 @@ export class FuelService {
       }
 
       return await this.prisma.fuel.create({ data });
+    } catch (error) {
+      throw this.toFriendlyError(error);
+    }
+  }
+
+  // Edição de abastecimento - restrita a ADMIN/COORDENACAO pelo controller.
+  // Não permite trocar o veículo; recalcula consumo/custo e realinha o KM do
+  // veículo com o maior currentKm registrado para ele.
+  async update(
+    id: string,
+    dto: UpdateFuelDto,
+    user: AuthenticatedUser,
+  ): Promise<Fuel> {
+    const existing = await this.prisma.fuel.findUnique({ where: { id } });
+
+    if (!existing) {
+      throw new NotFoundException('Abastecimento não encontrado.');
+    }
+
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: { id: existing.vehicleId, deletedAt: null },
+    });
+
+    if (!vehicle) {
+      throw new BadRequestException('Veículo informado não existe.');
+    }
+
+    const fuelType = dto.fuelType ?? existing.fuelType;
+
+    if (!isFuelTypeCompatible(vehicle.fuelType, fuelType)) {
+      throw new BadRequestException(
+        `O tipo de combustível informado não é compatível com o veículo (${vehicle.fuelType}).`,
+      );
+    }
+
+    if (dto.driverId) {
+      const driver = await this.prisma.driver.findFirst({
+        where: { id: dto.driverId, deletedAt: null },
+      });
+
+      if (!driver) {
+        throw new BadRequestException('Motorista informado não existe.');
+      }
+    }
+
+    const currentKm = dto.currentKm ?? existing.currentKm;
+
+    const previous = await this.prisma.fuel.findFirst({
+      where: { vehicleId: existing.vehicleId, id: { not: id } },
+      orderBy: { currentKm: 'desc' },
+    });
+
+    if (
+      previous &&
+      new Prisma.Decimal(currentKm).lessThan(previous.currentKm)
+    ) {
+      throw new UnprocessableEntityException(
+        'O KM atual não pode ser menor que o último abastecimento registrado para este veículo.',
+      );
+    }
+
+    const liters = dto.liters ?? existing.liters;
+    const amountPaid = dto.amountPaid ?? existing.amountPaid;
+
+    const metrics = calculateFuelMetrics({
+      currentKm,
+      previousKm: previous?.currentKm ?? null,
+      liters,
+      amountPaid,
+    });
+
+    const data = {
+      driverId: dto.driverId ?? existing.driverId,
+      liters,
+      amountPaid,
+      currentKm,
+      fuelType,
+      date: dto.date ? new Date(dto.date) : existing.date,
+      consumptionKmL: metrics.consumptionKmL,
+      costPerKm: metrics.costPerKm,
+      updatedBy: user.sub,
+    };
+
+    try {
+      const updated = await this.prisma.fuel.update({ where: { id }, data });
+
+      const latest = await this.prisma.fuel.findFirst({
+        where: { vehicleId: existing.vehicleId },
+        orderBy: { currentKm: 'desc' },
+      });
+
+      if (latest && !latest.currentKm.equals(vehicle.currentKm)) {
+        await this.prisma.vehicle.update({
+          where: { id: existing.vehicleId },
+          data: { currentKm: latest.currentKm },
+        });
+      }
+
+      return updated;
     } catch (error) {
       throw this.toFriendlyError(error);
     }

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PackageSearch } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -38,6 +39,9 @@ import { formatDateTime } from '@/lib/formatters';
 import {
   shipmentItemUnitLabels,
   shipmentItemUnitOptions,
+  shipmentPriorityBadgeVariants,
+  shipmentPriorityLabels,
+  shipmentPriorityOptions,
   shipmentStatusBadgeVariants,
   shipmentStatusLabels,
   shipmentStatusOptions,
@@ -47,6 +51,7 @@ import type {
   ConfirmShipmentPayload,
   CreateShipmentPayload,
   ShipmentItemUnit,
+  ShipmentPriority,
   ShipmentQuery,
   ShipmentStatus,
   ShipmentWithRelations,
@@ -84,6 +89,7 @@ const shipmentSchema = z.object({
   items: z.array(shipmentItemSchema).min(1, 'Informe ao menos um item.'),
   transporterId: z.string(),
   observations: z.string(),
+  priority: z.string().min(1, 'Selecione a criticidade.'),
 });
 
 type ShipmentFormValues = z.infer<typeof shipmentSchema>;
@@ -104,6 +110,7 @@ function buildEmptyValues(): ShipmentFormValues {
     items: [{ ...EMPTY_ITEM }],
     transporterId: '',
     observations: '',
+    priority: 'MODERADO',
   };
 }
 
@@ -135,6 +142,7 @@ const editShipmentSchema = z.object({
   items: z.array(shipmentItemSchema).min(1, 'Informe ao menos um item.'),
   transporterId: z.string(),
   observations: z.string(),
+  priority: z.string().min(1, 'Selecione a criticidade.'),
 });
 
 type EditShipmentFormValues = z.infer<typeof editShipmentSchema>;
@@ -178,6 +186,7 @@ export function ShipmentsPage() {
   const isConferente = hasRole('CONFERENTE');
   const canCreate = canManage || isConferente;
 
+  const [searchParams, setSearchParams] = useSearchParams();
   const [filters, setFilters] = useState<ShipmentQuery>({});
   const [page, setPage] = useState(1);
   const [selectedProtocol, setSelectedProtocol] = useState<string | null>(null);
@@ -213,6 +222,38 @@ export function ShipmentsPage() {
       (await api.get<ShipmentWithTimeline>(`/shipments/${selectedProtocol}`)).data,
     enabled: !!selectedProtocol,
   });
+
+  // Abre o detalhe automaticamente quando chega via clique em uma notificação
+  // (ex.: /envios?envioId=<id>).
+  const linkedShipmentId = searchParams.get('envioId');
+
+  useEffect(() => {
+    if (!linkedShipmentId) return;
+
+    let active = true;
+
+    api
+      .get<ShipmentWithRelations>(`/shipments/by-id/${linkedShipmentId}`)
+      .then((response) => {
+        if (active) setSelectedProtocol(response.data.protocolNumber);
+      })
+      .catch(() => {
+        if (active) toast.error('Não foi possível abrir o envio da notificação.');
+      })
+      .finally(() => {
+        if (active) {
+          setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('envioId');
+            return next;
+          });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [linkedShipmentId, setSearchParams]);
 
   const invalidateShipments = () => {
     queryClient.invalidateQueries({ queryKey: ['shipments'] });
@@ -280,6 +321,7 @@ export function ShipmentsPage() {
       })),
       transporterId: values.transporterId || undefined,
       observations: values.observations || undefined,
+      priority: values.priority as ShipmentPriority,
     });
   }
 
@@ -354,7 +396,12 @@ export function ShipmentsPage() {
 
   const editForm = useForm<EditShipmentFormValues>({
     resolver: zodResolver(editShipmentSchema),
-    defaultValues: { items: [{ ...EMPTY_ITEM }], transporterId: '', observations: '' },
+    defaultValues: {
+      items: [{ ...EMPTY_ITEM }],
+      transporterId: '',
+      observations: '',
+      priority: 'MODERADO',
+    },
   });
 
   const {
@@ -392,6 +439,7 @@ export function ShipmentsPage() {
       })),
       transporterId: selectedShipment.transporterId ?? '',
       observations: selectedShipment.observations ?? '',
+      priority: selectedShipment.priority,
     });
     setEditDialogOpen(true);
   }
@@ -410,6 +458,7 @@ export function ShipmentsPage() {
         })),
         transporterId: values.transporterId || undefined,
         observations: values.observations,
+        priority: values.priority as ShipmentPriority,
       },
     });
   }
@@ -529,6 +578,25 @@ export function ShipmentsPage() {
                                 {activeDrivers.map((driver) => (
                                   <option key={driver.id} value={driver.id}>
                                     {driver.name}
+                                  </option>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="priority"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Criticidade</FormLabel>
+                            <FormControl>
+                              <Select {...field} required>
+                                {shipmentPriorityOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
                                   </option>
                                 ))}
                               </Select>
@@ -770,22 +838,23 @@ export function ShipmentsPage() {
                 <th className="px-2 py-2 font-medium">Destino</th>
                 <th className="px-2 py-2 font-medium">Remetente</th>
                 <th className="px-2 py-2 font-medium">Transportador</th>
+                <th className="px-2 py-2 font-medium">Criticidade</th>
                 <th className="px-2 py-2 font-medium">Status</th>
                 <th className="px-2 py-2 font-medium">Criado em</th>
-                <th className="px-2 py-2 font-medium" />
+                <th className="px-2 py-2 font-medium">Ações</th>
               </tr>
             </thead>
             <tbody>
               {isLoadingShipments && (
                 <tr>
-                  <td colSpan={7} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
                     Carregando...
                   </td>
                 </tr>
               )}
               {!isLoadingShipments && shipments?.data.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
                     Nenhum envio encontrado.
                   </td>
                 </tr>
@@ -797,6 +866,11 @@ export function ShipmentsPage() {
                   <td className="px-2 py-2 text-muted-foreground">{shipment.sender.name}</td>
                   <td className="px-2 py-2 text-muted-foreground">
                     {shipment.transporter?.name ?? '—'}
+                  </td>
+                  <td className="px-2 py-2">
+                    <Badge variant={shipmentPriorityBadgeVariants[shipment.priority]}>
+                      {shipmentPriorityLabels[shipment.priority]}
+                    </Badge>
                   </td>
                   <td className="px-2 py-2">
                     <Badge variant={shipmentStatusBadgeVariants[shipment.status]}>
@@ -859,6 +933,12 @@ export function ShipmentsPage() {
                     <p className="text-xs text-muted-foreground uppercase">Status atual</p>
                     <Badge variant={shipmentStatusBadgeVariants[selectedShipment.status]}>
                       {shipmentStatusLabels[selectedShipment.status]}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase">Criticidade</p>
+                    <Badge variant={shipmentPriorityBadgeVariants[selectedShipment.priority]}>
+                      {shipmentPriorityLabels[selectedShipment.priority]}
                     </Badge>
                   </div>
                   <div>
@@ -1182,6 +1262,26 @@ export function ShipmentsPage() {
                     <FormLabel>Observações</FormLabel>
                     <FormControl>
                       <Input {...field} placeholder="Observações sobre o envio" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Criticidade</FormLabel>
+                    <FormControl>
+                      <Select {...field} required>
+                        {shipmentPriorityOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>

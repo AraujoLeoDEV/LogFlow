@@ -31,6 +31,15 @@ export interface CreateFuelPayload {
   date?: string;
 }
 
+export interface UpdateFuelPayload {
+  driverId?: string;
+  liters?: number;
+  amountPaid?: number;
+  currentKm?: number;
+  fuelType?: FuelType;
+  date?: string;
+}
+
 export interface FuelQuery extends PaginationQuery {
   vehicleId?: string;
   driverId?: string;

@@ -4,12 +4,14 @@ import {
   ArrayMinSize,
   IsArray,
   IsDateString,
+  IsEnum,
   IsOptional,
   IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
 
+import { ShipmentPriority } from '../../../../generated/prisma/client';
 import { ShipmentItemDto } from './shipment-item.dto';
 
 export class CreateShipmentDto {
@@ -50,4 +52,12 @@ export class CreateShipmentDto {
   @IsOptional()
   @IsString()
   observations?: string;
+
+  @ApiPropertyOptional({
+    enum: ShipmentPriority,
+    description: 'Criticidade do envio (default: MODERADO).',
+  })
+  @IsOptional()
+  @IsEnum(ShipmentPriority, { message: 'Criticidade inválida.' })
+  priority?: ShipmentPriority;
 }

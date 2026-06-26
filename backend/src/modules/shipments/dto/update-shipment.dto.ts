@@ -3,12 +3,14 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsEnum,
   IsOptional,
   IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
 
+import { ShipmentPriority } from '../../../../generated/prisma/client';
 import { ShipmentItemDto } from './shipment-item.dto';
 
 export class UpdateShipmentDto {
@@ -34,4 +36,12 @@ export class UpdateShipmentDto {
   @IsOptional()
   @IsUUID('all', { message: 'Motorista (transportador) inválido.' })
   transporterId?: string;
+
+  @ApiPropertyOptional({
+    enum: ShipmentPriority,
+    description: 'Criticidade do envio.',
+  })
+  @IsOptional()
+  @IsEnum(ShipmentPriority, { message: 'Criticidade inválida.' })
+  priority?: ShipmentPriority;
 }

@@ -7,16 +7,36 @@ $VM = "logflow@192.168.100.2"
 $RemoteDir = "~/antigravity"
 $LocalDir = $PSScriptRoot
 
-$Excludes = @("node_modules", "dist", ".git", "generated", "coverage", "*.log")
-$ExcludeArgs = $Excludes | ForEach-Object { "--exclude=$_" }
+$DirExcludes = @("node_modules", "dist", ".git", "generated", "coverage")
+$FileExcludes = @("*.log")
+$StagingRoot = Join-Path $env:TEMP "antigravity-deploy"
+
+function Sync-Service {
+    param([string]$Name)
+
+    $source = Join-Path $LocalDir $Name
+    $staging = Join-Path $StagingRoot $Name
+
+    if (Test-Path $staging) {
+        Remove-Item $staging -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $staging -Force | Out-Null
+
+    robocopy $source $staging /E /XD $DirExcludes /XF $FileExcludes /NFL /NDL /NJH /NJS /NP | Out-Null
+    if ($LASTEXITCODE -ge 8) {
+        throw "robocopy falhou ao preparar '$Name' (codigo $LASTEXITCODE)."
+    }
+
+    scp -r $staging "${VM}:${RemoteDir}/"
+}
 
 Write-Host "Sincronizando arquivos para a VM..." -ForegroundColor Cyan
 
 if ($Service -eq "backend" -or $Service -eq "all") {
-    scp -r "$LocalDir\backend" "${VM}:${RemoteDir}/"
+    Sync-Service -Name "backend"
 }
 if ($Service -eq "frontend" -or $Service -eq "all") {
-    scp -r "$LocalDir\frontend" "${VM}:${RemoteDir}/"
+    Sync-Service -Name "frontend"
 }
 
 # Sempre sincronizar arquivos de configuracao raiz

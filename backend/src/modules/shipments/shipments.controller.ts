@@ -67,6 +67,19 @@ export class ShipmentsController {
     res.download(file.filePath, `comprovante-${file.shipmentId}.pdf`);
   }
 
+  @Get('by-id/:id')
+  @Roles(Role.ADMIN, Role.COORDENACAO, Role.CONFERENTE)
+  @ApiOperation({
+    summary:
+      'Busca um envio pelo id (usado para abrir a partir de uma notificação)',
+  })
+  findById(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<ShipmentWithRelations> {
+    return this.shipmentsService.findById(id, user);
+  }
+
   @Get(':protocolNumber')
   @Roles(Role.ADMIN, Role.COORDENACAO, Role.CONFERENTE)
   @ApiOperation({
