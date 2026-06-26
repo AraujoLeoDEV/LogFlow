@@ -25,12 +25,14 @@ export class UnitsController {
   constructor(private readonly unitsService: UnitsService) {}
 
   @Get()
+  @Roles(Role.ADMIN, Role.COORDENACAO, Role.CONFERENTE)
   @ApiOperation({ summary: 'Lista todas as unidades cadastradas' })
   findAll(): Promise<Unit[]> {
     return this.unitsService.findAll();
   }
 
   @Get(':id')
+  @Roles(Role.ADMIN, Role.COORDENACAO, Role.CONFERENTE)
   @ApiOperation({ summary: 'Busca uma unidade por id' })
   findOne(@Param('id') id: string): Promise<Unit> {
     return this.unitsService.findOne(id);
