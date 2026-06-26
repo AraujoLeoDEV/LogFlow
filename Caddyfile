@@ -1,21 +1,23 @@
-# Reverse proxy com HTTPS - Fase 15 (Deploy e Producao).
+# Reverse proxy - Fase 15 (Deploy e Producao).
 # APP_DOMAIN e API_DOMAIN sao lidos do ambiente do container caddy
 # (definidos em .env.production e injetados via docker-compose.prod.yml).
 #
-# Implantacao em rede interna com IP fixo (sem dominio publico).
-# default_sni e necessario pois clientes conectando por IP nao enviam SNI
-# no TLS handshake — sem ele o Caddy nao seleciona o certificado correto.
+# Servido via Cloudflare Tunnel, que termina o TLS na borda - por isso os
+# sites usam http:// aqui (auto-HTTPS do Caddy entraria em conflito/loop
+# com o tunnel). default_sni continua necessario para o handshake interno.
 
 {
 	default_sni {$APP_DOMAIN_HOST}
 }
 
-{$APP_DOMAIN} {
+http://{$APP_DOMAIN} {
+
 	encode gzip
 	reverse_proxy frontend:80
 }
 
-{$API_DOMAIN} {
+http://{$API_DOMAIN} {
+
 	encode gzip
 	reverse_proxy backend:3000
 }
