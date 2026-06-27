@@ -1,4 +1,13 @@
-import { ClipboardList, LogOut, Menu, PackageSearch, Plus, Truck, UserRound } from 'lucide-react';
+import {
+  ClipboardList,
+  LogOut,
+  Menu,
+  PackageSearch,
+  Plus,
+  Siren,
+  Truck,
+  UserRound,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -106,6 +115,18 @@ export function Header() {
             </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
+      )}
+
+      {hasRole('ADMIN', 'COORDENACAO') && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={() => navigate('/envios/monitoramento')}
+        >
+          <Siren className="size-4" />
+          Monitoramento
+        </Button>
       )}
 
       <ThemeToggle />

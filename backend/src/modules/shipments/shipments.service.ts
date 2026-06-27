@@ -25,6 +25,7 @@ import {
   ShipmentFile,
   ShipmentFileType,
   ShipmentItem,
+  ShipmentPriority,
   ShipmentReceipt,
   ShipmentStatus,
   ShipmentStatusHistory,
@@ -63,6 +64,14 @@ export type ShipmentWithRelations = ShipmentRecord;
 export interface ShipmentWithTimeline extends ShipmentWithRelations {
   statusHistory: ShipmentStatusHistory[];
 }
+
+export interface ShipmentMonitoringItem extends ShipmentWithRelations {
+  hoursWaiting: number;
+  overdue: boolean;
+}
+
+const URGENT_OVERDUE_HOURS = 24;
+const MS_PER_HOUR = 3_600_000;
 
 export const shipmentInclude = {
   destinationUnit: { select: { id: true, name: true, phone: true } },
@@ -307,6 +316,43 @@ export class ShipmentsService {
     }
 
     return shipment;
+  }
+
+  // Lista envios ainda não confirmados/cancelados para o painel de
+  // monitoramento (ADMIN/COORDENACAO), com tempo de espera calculado em
+  // memória. Urgente com 24h+ de espera é marcado como `overdue` para o
+  // frontend destacar (piscar) o card.
+  async findMonitoring(): Promise<ShipmentMonitoringItem[]> {
+    const shipments = await this.prisma.shipment.findMany({
+      where: {
+        status: {
+          in: [
+            ShipmentStatus.PENDENTE,
+            ShipmentStatus.EM_TRANSITO,
+            ShipmentStatus.ENTREGUE,
+          ],
+        },
+      },
+      orderBy: { shippedAt: 'asc' },
+      include: shipmentInclude,
+    });
+
+    const now = Date.now();
+
+    return shipments.map((shipment) => {
+      const hoursWaiting = Math.max(
+        0,
+        (now - shipment.shippedAt.getTime()) / MS_PER_HOUR,
+      );
+
+      return {
+        ...shipment,
+        hoursWaiting,
+        overdue:
+          shipment.priority === ShipmentPriority.URGENTE &&
+          hoursWaiting >= URGENT_OVERDUE_HOURS,
+      };
+    });
   }
 
   // Atualização de status com validação de transição e registro na timeline

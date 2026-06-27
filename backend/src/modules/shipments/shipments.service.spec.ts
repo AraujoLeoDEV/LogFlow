@@ -123,7 +123,7 @@ function buildShipmentItem(
 }
 
 interface ShipmentWhere {
-  status?: ShipmentStatus;
+  status?: ShipmentStatus | { in: ShipmentStatus[] };
   destinationUnitId?: string;
   createdAt?: { gte?: Date; lte?: Date };
 }
@@ -132,6 +132,7 @@ interface FindManyShipmentArgs {
   where?: ShipmentWhere;
   skip?: number;
   take?: number;
+  orderBy?: { shippedAt?: 'asc' | 'desc' };
 }
 
 interface FindUniqueShipmentArgs {
@@ -307,7 +308,11 @@ function buildService(
     where = where ?? {};
 
     if (where.status) {
-      results = results.filter((item) => item.status === where?.status);
+      results = results.filter((item) =>
+        typeof where?.status === 'object' && where.status !== null
+          ? where.status.in.includes(item.status)
+          : item.status === where?.status,
+      );
     }
     if (where.destinationUnitId) {
       results = results.filter(
@@ -699,6 +704,71 @@ describe('ShipmentsService', () => {
       await expect(service.findAll({}, conferenteUser)).rejects.toThrow(
         ForbiddenException,
       );
+    });
+  });
+
+  describe('findMonitoring', () => {
+    it('marca como overdue um envio Urgente com 24h+ de espera ainda não confirmado', async () => {
+      const thirtyHoursAgo = new Date(Date.now() - 30 * 60 * 60 * 1000);
+      const { service } = buildService({
+        shipments: [
+          buildShipment({
+            id: 'shipment-urgente-vencido',
+            priority: ShipmentPriority.URGENTE,
+            status: ShipmentStatus.EM_TRANSITO,
+            shippedAt: thirtyHoursAgo,
+          }),
+        ],
+      });
+
+      const result = await service.findMonitoring();
+      const found = result.find((s) => s.id === 'shipment-urgente-vencido');
+
+      expect(found?.overdue).toBe(true);
+      expect(found?.hoursWaiting).toBeGreaterThanOrEqual(24);
+    });
+
+    it('não marca como overdue um envio Urgente recente (menos de 24h)', async () => {
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+      const { service } = buildService({
+        shipments: [
+          buildShipment({
+            id: 'shipment-urgente-recente',
+            priority: ShipmentPriority.URGENTE,
+            status: ShipmentStatus.PENDENTE,
+            shippedAt: twoHoursAgo,
+          }),
+        ],
+      });
+
+      const result = await service.findMonitoring();
+      const found = result.find((s) => s.id === 'shipment-urgente-recente');
+
+      expect(found?.overdue).toBe(false);
+    });
+
+    it('não inclui envios CONFIRMADO ou CANCELADO, mesmo antigos e Urgentes', async () => {
+      const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
+      const { service } = buildService({
+        shipments: [
+          buildShipment({
+            id: 'shipment-confirmado',
+            priority: ShipmentPriority.URGENTE,
+            status: ShipmentStatus.CONFIRMADO,
+            shippedAt: fortyEightHoursAgo,
+          }),
+          buildShipment({
+            id: 'shipment-cancelado',
+            priority: ShipmentPriority.URGENTE,
+            status: ShipmentStatus.CANCELADO,
+            shippedAt: fortyEightHoursAgo,
+          }),
+        ],
+      });
+
+      const result = await service.findMonitoring();
+
+      expect(result).toHaveLength(0);
     });
   });
 

@@ -75,6 +75,11 @@ export interface ShipmentWithTimeline extends ShipmentWithRelations {
   statusHistory: ShipmentStatusHistoryEntry[];
 }
 
+export interface ShipmentMonitoringItem extends ShipmentWithRelations {
+  hoursWaiting: number;
+  overdue: boolean;
+}
+
 export interface CreateShipmentItemPayload {
   description: string;
   category?: string;

@@ -4,9 +4,17 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.5.2026';
+export const APP_VERSION = 'V0.6.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.6.2026',
+    date: '26/06/2026',
+    items: [
+      'Novo: tela de Monitoramento de envios (botão ao lado de "Novo"), com os envios ainda não confirmados organizados por criticidade.',
+      'Novo: envios Urgentes aguardando confirmação de recebimento há 24h ou mais piscam em vermelho na tela de Monitoramento.',
+    ],
+  },
   {
     version: 'V0.5.2026',
     date: '26/06/2026',

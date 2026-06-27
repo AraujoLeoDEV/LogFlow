@@ -21,6 +21,7 @@ import { MaintenancePage } from '@/pages/MaintenancePage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { RoutesPage } from '@/pages/RoutesPage';
+import { ShipmentMonitoringPage } from '@/pages/ShipmentMonitoringPage';
 import { ShipmentsPage } from '@/pages/ShipmentsPage';
 import { UnitsPage } from '@/pages/UnitsPage';
 import { UsersPage } from '@/pages/UsersPage';
@@ -76,6 +77,9 @@ function App() {
                       />
                     </Route>
                   ))}
+                <Route element={<ProtectedRoute roles={['ADMIN', 'COORDENACAO']} />}>
+                  <Route path="/envios/monitoramento" element={<ShipmentMonitoringPage />} />
+                </Route>
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

@@ -163,3 +163,28 @@
     @apply font-mono;
     }
 }
+
+/* Destaque para envios Urgentes vencidos (24h+ sem confirmação) no painel
+   de monitoramento - chama atenção sem depender só da cor do badge. */
+@keyframes blink-red {
+  0%, 100% {
+    background-color: color-mix(in oklch, var(--destructive), transparent 85%);
+    border-color: var(--destructive);
+  }
+  50% {
+    background-color: color-mix(in oklch, var(--destructive), transparent 96%);
+    border-color: color-mix(in oklch, var(--destructive), transparent 40%);
+  }
+}
+
+.animate-blink-red {
+  animation: blink-red 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink-red {
+    animation: none;
+    background-color: color-mix(in oklch, var(--destructive), transparent 85%);
+    border-color: var(--destructive);
+  }
+}

@@ -27,6 +27,7 @@ import { ShipmentQueryDto } from './dto/shipment-query.dto';
 import { UpdateShipmentDto } from './dto/update-shipment.dto';
 import { UpdateShipmentStatusDto } from './dto/update-shipment-status.dto';
 import {
+  ShipmentMonitoringItem,
   ShipmentsService,
   ShipmentWithRelations,
   ShipmentWithTimeline,
@@ -78,6 +79,16 @@ export class ShipmentsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ShipmentWithRelations> {
     return this.shipmentsService.findById(id, user);
+  }
+
+  @Get('monitoring')
+  @Roles(Role.ADMIN, Role.COORDENACAO)
+  @ApiOperation({
+    summary:
+      'Lista envios ainda não confirmados/cancelados, agrupáveis por criticidade, com tempo de espera calculado',
+  })
+  findMonitoring(): Promise<ShipmentMonitoringItem[]> {
+    return this.shipmentsService.findMonitoring();
   }
 
   @Get(':protocolNumber')
