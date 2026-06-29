@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional } from 'class-validator';
+import { IsDateString, IsOptional, IsUUID } from 'class-validator';
 
 export class DashboardQueryDto {
   @ApiPropertyOptional({
@@ -15,4 +15,18 @@ export class DashboardQueryDto {
   @IsOptional()
   @IsDateString({}, { message: 'Data final inválida.' })
   to?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar pelo id do veículo (default: todos).',
+  })
+  @IsOptional()
+  @IsUUID('all', { message: 'Veículo inválido.' })
+  vehicleId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filtrar pelo id do motorista (default: todos).',
+  })
+  @IsOptional()
+  @IsUUID('all', { message: 'Motorista inválido.' })
+  driverId?: string;
 }

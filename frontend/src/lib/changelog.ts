@@ -4,9 +4,16 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.6.2026';
+export const APP_VERSION = 'V0.7.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.7.2026',
+    date: '29/06/2026',
+    items: [
+      'Novo: Dashboard agora permite filtrar os indicadores por veículo e por motorista, além da visão geral com todos.',
+    ],
+  },
   {
     version: 'V0.6.2026',
     date: '26/06/2026',

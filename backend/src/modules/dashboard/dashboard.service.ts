@@ -57,7 +57,10 @@ export class DashboardService {
 
     const [drivers, dailyLogs, incidents] = await Promise.all([
       this.prisma.driver.findMany({
-        where: { deletedAt: null },
+        where: {
+          deletedAt: null,
+          ...(query.driverId ? { id: query.driverId } : {}),
+        },
         select: { id: true, name: true },
       }),
       this.prisma.dailyLog.findMany({
@@ -65,11 +68,17 @@ export class DashboardService {
           status: DailyLogStatus.FINALIZADO,
           kmDriven: { not: null },
           ...(dateFilter ? { departureAt: dateFilter } : {}),
+          ...(query.driverId ? { driverId: query.driverId } : {}),
+          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
         },
         select: { driverId: true, kmDriven: true, totalDurationMinutes: true },
       }),
       this.prisma.incident.findMany({
-        where: dateFilter ? { date: dateFilter } : undefined,
+        where: {
+          ...(dateFilter ? { date: dateFilter } : {}),
+          ...(query.driverId ? { driverId: query.driverId } : {}),
+          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
+        },
         select: { driverId: true },
       }),
     ]);
@@ -122,7 +131,10 @@ export class DashboardService {
 
     const [vehicles, dailyLogs, fuelRecords, maintenances] = await Promise.all([
       this.prisma.vehicle.findMany({
-        where: { deletedAt: null },
+        where: {
+          deletedAt: null,
+          ...(query.vehicleId ? { id: query.vehicleId } : {}),
+        },
         select: { id: true, plate: true, model: true, currentKm: true },
       }),
       this.prisma.dailyLog.findMany({
@@ -130,15 +142,24 @@ export class DashboardService {
           status: DailyLogStatus.FINALIZADO,
           kmDriven: { not: null },
           ...(dateFilter ? { departureAt: dateFilter } : {}),
+          ...(query.driverId ? { driverId: query.driverId } : {}),
+          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
         },
         select: { vehicleId: true, kmDriven: true, totalDurationMinutes: true },
       }),
       this.prisma.fuel.findMany({
-        where: dateFilter ? { date: dateFilter } : undefined,
+        where: {
+          ...(dateFilter ? { date: dateFilter } : {}),
+          ...(query.driverId ? { driverId: query.driverId } : {}),
+          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
+        },
         select: { vehicleId: true, amountPaid: true },
       }),
       this.prisma.maintenance.findMany({
-        where: dateFilter ? { createdAt: dateFilter } : undefined,
+        where: {
+          ...(dateFilter ? { createdAt: dateFilter } : {}),
+          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
+        },
         select: { vehicleId: true, cost: true },
       }),
     ]);
@@ -228,6 +249,8 @@ export class DashboardService {
           status: DailyLogStatus.FINALIZADO,
           kmDriven: { not: null },
           ...(dateFilter ? { departureAt: dateFilter } : {}),
+          ...(query.driverId ? { driverId: query.driverId } : {}),
+          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
         },
         select: { routeId: true, kmDriven: true, totalDurationMinutes: true },
       }),

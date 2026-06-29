@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { StatCard } from '@/components/ui/stat-card';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs';
 import { VehicleName } from '@/components/vehicles/VehicleName';
@@ -26,6 +27,8 @@ import type {
   RouteIndicator,
   VehicleIndicators,
 } from '@/types/dashboard';
+import type { Driver } from '@/types/driver';
+import type { Vehicle } from '@/types/vehicle';
 
 function formatRate(value: number | null): string {
   return value !== null ? `${formatNumber(value)} / 1.000 km` : '—';
@@ -42,6 +45,18 @@ export function DashboardPage() {
   function handleFilterChange<K extends keyof DashboardQuery>(key: K, value: string) {
     setFilters((prev) => ({ ...prev, [key]: (value || undefined) as DashboardQuery[K] }));
   }
+
+  const { data: vehicles } = useQuery({
+    queryKey: ['vehicles'],
+    queryFn: async () => (await api.get<Vehicle[]>('/vehicles')).data,
+    enabled: canViewVehicles || canViewDrivers || canViewRoutes,
+  });
+
+  const { data: drivers } = useQuery({
+    queryKey: ['drivers'],
+    queryFn: async () => (await api.get<Driver[]>('/drivers')).data,
+    enabled: canViewDrivers || canViewVehicles || canViewRoutes,
+  });
 
   const { data: driverIndicators, isLoading: isLoadingDrivers } = useQuery({
     queryKey: ['dashboard', 'drivers', filters],
@@ -115,11 +130,14 @@ export function DashboardPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Período</CardTitle>
-          <CardDescription>Filtre os indicadores por período (opcional).</CardDescription>
+          <CardTitle>Filtros</CardTitle>
+          <CardDescription>
+            Filtre os indicadores por período, veículo e/ou motorista (opcional — padrão: geral, com
+            todos).
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:w-1/2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="grid gap-1.5">
               <Label>De</Label>
               <DatePicker
@@ -133,6 +151,34 @@ export function DashboardPage() {
                 value={filters.to}
                 onChange={(value) => handleFilterChange('to', value)}
               />
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Veículo</Label>
+              <Select
+                value={filters.vehicleId ?? ''}
+                onChange={(event) => handleFilterChange('vehicleId', event.target.value)}
+              >
+                <option value="">Geral (todos)</option>
+                {(vehicles ?? []).map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.model} ({vehicle.plate})
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <div className="grid gap-1.5">
+              <Label>Motorista</Label>
+              <Select
+                value={filters.driverId ?? ''}
+                onChange={(event) => handleFilterChange('driverId', event.target.value)}
+              >
+                <option value="">Geral (todos)</option>
+                {(drivers ?? []).map((driver) => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.name}
+                  </option>
+                ))}
+              </Select>
             </div>
           </div>
         </CardContent>

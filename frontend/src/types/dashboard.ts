@@ -1,6 +1,8 @@
 export interface DashboardQuery {
   from?: string;
   to?: string;
+  vehicleId?: string;
+  driverId?: string;
 }
 
 export interface DriverIndicator {

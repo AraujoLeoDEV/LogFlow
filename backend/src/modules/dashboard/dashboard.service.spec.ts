@@ -208,14 +208,22 @@ function buildService(
 
   const prisma = {
     driver: {
-      findMany: jest.fn(() =>
-        Promise.resolve(drivers.filter((driver) => driver.deletedAt === null)),
+      findMany: jest.fn((args: { where: { id?: string } }) =>
+        Promise.resolve(
+          drivers
+            .filter((driver) => driver.deletedAt === null)
+            .filter((driver) => !args.where.id || driver.id === args.where.id),
+        ),
       ),
     },
     vehicle: {
-      findMany: jest.fn(() =>
+      findMany: jest.fn((args: { where: { id?: string } }) =>
         Promise.resolve(
-          vehicles.filter((vehicle) => vehicle.deletedAt === null),
+          vehicles
+            .filter((vehicle) => vehicle.deletedAt === null)
+            .filter(
+              (vehicle) => !args.where.id || vehicle.id === args.where.id,
+            ),
         ),
       ),
     },
@@ -225,43 +233,106 @@ function buildService(
       ),
     },
     dailyLog: {
-      findMany: jest.fn((args: { where: { departureAt?: DateRangeFilter } }) =>
-        Promise.resolve(
-          applyDateFilter(
-            dailyLogs.filter((log) => log.status === DailyLogStatus.FINALIZADO),
-            (log) => log.departureAt,
-            args.where.departureAt,
+      findMany: jest.fn(
+        (args: {
+          where: {
+            departureAt?: DateRangeFilter;
+            driverId?: string;
+            vehicleId?: string;
+          };
+        }) =>
+          Promise.resolve(
+            applyDateFilter(
+              dailyLogs
+                .filter((log) => log.status === DailyLogStatus.FINALIZADO)
+                .filter(
+                  (log) =>
+                    !args.where.driverId ||
+                    log.driverId === args.where.driverId,
+                )
+                .filter(
+                  (log) =>
+                    !args.where.vehicleId ||
+                    log.vehicleId === args.where.vehicleId,
+                ),
+              (log) => log.departureAt,
+              args.where.departureAt,
+            ),
           ),
-        ),
       ),
     },
     fuel: {
-      findMany: jest.fn((args: { where?: { date?: DateRangeFilter } }) =>
-        Promise.resolve(
-          applyDateFilter(
-            fuelRecords,
-            (record) => record.date,
-            args.where?.date,
+      findMany: jest.fn(
+        (args: {
+          where?: {
+            date?: DateRangeFilter;
+            driverId?: string;
+            vehicleId?: string;
+          };
+        }) =>
+          Promise.resolve(
+            applyDateFilter(
+              fuelRecords
+                .filter(
+                  (record) =>
+                    !args.where?.driverId ||
+                    record.driverId === args.where.driverId,
+                )
+                .filter(
+                  (record) =>
+                    !args.where?.vehicleId ||
+                    record.vehicleId === args.where.vehicleId,
+                ),
+              (record) => record.date,
+              args.where?.date,
+            ),
           ),
-        ),
       ),
     },
     maintenance: {
-      findMany: jest.fn((args: { where?: { createdAt?: DateRangeFilter } }) =>
-        Promise.resolve(
-          applyDateFilter(
-            maintenances,
-            (record) => record.createdAt,
-            args.where?.createdAt,
+      findMany: jest.fn(
+        (args: {
+          where?: { createdAt?: DateRangeFilter; vehicleId?: string };
+        }) =>
+          Promise.resolve(
+            applyDateFilter(
+              maintenances.filter(
+                (record) =>
+                  !args.where?.vehicleId ||
+                  record.vehicleId === args.where.vehicleId,
+              ),
+              (record) => record.createdAt,
+              args.where?.createdAt,
+            ),
           ),
-        ),
       ),
     },
     incident: {
-      findMany: jest.fn((args: { where?: { date?: DateRangeFilter } }) =>
-        Promise.resolve(
-          applyDateFilter(incidents, (record) => record.date, args.where?.date),
-        ),
+      findMany: jest.fn(
+        (args: {
+          where?: {
+            date?: DateRangeFilter;
+            driverId?: string;
+            vehicleId?: string;
+          };
+        }) =>
+          Promise.resolve(
+            applyDateFilter(
+              incidents
+                .filter(
+                  (record) =>
+                    !args.where?.driverId ||
+                    record.driverId === args.where.driverId,
+                )
+                .filter(
+                  (record) =>
+                    !args.where?.vehicleId ||
+                    record.vehicleId === args.where.vehicleId,
+                ),
+              (record) => record.date,
+              args.where?.date,
+            ),
+          ),
       ),
     },
   } as unknown as PrismaService;
@@ -364,6 +435,57 @@ describe('DashboardService', () => {
       });
 
       expect(result[0].kmTotal).toBe(50);
+    });
+
+    it('filtra por motorista, retornando só o motorista selecionado e suas viagens', async () => {
+      const drivers = [
+        buildDriver({ id: 'driver-1', name: 'Motorista A' }),
+        buildDriver({ id: 'driver-2', name: 'Motorista B' }),
+      ];
+      const dailyLogs = [
+        buildDailyLog({
+          driverId: 'driver-1',
+          kmDriven: new Prisma.Decimal(100),
+        }),
+        buildDailyLog({
+          driverId: 'driver-2',
+          kmDriven: new Prisma.Decimal(300),
+        }),
+      ];
+
+      const { service } = buildService({ drivers, dailyLogs });
+
+      const result = await service.getDriverIndicators({
+        driverId: 'driver-1',
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].driverId).toBe('driver-1');
+      expect(result[0].kmTotal).toBe(100);
+    });
+
+    it('filtra por veículo, contando só as viagens feitas com aquele veículo', async () => {
+      const drivers = [buildDriver({ id: 'driver-1', name: 'Motorista A' })];
+      const dailyLogs = [
+        buildDailyLog({
+          driverId: 'driver-1',
+          vehicleId: 'vehicle-1',
+          kmDriven: new Prisma.Decimal(100),
+        }),
+        buildDailyLog({
+          driverId: 'driver-1',
+          vehicleId: 'vehicle-2',
+          kmDriven: new Prisma.Decimal(300),
+        }),
+      ];
+
+      const { service } = buildService({ drivers, dailyLogs });
+
+      const result = await service.getDriverIndicators({
+        vehicleId: 'vehicle-1',
+      });
+
+      expect(result[0].kmTotal).toBe(100);
     });
   });
 
@@ -474,6 +596,57 @@ describe('DashboardService', () => {
 
       expect(result.mostUsed?.vehicleId).toBe('vehicle-2');
       expect(result.mostExpensive?.vehicleId).toBe('vehicle-1');
+    });
+
+    it('filtra por veículo, retornando só o veículo selecionado', async () => {
+      const vehicles = [
+        buildVehicle({ id: 'vehicle-1', plate: 'ABC1D23' }),
+        buildVehicle({ id: 'vehicle-2', plate: 'XYZ9E87' }),
+      ];
+      const dailyLogs = [
+        buildDailyLog({
+          vehicleId: 'vehicle-1',
+          kmDriven: new Prisma.Decimal(100),
+        }),
+        buildDailyLog({
+          vehicleId: 'vehicle-2',
+          kmDriven: new Prisma.Decimal(300),
+        }),
+      ];
+
+      const { service } = buildService({ vehicles, dailyLogs });
+
+      const result = await service.getVehicleIndicators({
+        vehicleId: 'vehicle-1',
+      });
+
+      expect(result.vehicles).toHaveLength(1);
+      expect(result.vehicles[0].vehicleId).toBe('vehicle-1');
+      expect(result.vehicles[0].kmTotal).toBe(100);
+    });
+
+    it('filtra por motorista, contando só os custos/usos daquele motorista', async () => {
+      const vehicles = [buildVehicle({ id: 'vehicle-1', plate: 'ABC1D23' })];
+      const dailyLogs = [
+        buildDailyLog({
+          vehicleId: 'vehicle-1',
+          driverId: 'driver-1',
+          kmDriven: new Prisma.Decimal(100),
+        }),
+        buildDailyLog({
+          vehicleId: 'vehicle-1',
+          driverId: 'driver-2',
+          kmDriven: new Prisma.Decimal(300),
+        }),
+      ];
+
+      const { service } = buildService({ vehicles, dailyLogs });
+
+      const result = await service.getVehicleIndicators({
+        driverId: 'driver-1',
+      });
+
+      expect(result.vehicles[0].kmTotal).toBe(100);
     });
   });
 
