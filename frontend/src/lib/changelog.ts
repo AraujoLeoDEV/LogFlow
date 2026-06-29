@@ -13,6 +13,7 @@ export const changelog: ChangelogEntry[] = [
     items: [
       'Novo: tela de Monitoramento de envios (botão ao lado de "Novo"), com os envios ainda não confirmados organizados por criticidade.',
       'Novo: envios Urgentes aguardando confirmação de recebimento há 24h ou mais piscam em vermelho na tela de Monitoramento.',
+      'Correção: usuários Conferente não conseguiam selecionar a unidade de destino ao registrar um envio.',
     ],
   },
   {
