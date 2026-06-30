@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.7.2026';
+export const APP_VERSION = 'V0.8.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.8.2026',
+    date: '30/06/2026',
+    items: [
+      'Novo: cadastro de Rotas agora usa pontos de parada em vez de distância/duração estimadas — adicione quantas paradas quiser, na ordem desejada.',
+      'Novo: Visão executiva do Dashboard, com gráficos de custos, KM por motorista, uso por rota, combustível e manutenção por veículo — pensada para apresentação à diretoria.',
+      'Novo: usuários ADMIN agora podem excluir definitivamente registros do sistema (combustível, manutenção, registro diário, relatórios, envios e, quando não houver vínculos, veículos, motoristas, unidades, rotas e usuários).',
+    ],
+  },
   {
     version: 'V0.7.2026',
     date: '29/06/2026',
