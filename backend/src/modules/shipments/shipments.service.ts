@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { randomBytes } from 'crypto';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync } from 'fs';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { AlertsMailerService } from '../alerts/alerts-mailer.service';
@@ -589,6 +589,28 @@ export class ShipmentsService {
 
       return result;
     });
+  }
+
+  // Exclusão definitiva - somente ADMIN. Itens, arquivos, recibo e timeline
+  // cascateiam via FK (onDelete: Cascade). O delete no banco roda primeiro:
+  // se falhar, nenhum arquivo físico é tocado e nada fica órfão.
+  async remove(id: string): Promise<void> {
+    const shipment = await this.prisma.shipment.findUnique({
+      where: { id },
+      include: { files: true },
+    });
+
+    if (!shipment) {
+      throw new NotFoundException('Envio não encontrado.');
+    }
+
+    await this.prisma.shipment.delete({ where: { id } });
+
+    for (const file of shipment.files) {
+      if (existsSync(file.filePath)) {
+        unlinkSync(file.filePath);
+      }
+    }
   }
 
   // Lista os arquivos (ex.: PDF de comprovante) gerados para o envio.

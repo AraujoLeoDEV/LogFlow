@@ -181,6 +181,18 @@ export class DailyLogsService {
     return paginate(data, total, page, limit);
   }
 
+  // Exclusão definitiva - somente ADMIN. Registro Diário não tem
+  // dependentes no schema, então não há risco de violação de FK.
+  async remove(id: string): Promise<void> {
+    const existing = await this.prisma.dailyLog.findUnique({ where: { id } });
+
+    if (!existing) {
+      throw new NotFoundException('Registro diário não encontrado.');
+    }
+
+    await this.prisma.dailyLog.delete({ where: { id } });
+  }
+
   // Job agendado - seção 4.5: marca como ATRASADO os registros que excederem
   // o tempo estimado da rota sem retorno
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -193,6 +205,10 @@ export class DailyLogsService {
     const now = Date.now();
     const overdueIds = ongoingLogs
       .filter((log) => {
+        if (log.route.estimatedDurationMinutes === null) {
+          return false;
+        }
+
         const deadline =
           log.departureAt.getTime() +
           log.route.estimatedDurationMinutes * 60_000;

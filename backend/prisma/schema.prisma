@@ -236,8 +236,11 @@ model Unit {
 model Route {
   id                       String   @id @default(uuid())
   name                     String
-  estimatedDistanceKm      Decimal  @map("estimated_distance_km") @db.Decimal(10, 2)
-  estimatedDurationMinutes Int      @map("estimated_duration_minutes")
+  // Legado: campos opcionais, não preenchíveis a partir da criação de rotas
+  // novas. Rotas antigas que já têm estimatedDurationMinutes continuam
+  // gerando alerta de atraso (seção 4.5/4.10); rotas novas não.
+  estimatedDistanceKm      Decimal? @map("estimated_distance_km") @db.Decimal(10, 2)
+  estimatedDurationMinutes Int?     @map("estimated_duration_minutes")
   active                   Boolean  @default(true)
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt @map("updated_at")
@@ -245,8 +248,23 @@ model Route {
   vehicles  Vehicle[]  @relation("VehicleMainRoute")
   drivers   Driver[]   @relation("DriverDefaultRoute")
   dailyLogs DailyLog[]
+  stops     RouteStop[]
 
   @@map("routes")
+}
+
+// Pontos de parada de uma rota, em ordem - seção 4.2
+model RouteStop {
+  id        String   @id @default(uuid())
+  routeId   String   @map("route_id")
+  name      String
+  sequence  Int
+  createdAt DateTime @default(now()) @map("created_at")
+
+  route Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, sequence])
+  @@map("route_stops")
 }
 
 // Veículos - seção 4.3
@@ -508,7 +526,7 @@ model ShipmentStatusHistory {
   changedBy  String?        @map("changed_by")
   notes      String?
 
-  shipment Shipment @relation(fields: [shipmentId], references: [id])
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 
   @@map("shipment_status_history")
 }

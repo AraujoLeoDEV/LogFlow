@@ -32,3 +32,16 @@ export function formatNumber(
       })
     : '—';
 }
+
+// Como toFixed(), mas com separador de milhar pt-BR (ex.: 58000.5 -> "58.000,5").
+export function formatDecimal(
+  value: number | string | null | undefined,
+  fractionDigits = 1,
+): string {
+  return value !== null && value !== undefined
+    ? Number(value).toLocaleString('pt-BR', {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      })
+    : '—';
+}

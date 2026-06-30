@@ -1,14 +1,18 @@
-import { Map, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Ban, Map, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { RouteFormSheet } from '@/components/routes/RouteFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCrudResource } from '@/hooks/useCrudResource';
 import type { CreateRoutePayload, Route, UpdateRoutePayload } from '@/types/route';
 
 export function RoutesPage() {
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
+
   const {
     items: routes,
     isLoading,
@@ -18,6 +22,7 @@ export function RoutesPage() {
     openCreateSheet,
     openEditSheet,
     handleDelete,
+    handlePermanentDelete,
     createMutation,
     updateMutation,
     isSubmitting,
@@ -33,6 +38,14 @@ export function RoutesPage() {
       deleteError: 'Não foi possível inativar a rota.',
     },
     confirmDelete: (route) => `Inativar a rota "${route.name}"?`,
+    permanentDelete: {
+      messages: {
+        deleted: 'Rota excluída definitivamente.',
+        deleteError: 'Não foi possível excluir a rota.',
+      },
+      confirmDelete: (route) =>
+        `Excluir DEFINITIVAMENTE a rota "${route.name}"? Essa ação não pode ser desfeita.`,
+    },
   });
 
   return (
@@ -40,7 +53,7 @@ export function RoutesPage() {
       <PageHeader
         icon={Map}
         title="Rotas"
-        description="Gerencie as rotas cadastradas, com distância e duração estimadas."
+        description="Gerencie as rotas cadastradas e seus pontos de parada."
         action={
           <Button onClick={openCreateSheet}>
             <Plus />
@@ -54,8 +67,7 @@ export function RoutesPage() {
           <thead className="border-b bg-muted/50 text-left text-xs text-muted-foreground uppercase">
             <tr>
               <th className="px-4 py-2 font-medium">Nome</th>
-              <th className="px-4 py-2 font-medium">Distância (km)</th>
-              <th className="px-4 py-2 font-medium">Duração (min)</th>
+              <th className="px-4 py-2 font-medium">Pontos de parada</th>
               <th className="px-4 py-2 font-medium">Usos</th>
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium text-right">Ações</th>
@@ -64,14 +76,14 @@ export function RoutesPage() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                   Carregando...
                 </td>
               </tr>
             )}
             {!isLoading && routes?.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                <td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
                   Nenhuma rota cadastrada.
                 </td>
               </tr>
@@ -79,8 +91,9 @@ export function RoutesPage() {
             {routes?.map((route) => (
               <tr key={route.id} className="border-b last:border-0">
                 <td className="px-4 py-2 font-medium">{route.name}</td>
-                <td className="px-4 py-2">{Number(route.estimatedDistanceKm).toFixed(1)}</td>
-                <td className="px-4 py-2">{route.estimatedDurationMinutes}</td>
+                <td className="px-4 py-2 text-muted-foreground">
+                  {route.stops.length > 0 ? route.stops.map((stop) => stop.name).join(' → ') : '—'}
+                </td>
                 <td className="px-4 py-2 font-mono tabular-nums">{route.usageCount}</td>
                 <td className="px-4 py-2">
                   <Badge variant={route.active ? 'default' : 'outline'}>
@@ -96,6 +109,16 @@ export function RoutesPage() {
                     <Trash2 />
                     <span className="sr-only">Inativar</span>
                   </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handlePermanentDelete(route)}
+                    >
+                      <Ban />
+                      <span className="sr-only">Excluir definitivamente</span>
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

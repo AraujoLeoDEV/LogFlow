@@ -1,7 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
-import { Unit } from '../../../generated/prisma/client';
+import { Prisma, Unit } from '../../../generated/prisma/client';
 import { CreateUnitDto } from './dto/create-unit.dto';
 import { UpdateUnitDto } from './dto/update-unit.dto';
 
@@ -37,5 +41,27 @@ export class UnitsService {
     await this.findOne(id);
 
     await this.prisma.unit.update({ where: { id }, data: { active: false } });
+  }
+
+  // Exclusão definitiva - somente ADMIN. Diferente de remove() (inativação),
+  // apaga o registro de verdade; bloqueada se houver envios vinculados a
+  // esta unidade (como origem ou destino) ou usuários vinculados a ela.
+  async removePermanently(id: string): Promise<void> {
+    await this.findOne(id);
+
+    try {
+      await this.prisma.unit.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Não é possível excluir definitivamente: existem envios ou usuários vinculados a esta unidade. Use inativar em vez de excluir.',
+        );
+      }
+
+      throw error;
+    }
   }
 }

@@ -56,4 +56,15 @@ export class UnitsController {
   remove(@Param('id') id: string): Promise<void> {
     return this.unitsService.remove(id);
   }
+
+  @Delete(':id/permanent')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary:
+      'Exclui definitivamente uma unidade (somente ADMIN; bloqueado se houver registros vinculados)',
+  })
+  removePermanently(@Param('id') id: string): Promise<void> {
+    return this.unitsService.removePermanently(id);
+  }
 }

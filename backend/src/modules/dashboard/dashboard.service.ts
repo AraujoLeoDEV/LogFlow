@@ -24,6 +24,8 @@ export interface VehicleIndicator {
   kmTotal: number;
   usageMinutes: number;
   usageCount: number;
+  fuelCost: number;
+  maintenanceCost: number;
   totalCost: number;
   costPerKm: number | null;
 }
@@ -176,14 +178,18 @@ export class DashboardService {
       },
     );
 
-    // Combustível + manutenção somados no mesmo Map por veículo;
-    // distingue a origem do registro por qual campo de valor ele tem.
-    const costByVehicle = groupAndAccumulate(
-      [...fuelRecords, ...maintenances],
+    const fuelCostByVehicle = groupAndAccumulate(
+      fuelRecords,
       (record) => record.vehicleId,
       () => new Prisma.Decimal(0),
-      (total, record) =>
-        total.plus('amountPaid' in record ? record.amountPaid : record.cost),
+      (total, record) => total.plus(record.amountPaid),
+    );
+
+    const maintenanceCostByVehicle = groupAndAccumulate(
+      maintenances,
+      (record) => record.vehicleId,
+      () => new Prisma.Decimal(0),
+      (total, record) => total.plus(record.cost),
     );
 
     const indicators: VehicleIndicator[] = vehicles.map((vehicle) => {
@@ -192,9 +198,13 @@ export class DashboardService {
         minutes: 0,
         count: 0,
       };
-      const totalCost = (
-        costByVehicle.get(vehicle.id) ?? new Prisma.Decimal(0)
+      const fuelCost = (
+        fuelCostByVehicle.get(vehicle.id) ?? new Prisma.Decimal(0)
       ).toNumber();
+      const maintenanceCost = (
+        maintenanceCostByVehicle.get(vehicle.id) ?? new Prisma.Decimal(0)
+      ).toNumber();
+      const totalCost = fuelCost + maintenanceCost;
 
       return {
         vehicleId: vehicle.id,
@@ -204,6 +214,8 @@ export class DashboardService {
         kmTotal: usage.kmTotal,
         usageMinutes: usage.minutes,
         usageCount: usage.count,
+        fuelCost,
+        maintenanceCost,
         totalCost,
         costPerKm: calculateCostPerKm(totalCost, usage.kmTotal),
       };
@@ -239,23 +251,38 @@ export class DashboardService {
   ): Promise<RouteIndicator[]> {
     const dateFilter = buildDateRangeFilter(query.from, query.to);
 
-    const [routes, dailyLogs, vehicleIndicators] = await Promise.all([
-      this.prisma.route.findMany({
-        where: { active: true },
-        select: { id: true, name: true },
-      }),
-      this.prisma.dailyLog.findMany({
-        where: {
-          status: DailyLogStatus.FINALIZADO,
-          kmDriven: { not: null },
-          ...(dateFilter ? { departureAt: dateFilter } : {}),
-          ...(query.driverId ? { driverId: query.driverId } : {}),
-          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
-        },
-        select: { routeId: true, kmDriven: true, totalDurationMinutes: true },
-      }),
-      this.getVehicleIndicators(query),
-    ]);
+    const [routes, dailyLogs, fuelCostAgg, maintenanceCostAgg] =
+      await Promise.all([
+        this.prisma.route.findMany({
+          where: { active: true },
+          select: { id: true, name: true },
+        }),
+        this.prisma.dailyLog.findMany({
+          where: {
+            status: DailyLogStatus.FINALIZADO,
+            kmDriven: { not: null },
+            ...(dateFilter ? { departureAt: dateFilter } : {}),
+            ...(query.driverId ? { driverId: query.driverId } : {}),
+            ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
+          },
+          select: { routeId: true, kmDriven: true, totalDurationMinutes: true },
+        }),
+        this.prisma.fuel.aggregate({
+          where: {
+            ...(dateFilter ? { date: dateFilter } : {}),
+            ...(query.driverId ? { driverId: query.driverId } : {}),
+            ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
+          },
+          _sum: { amountPaid: true },
+        }),
+        this.prisma.maintenance.aggregate({
+          where: {
+            ...(dateFilter ? { createdAt: dateFilter } : {}),
+            ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
+          },
+          _sum: { cost: true },
+        }),
+      ]);
 
     const usageByRoute = groupAndAccumulate(
       dailyLogs,
@@ -269,14 +296,13 @@ export class DashboardService {
       },
     );
 
-    const fleetKmTotal = vehicleIndicators.vehicles.reduce(
-      (sum, vehicle) => sum + vehicle.kmTotal,
+    const fleetKmTotal = dailyLogs.reduce(
+      (sum, log) => sum + (log.kmDriven?.toNumber() ?? 0),
       0,
     );
-    const fleetCostTotal = vehicleIndicators.vehicles.reduce(
-      (sum, vehicle) => sum + vehicle.totalCost,
-      0,
-    );
+    const fleetCostTotal =
+      (fuelCostAgg._sum.amountPaid?.toNumber() ?? 0) +
+      (maintenanceCostAgg._sum.cost?.toNumber() ?? 0);
     const fleetCostPerKm = calculateCostPerKm(fleetCostTotal, fleetKmTotal);
 
     const indicators: RouteIndicator[] = routes.map((route) => {

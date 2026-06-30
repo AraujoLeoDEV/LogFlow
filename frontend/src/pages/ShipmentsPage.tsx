@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PackageSearch } from 'lucide-react';
+import { Ban, PackageSearch } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
@@ -182,6 +182,7 @@ function buildWhatsappShareUrl(shipment: ShipmentWithTimeline, pdfUrl: string | 
 export function ShipmentsPage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
   const canManage = hasRole('ADMIN', 'COORDENACAO');
   const isConferente = hasRole('CONFERENTE');
   const canCreate = canManage || isConferente;
@@ -258,6 +259,29 @@ export function ShipmentsPage() {
   const invalidateShipments = () => {
     queryClient.invalidateQueries({ queryKey: ['shipments'] });
   };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => api.delete(`/shipments/${id}`),
+    onSuccess: () => {
+      toast.success('Envio excluído definitivamente.');
+      setSelectedProtocol(null);
+      invalidateShipments();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Não foi possível excluir o envio.'));
+    },
+  });
+
+  function handleDelete() {
+    if (!selectedShipment) return;
+    if (
+      window.confirm(
+        `Excluir DEFINITIVAMENTE o envio com protocolo "${selectedShipment.protocolNumber}"? Essa ação não pode ser desfeita.`,
+      )
+    ) {
+      deleteMutation.mutate(selectedShipment.id);
+    }
+  }
 
   const activeUnits = (units ?? []).filter((unit) => unit.active);
   const activeDrivers = (drivers ?? []).filter((driver) => driver.active);
@@ -959,13 +983,21 @@ export function ShipmentsPage() {
                   </div>
                 </div>
 
-                {canEditShipment && (
-                  <div>
-                    <Button type="button" variant="outline" size="sm" onClick={openEditDialog}>
-                      Editar envio
-                    </Button>
-                    {selectedShipment.status === 'CONFIRMADO' && (
-                      <p className="mt-1 text-xs text-muted-foreground">
+                {(canEditShipment || isAdmin) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canEditShipment && (
+                      <Button type="button" variant="outline" size="sm" onClick={openEditDialog}>
+                        Editar envio
+                      </Button>
+                    )}
+                    {isAdmin && (
+                      <Button type="button" variant="outline" size="sm" onClick={handleDelete}>
+                        <Ban />
+                        Excluir definitivamente
+                      </Button>
+                    )}
+                    {canEditShipment && selectedShipment.status === 'CONFIRMADO' && (
+                      <p className="w-full text-xs text-muted-foreground">
                         Este envio já foi confirmado. Edições serão registradas na timeline para
                         auditoria.
                       </p>

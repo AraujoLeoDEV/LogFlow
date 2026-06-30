@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileText } from 'lucide-react';
+import { Ban, FileText } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -141,6 +141,7 @@ const EMPTY_VALUES: ReportFormValues = {
 export function ReportsPage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
   const canManage = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
 
   const { data: drivers } = useQuery({
@@ -205,6 +206,27 @@ export function ReportsPage() {
       toast.error(getErrorMessage(error, 'Não foi possível baixar o relatório.'));
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => api.delete(`/reports/${id}`),
+    onSuccess: () => {
+      toast.success('Relatório excluído definitivamente.');
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Não foi possível excluir o relatório.'));
+    },
+  });
+
+  function handleDelete(report: Report) {
+    if (
+      window.confirm(
+        `Excluir DEFINITIVAMENTE o relatório "${reportTypeLabels[report.type]}" (${formatDateTime(report.createdAt)})? Essa ação não pode ser desfeita.`,
+      )
+    ) {
+      deleteMutation.mutate(report.id);
+    }
+  }
 
   const activeDrivers = (drivers ?? []).filter((driver) => driver.active);
   const activeVehicles = (vehicles ?? []).filter((vehicle) => vehicle.active);
@@ -473,6 +495,12 @@ export function ReportsPage() {
                     >
                       Baixar
                     </Button>
+                    {isAdmin && (
+                      <Button variant="ghost" size="icon-sm" onClick={() => handleDelete(report)}>
+                        <Ban />
+                        <span className="sr-only">Excluir definitivamente</span>
+                      </Button>
+                    )}
                   </td>
                 </tr>
               ))}

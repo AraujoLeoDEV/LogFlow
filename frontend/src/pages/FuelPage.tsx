@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Fuel as FuelIcon, Pencil } from 'lucide-react';
+import { Ban, Fuel as FuelIcon, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -42,7 +42,7 @@ import {
   chartTooltipProps,
 } from '@/lib/chartTheme';
 import { getErrorMessage } from '@/lib/errors';
-import { formatCurrency, formatDateTime, formatNumber } from '@/lib/formatters';
+import { formatCurrency, formatDateTime, formatDecimal, formatNumber } from '@/lib/formatters';
 import { fuelTypeLabels, fuelTypeOptions } from '@/lib/fuelTypes';
 import type {
   CreateFuelPayload,
@@ -56,7 +56,7 @@ import type { PaginatedResult } from '@/types/pagination';
 import type { FuelType, Vehicle } from '@/types/vehicle';
 
 function formatConsumption(value: number | null): string {
-  return value !== null ? `${value.toFixed(2)} km/l` : '—';
+  return value !== null ? `${formatDecimal(value, 2)} km/l` : '—';
 }
 
 function formatMonth(month: string): string {
@@ -123,6 +123,7 @@ type EditFuelFormValues = z.infer<typeof editFuelSchema>;
 export function FuelPage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
   const canManageOthers = hasRole('ADMIN', 'COORDENACAO');
   const canRegister = hasRole('ADMIN', 'COORDENACAO', 'MOTORISTA');
   const canViewIndicators = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
@@ -205,6 +206,27 @@ export function FuelPage() {
       toast.error(getErrorMessage(error, 'Não foi possível atualizar o abastecimento.'));
     },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => api.delete(`/fuel/${id}`),
+    onSuccess: () => {
+      toast.success('Abastecimento excluído definitivamente.');
+      invalidateFuel();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Não foi possível excluir o abastecimento.'));
+    },
+  });
+
+  function handleDelete(fuel: FuelWithRelations) {
+    if (
+      window.confirm(
+        `Excluir DEFINITIVAMENTE o abastecimento de ${formatDateTime(fuel.date)}? Essa ação não pode ser desfeita.`,
+      )
+    ) {
+      deleteMutation.mutate(fuel.id);
+    }
+  }
 
   function openEditDialog(fuel: FuelWithRelations) {
     setEditingFuel(fuel);
@@ -647,6 +669,17 @@ export function FuelPage() {
                           <Pencil />
                           <span className="sr-only">Editar</span>
                         </Button>
+                        {isAdmin && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleDelete(fuel)}
+                          >
+                            <Ban />
+                            <span className="sr-only">Excluir definitivamente</span>
+                          </Button>
+                        )}
                       </td>
                     )}
                   </tr>

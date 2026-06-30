@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -25,14 +26,8 @@ import type { CreateRoutePayload, Route, UpdateRoutePayload } from '@/types/rout
 
 const schema = z.object({
   name: z.string().min(1, 'Informe o nome.'),
-  estimatedDistanceKm: z
-    .number({ message: 'Informe a distância estimada.' })
-    .positive('A distância estimada deve ser maior que zero.'),
-  estimatedDurationMinutes: z
-    .number({ message: 'Informe a duração estimada.' })
-    .int('A duração estimada deve ser um número inteiro de minutos.')
-    .positive('A duração estimada deve ser maior que zero.'),
   active: z.boolean(),
+  stops: z.array(z.object({ name: z.string().min(1, 'Informe o nome da parada.') })),
 });
 
 type RouteFormValues = z.infer<typeof schema>;
@@ -48,9 +43,8 @@ interface RouteFormSheetProps {
 
 const EMPTY_VALUES: RouteFormValues = {
   name: '',
-  estimatedDistanceKm: 0,
-  estimatedDurationMinutes: 0,
   active: true,
+  stops: [],
 };
 
 export function RouteFormSheet({
@@ -68,15 +62,16 @@ export function RouteFormSheet({
     defaultValues: EMPTY_VALUES,
   });
 
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: 'stops' });
+
   useEffect(() => {
     if (open) {
       form.reset(
         route
           ? {
               name: route.name,
-              estimatedDistanceKm: Number(route.estimatedDistanceKm),
-              estimatedDurationMinutes: route.estimatedDurationMinutes,
               active: route.active,
+              stops: route.stops.map((stop) => ({ name: stop.name })),
             }
           : EMPTY_VALUES,
       );
@@ -84,10 +79,16 @@ export function RouteFormSheet({
   }, [open, route, form]);
 
   function onSubmit(values: RouteFormValues) {
+    const payload = {
+      name: values.name,
+      active: values.active,
+      stops: values.stops,
+    };
+
     if (isEditing && route) {
-      onSubmitUpdate(route.id, values);
+      onSubmitUpdate(route.id, payload);
     } else {
-      onSubmitCreate(values);
+      onSubmitCreate(payload);
     }
   }
 
@@ -120,44 +121,33 @@ export function RouteFormSheet({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="estimatedDistanceKm"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Distância estimada (km)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      {...field}
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="estimatedDurationMinutes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Duração estimada (minutos)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      {...field}
-                      onChange={(event) => field.onChange(event.target.valueAsNumber)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="flex flex-col gap-2">
+              <Label>Pontos de parada</Label>
+              {fields.map((stop, index) => (
+                <div key={stop.id} className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`stops.${index}.name`}
+                    render={({ field }) => (
+                      <FormItem className="flex-1">
+                        <FormControl>
+                          <Input {...field} placeholder={`Parada ${index + 1}`} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button type="button" variant="outline" onClick={() => remove(index)}>
+                    Remover
+                  </Button>
+                </div>
+              ))}
+              <div>
+                <Button type="button" variant="outline" onClick={() => append({ name: '' })}>
+                  Adicionar parada
+                </Button>
+              </div>
+            </div>
             {isEditing && (
               <FormField
                 control={form.control}

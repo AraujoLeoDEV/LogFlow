@@ -1,12 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
-  IsInt,
   IsNotEmpty,
   IsOptional,
-  IsPositive,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+
+import { RouteStopDto } from './route-stop.dto';
 
 export class CreateRouteDto {
   @ApiProperty({ example: 'Rota Centro - Bairro Industrial' })
@@ -14,22 +17,18 @@ export class CreateRouteDto {
   @IsNotEmpty({ message: 'O nome é obrigatório.' })
   name: string;
 
-  @ApiProperty({
-    example: 18.5,
-    description: 'Distância estimada em quilômetros.',
-  })
-  @IsPositive({ message: 'A distância estimada deve ser maior que zero.' })
-  estimatedDistanceKm: number;
-
-  @ApiProperty({ example: 45, description: 'Duração estimada em minutos.' })
-  @IsInt({
-    message: 'A duração estimada deve ser um número inteiro de minutos.',
-  })
-  @IsPositive({ message: 'A duração estimada deve ser maior que zero.' })
-  estimatedDurationMinutes: number;
-
   @ApiPropertyOptional({ description: 'Indica se a rota está ativa.' })
   @IsOptional()
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({
+    type: [RouteStopDto],
+    description: 'Pontos de parada da rota, na ordem em que ocorrem.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RouteStopDto)
+  stops?: RouteStopDto[];
 }

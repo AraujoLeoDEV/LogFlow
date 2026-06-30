@@ -60,6 +60,11 @@ function buildService(reports: Report[] = []) {
       findUnique: jest.fn((args: { where: { id: string } }) =>
         Promise.resolve(reports.find((r) => r.id === args.where.id) ?? null),
       ),
+      delete: jest.fn((args: { where: { id: string } }) => {
+        const index = reports.findIndex((r) => r.id === args.where.id);
+        const [removed] = reports.splice(index, 1);
+        return Promise.resolve(removed);
+      }),
     },
   } as unknown as PrismaService;
 
@@ -166,5 +171,22 @@ describe('ReportsService', () => {
     const result = await service.getFilePath('r1');
 
     expect(result.filePath).toBe('/tmp/r1.csv');
+  });
+
+  it('remove exclui definitivamente o relatório (sem arquivo em disco)', async () => {
+    const existing = [buildReport({ id: 'r1', filePath: null })];
+    const { service, reports } = buildService(existing);
+
+    await service.remove('r1');
+
+    expect(reports).toHaveLength(0);
+  });
+
+  it('remove lança 404 quando o relatório não existe', async () => {
+    const { service } = buildService();
+
+    await expect(service.remove('inexistente')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

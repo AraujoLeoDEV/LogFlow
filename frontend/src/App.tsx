@@ -10,6 +10,7 @@ import { queryClient } from '@/lib/queryClient';
 import { DailyLogsPage } from '@/pages/DailyLogsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { DriversPage } from '@/pages/DriversPage';
+import { ExecutiveDashboardPage } from '@/pages/ExecutiveDashboardPage';
 import { FinancePage } from '@/pages/FinancePage';
 import { FuelPage } from '@/pages/FuelPage';
 import { GoalsPage } from '@/pages/GoalsPage';
@@ -79,6 +80,9 @@ function App() {
                   ))}
                 <Route element={<ProtectedRoute roles={['ADMIN', 'COORDENACAO']} />}>
                   <Route path="/envios/monitoramento" element={<ShipmentMonitoringPage />} />
+                </Route>
+                <Route element={<ProtectedRoute roles={['ADMIN', 'COORDENACAO', 'FINANCEIRO']} />}>
+                  <Route path="/dashboard/executivo" element={<ExecutiveDashboardPage />} />
                 </Route>
               </Route>
             </Route>

@@ -415,6 +415,12 @@ function buildService(
     },
   );
 
+  const deleteShipment = jest.fn((args: { where: { id: string } }) => {
+    const index = shipments.findIndex((item) => item.id === args.where.id);
+    const [removed] = shipments.splice(index, 1);
+    return Promise.resolve(removed);
+  });
+
   const prisma = {
     shipment: {
       create: createShipment,
@@ -422,6 +428,7 @@ function buildService(
       count: countShipment,
       findUnique: findUniqueShipment,
       update: updateShipment,
+      delete: deleteShipment,
     },
     shipmentItem: {
       deleteMany: deleteManyShipmentItem,
@@ -1224,6 +1231,26 @@ describe('ShipmentsService', () => {
         changedBy: adminUser.sub,
         notes: 'Envio editado (observações).',
       });
+    });
+  });
+
+  describe('remove', () => {
+    it('exclui definitivamente um envio existente', async () => {
+      const { service, shipments } = buildService({
+        shipments: [buildShipment({ id: 'shipment-1' })],
+      });
+
+      await service.remove('shipment-1');
+
+      expect(shipments).toHaveLength(0);
+    });
+
+    it('lança 404 ao excluir envio inexistente', async () => {
+      const { service } = buildService();
+
+      await expect(service.remove('shipment-x')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

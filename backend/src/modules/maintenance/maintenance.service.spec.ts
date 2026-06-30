@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -233,6 +233,18 @@ function buildService(
     Promise.resolve(filterMaintenance(args.where).length),
   );
 
+  const findUniqueMaintenance = jest.fn((args: { where: { id: string } }) =>
+    Promise.resolve(
+      maintenances.find((item) => item.id === args.where.id) ?? null,
+    ),
+  );
+
+  const deleteMaintenance = jest.fn((args: { where: { id: string } }) => {
+    const index = maintenances.findIndex((item) => item.id === args.where.id);
+    const [removed] = maintenances.splice(index, 1);
+    return Promise.resolve(removed);
+  });
+
   const updateVehicle = jest.fn((args: UpdateVehicleArgs): Promise<Vehicle> => {
     const vehicle = vehicles.find((item) => item.id === args.where.id);
     if (!vehicle) {
@@ -256,6 +268,8 @@ function buildService(
       create: createMaintenance,
       findMany: findManyMaintenance,
       count: countMaintenance,
+      findUnique: findUniqueMaintenance,
+      delete: deleteMaintenance,
     },
     $transaction: transaction,
   } as unknown as PrismaService;
@@ -273,6 +287,7 @@ function buildService(
     maintenances,
     updateVehicle,
     transaction,
+    deleteMaintenance,
   };
 }
 
@@ -425,6 +440,28 @@ describe('MaintenanceService', () => {
         category: 'TROCA_OLEO',
         kmRemaining: 1000,
       });
+    });
+  });
+
+  describe('remove', () => {
+    it('exclui definitivamente uma manutenção existente', async () => {
+      const { service, deleteMaintenance } = buildService({
+        maintenances: [buildMaintenance({ id: 'maintenance-1' })],
+      });
+
+      await service.remove('maintenance-1');
+
+      expect(deleteMaintenance).toHaveBeenCalledWith({
+        where: { id: 'maintenance-1' },
+      });
+    });
+
+    it('lança 404 ao excluir manutenção inexistente', async () => {
+      const { service } = buildService();
+
+      await expect(service.remove('maintenance-x')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

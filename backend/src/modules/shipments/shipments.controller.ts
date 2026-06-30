@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -176,5 +179,13 @@ export class ShipmentsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<ShipmentWithRelations> {
     return this.shipmentsService.update(id, dto, user);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Exclui definitivamente um envio (somente ADMIN)' })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.shipmentsService.remove(id);
   }
 }

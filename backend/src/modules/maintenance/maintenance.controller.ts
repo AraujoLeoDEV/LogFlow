@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -40,6 +50,16 @@ export class MaintenanceController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<MaintenanceWithVehicle> {
     return this.maintenanceService.create(dto, user);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Exclui definitivamente uma manutenção (somente ADMIN)',
+  })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.maintenanceService.remove(id);
   }
 
   @Get('schedule')

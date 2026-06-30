@@ -104,6 +104,29 @@ export class UsersService {
     });
   }
 
+  // Exclusão definitiva - somente ADMIN. Diferente de remove() (inativação),
+  // apaga o registro de verdade; bloqueada se houver motorista vinculado ou
+  // envios/recibos de confirmação registrados por este usuário. Não permite
+  // que o usuário logado exclua a própria conta (verificado no controller).
+  async removePermanently(id: string): Promise<void> {
+    await this.findOne(id);
+
+    try {
+      await this.prisma.user.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Não é possível excluir definitivamente: este usuário está vinculado a um motorista ou a envios/confirmações de recebimento já registrados. Use inativar em vez de excluir.',
+        );
+      }
+
+      throw error;
+    }
+  }
+
   private toFriendlyError(error: unknown): unknown {
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&

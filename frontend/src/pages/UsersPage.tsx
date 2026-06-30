@@ -1,15 +1,19 @@
-import { Pencil, Plus, Trash2, Users } from 'lucide-react';
+import { Ban, Pencil, Plus, Trash2, Users } from 'lucide-react';
 
 import { UserFormSheet } from '@/components/users/UserFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCrudResource } from '@/hooks/useCrudResource';
 import { roleLabels } from '@/lib/roles';
 import type { CreateUserPayload, UpdateUserPayload, User } from '@/types/user';
 
 export function UsersPage() {
+  const { hasRole, user: currentUser } = useAuth();
+  const isAdmin = hasRole('ADMIN');
+
   const {
     items: users,
     isLoading,
@@ -19,6 +23,7 @@ export function UsersPage() {
     openCreateSheet,
     openEditSheet,
     handleDelete,
+    handlePermanentDelete,
     createMutation,
     updateMutation,
     isSubmitting,
@@ -34,6 +39,14 @@ export function UsersPage() {
       deleteError: 'Não foi possível remover o usuário.',
     },
     confirmDelete: (user) => `Remover o usuário "${user.name}"?`,
+    permanentDelete: {
+      messages: {
+        deleted: 'Usuário excluído definitivamente.',
+        deleteError: 'Não foi possível excluir o usuário.',
+      },
+      confirmDelete: (user) =>
+        `Excluir DEFINITIVAMENTE o usuário "${user.name}"? Essa ação não pode ser desfeita.`,
+    },
   });
 
   return (
@@ -97,6 +110,22 @@ export function UsersPage() {
                     <Trash2 />
                     <span className="sr-only">Remover</span>
                   </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={user.id === currentUser?.id}
+                      title={
+                        user.id === currentUser?.id
+                          ? 'Você não pode excluir a própria conta.'
+                          : undefined
+                      }
+                      onClick={() => handlePermanentDelete(user)}
+                    >
+                      <Ban />
+                      <span className="sr-only">Excluir definitivamente</span>
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

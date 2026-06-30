@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -71,5 +72,23 @@ export class UsersController {
   })
   remove(@Param('id') id: string): Promise<void> {
     return this.usersService.remove(id);
+  }
+
+  @Roles(Role.ADMIN)
+  @Delete(':id/permanent')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary:
+      'Exclui definitivamente um usuário (somente Administrador; bloqueado se houver registros vinculados; não é possível excluir a própria conta)',
+  })
+  removePermanently(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<void> {
+    if (id === user.sub) {
+      throw new BadRequestException('Você não pode excluir a própria conta.');
+    }
+
+    return this.usersService.removePermanently(id);
   }
 }

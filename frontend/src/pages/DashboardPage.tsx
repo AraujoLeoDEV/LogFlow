@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
-import { Gauge, LayoutDashboard, Route as RouteIcon, UserRound } from 'lucide-react';
+import { Gauge, LayoutDashboard, PieChart, Route as RouteIcon, UserRound } from 'lucide-react';
 import { useState } from 'react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from '@/components/ui/label';
@@ -35,7 +37,9 @@ function formatRate(value: number | null): string {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const { hasRole } = useAuth();
+  const canViewExecutive = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
   const canViewDrivers = hasRole('ADMIN', 'COORDENACAO');
   const canViewVehicles = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
   const canViewRoutes = hasRole('ADMIN', 'COORDENACAO');
@@ -106,6 +110,18 @@ export function DashboardPage() {
         icon={LayoutDashboard}
         title="Dashboard"
         description="Indicadores gerais da frota."
+        action={
+          canViewExecutive && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/dashboard/executivo')}
+            >
+              <PieChart />
+              Visão executiva
+            </Button>
+          )
+        }
       />
 
       <div className="grid gap-3 sm:grid-cols-3">

@@ -23,6 +23,8 @@ export interface VehicleIndicator {
   kmTotal: number;
   usageMinutes: number;
   usageCount: number;
+  fuelCost: number;
+  maintenanceCost: number;
   totalCost: number;
   costPerKm: number | null;
 }

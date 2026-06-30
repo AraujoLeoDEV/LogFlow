@@ -139,7 +139,7 @@ function buildService(
   options: {
     dailyLogs?: DailyLog[];
     drivers?: Driver[];
-    routeDurations?: Record<string, number>;
+    routeDurations?: Record<string, number | null>;
   } = {},
 ) {
   const dailyLogs = new Map<string, DailyLog>();
@@ -213,7 +213,8 @@ function buildService(
         route: {
           id: log.routeId,
           name: 'Rota Principal',
-          estimatedDurationMinutes: routeDurations[log.routeId] ?? 60,
+          estimatedDurationMinutes:
+            log.routeId in routeDurations ? routeDurations[log.routeId] : 60,
         },
       })),
     );
@@ -272,6 +273,12 @@ function buildService(
     return Promise.resolve({ count });
   });
 
+  const deleteDailyLog = jest.fn((args: { where: { id: string } }) => {
+    const removed = dailyLogs.get(args.where.id);
+    dailyLogs.delete(args.where.id);
+    return Promise.resolve(removed);
+  });
+
   const prisma = {
     dailyLog: {
       findFirst: findFirstDailyLog,
@@ -281,6 +288,7 @@ function buildService(
       create: createDailyLog,
       update: updateDailyLog,
       updateMany: updateManyDailyLog,
+      delete: deleteDailyLog,
     },
     driver: {
       findFirst: findFirstDriver,
@@ -511,6 +519,45 @@ describe('DailyLogsService', () => {
       expect(count).toBe(0);
       expect(dailyLogs.get('log-1')?.status).toBe(DailyLogStatus.EM_ANDAMENTO);
       expect(updateManyDailyLog).not.toHaveBeenCalled();
+    });
+
+    it('nunca marca como atrasada uma rota sem duração estimada (rota nova, sem o campo legado)', async () => {
+      const departureAt = new Date(Date.now() - 10_000 * 60_000);
+      const { service, dailyLogs, updateManyDailyLog } = buildService({
+        dailyLogs: [
+          buildDailyLog({
+            id: 'log-1',
+            status: DailyLogStatus.EM_ANDAMENTO,
+            departureAt,
+            routeId: 'route-sem-estimativa',
+          }),
+        ],
+        routeDurations: { 'route-sem-estimativa': null },
+      });
+
+      const count = await service.markOverdueLogs();
+
+      expect(count).toBe(0);
+      expect(dailyLogs.get('log-1')?.status).toBe(DailyLogStatus.EM_ANDAMENTO);
+      expect(updateManyDailyLog).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('exclui definitivamente um registro diário existente', async () => {
+      const { service, dailyLogs } = buildService({
+        dailyLogs: [buildDailyLog({ id: 'log-1' })],
+      });
+
+      await service.remove('log-1');
+
+      expect(dailyLogs.has('log-1')).toBe(false);
+    });
+
+    it('lança 404 ao excluir registro diário inexistente', async () => {
+      const { service } = buildService();
+
+      await expect(service.remove('log-x')).rejects.toThrow(NotFoundException);
     });
   });
 });

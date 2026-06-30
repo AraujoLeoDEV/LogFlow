@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClipboardList } from 'lucide-react';
+import { Ban, ClipboardList } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -88,6 +88,7 @@ const EMPTY_DEPARTURE_VALUES: DepartureFormValues = {
 export function DailyLogsPage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
   const canManageOthers = hasRole('ADMIN', 'COORDENACAO');
 
   const [filters, setFilters] = useState<DailyLogQuery>({});
@@ -200,6 +201,27 @@ export function DailyLogsPage() {
 
   function handleReturnSubmit(id: string, payload: ReturnDailyLogPayload) {
     returnMutation.mutate({ id, payload });
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => api.delete(`/daily-logs/${id}`),
+    onSuccess: () => {
+      toast.success('Registro diário excluído definitivamente.');
+      invalidateDailyLogs();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Não foi possível excluir o registro diário.'));
+    },
+  });
+
+  function handleDelete(log: DailyLogWithRelations) {
+    if (
+      window.confirm(
+        `Excluir DEFINITIVAMENTE o registro diário de ${formatDateTime(log.departureAt)}? Essa ação não pode ser desfeita.`,
+      )
+    ) {
+      deleteMutation.mutate(log.id);
+    }
   }
 
   function handleFilterChange<K extends keyof DailyLogQuery>(key: K, value: string) {
@@ -501,19 +523,26 @@ export function DailyLogsPage() {
                 <th className="px-2 py-2 font-medium">Duração</th>
                 <th className="px-2 py-2 font-medium">Vel. média</th>
                 <th className="px-2 py-2 font-medium">Status</th>
+                {isAdmin && <th className="px-2 py-2 font-medium">Ações</th>}
               </tr>
             </thead>
             <tbody>
               {isLoadingHistory && (
                 <tr>
-                  <td colSpan={10} className="px-2 py-6 text-center text-muted-foreground">
+                  <td
+                    colSpan={isAdmin ? 11 : 10}
+                    className="px-2 py-6 text-center text-muted-foreground"
+                  >
                     Carregando...
                   </td>
                 </tr>
               )}
               {!isLoadingHistory && history?.data.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-2 py-6 text-center text-muted-foreground">
+                  <td
+                    colSpan={isAdmin ? 11 : 10}
+                    className="px-2 py-6 text-center text-muted-foreground"
+                  >
                     Nenhum registro encontrado.
                   </td>
                 </tr>
@@ -538,6 +567,19 @@ export function DailyLogsPage() {
                   <td className="px-2 py-2">
                     <StatusBadge status={log.status} />
                   </td>
+                  {isAdmin && (
+                    <td className="px-2 py-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleDelete(log)}
+                      >
+                        <Ban />
+                        <span className="sr-only">Excluir definitivamente</span>
+                      </Button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

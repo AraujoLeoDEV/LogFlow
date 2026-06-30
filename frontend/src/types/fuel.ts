@@ -47,6 +47,11 @@ export interface FuelQuery extends PaginationQuery {
   to?: string;
 }
 
+export interface FuelIndicatorsQuery {
+  from?: string;
+  to?: string;
+}
+
 export interface VehicleFuelIndicator {
   vehicleId: string;
   plate: string;

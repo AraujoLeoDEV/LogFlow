@@ -26,7 +26,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
-import { formatCurrency, formatDateTime } from '@/lib/formatters';
+import { formatCurrency, formatDateTime, formatDecimal } from '@/lib/formatters';
 import {
   incidentCategoryLabels,
   incidentCategoryOptions,
@@ -49,7 +49,7 @@ import type { PaginatedResult } from '@/types/pagination';
 import type { Vehicle } from '@/types/vehicle';
 
 function formatRate(value: number | null): string {
-  return value !== null ? `${value.toFixed(2)} / 1.000 km` : '—';
+  return value !== null ? `${formatDecimal(value, 2)} / 1.000 km` : '—';
 }
 
 const incidentSchema = z.object({
@@ -186,7 +186,7 @@ export function IncidentsPage() {
                   <div className="rounded-lg border p-4">
                     <p className="text-xs text-muted-foreground uppercase">KM rodado</p>
                     <p className="text-lg font-semibold">
-                      {indicators.fleetRate.kmDriven.toFixed(1)} km
+                      {formatDecimal(indicators.fleetRate.kmDriven)} km
                     </p>
                   </div>
                   <div className="rounded-lg border p-4">
@@ -284,7 +284,7 @@ export function IncidentsPage() {
                             <VehicleName vehicle={item} />
                           </td>
                           <td className="px-2 py-2">{item.incidentCount}</td>
-                          <td className="px-2 py-2">{item.kmDriven.toFixed(1)} km</td>
+                          <td className="px-2 py-2">{formatDecimal(item.kmDriven)} km</td>
                           <td className="px-2 py-2">{formatRate(item.ratePer1000Km)}</td>
                         </tr>
                       ))}

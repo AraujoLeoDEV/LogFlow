@@ -25,7 +25,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, formatDecimal } from '@/lib/formatters';
 import type { Driver } from '@/types/driver';
 import type {
   CreateGoalPayload,
@@ -56,7 +56,7 @@ function statusBadgeVariant(status: GoalStatus): 'secondary' | 'default' | 'dest
 }
 
 function formatConsumption(value: string | number | null): string {
-  return value !== null ? `${Number(value).toFixed(2)} km/L` : '—';
+  return value !== null ? `${formatDecimal(value, 2)} km/L` : '—';
 }
 
 function currentPeriod(): string {
@@ -547,7 +547,7 @@ export function GoalsPage() {
                   <td className="px-2 py-2">{formatConsumption(entry.targetValue)}</td>
                   <td className="px-2 py-2">{formatConsumption(entry.actualValue)}</td>
                   <td className="px-2 py-2">
-                    {entry.difference !== null ? `${entry.difference.toFixed(2)} km/L` : '—'}
+                    {entry.difference !== null ? `${formatDecimal(entry.difference, 2)} km/L` : '—'}
                   </td>
                   <td className="px-2 py-2">
                     <Badge variant={statusBadgeVariant(entry.status)}>

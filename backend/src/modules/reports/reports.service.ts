@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { existsSync, unlinkSync } from 'fs';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma, Report, ReportStatus } from '../../../generated/prisma/client';
@@ -72,5 +73,17 @@ export class ReportsService {
     }
 
     return report as Report & { filePath: string };
+  }
+
+  // Exclusão definitiva - somente ADMIN. O delete no banco roda primeiro:
+  // se falhar, o arquivo gerado em disco não é tocado e nada fica órfão.
+  async remove(id: string): Promise<void> {
+    const report = await this.findOne(id);
+
+    await this.prisma.report.delete({ where: { id } });
+
+    if (report.filePath && existsSync(report.filePath)) {
+      unlinkSync(report.filePath);
+    }
   }
 }

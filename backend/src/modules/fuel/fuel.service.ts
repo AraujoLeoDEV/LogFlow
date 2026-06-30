@@ -19,6 +19,7 @@ import {
 import { Fuel, Prisma, Role } from '../../../generated/prisma/client';
 import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface';
 import { CreateFuelDto } from './dto/create-fuel.dto';
+import { FuelIndicatorsQueryDto } from './dto/fuel-indicators-query.dto';
 import { FuelQueryDto } from './dto/fuel-query.dto';
 import { UpdateFuelDto } from './dto/update-fuel.dto';
 import { calculateFuelMetrics, isFuelTypeCompatible } from './fuel.util';
@@ -274,8 +275,13 @@ export class FuelService {
   }
 
   // Indicadores - seção 4.6
-  async getIndicators(): Promise<FuelIndicators> {
+  async getIndicators(
+    query: FuelIndicatorsQueryDto = {},
+  ): Promise<FuelIndicators> {
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
+
     const records = await this.prisma.fuel.findMany({
+      where: dateFilter ? { date: dateFilter } : undefined,
       include: {
         vehicle: {
           select: { id: true, plate: true, model: true, currentKm: true },
@@ -358,6 +364,18 @@ export class FuelService {
       .sort((a, b) => a.month.localeCompare(b.month));
 
     return { vehicles, mostEconomical, mostExpensive, monthlySpend };
+  }
+
+  // Exclusão definitiva - somente ADMIN. Abastecimento não tem dependentes
+  // no schema, então não há risco de violação de FK.
+  async remove(id: string): Promise<void> {
+    const existing = await this.prisma.fuel.findUnique({ where: { id } });
+
+    if (!existing) {
+      throw new NotFoundException('Abastecimento não encontrado.');
+    }
+
+    await this.prisma.fuel.delete({ where: { id } });
   }
 
   private toFriendlyError(error: unknown): unknown {

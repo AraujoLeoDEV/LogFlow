@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -45,6 +48,16 @@ export class DailyLogsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<DailyLog> {
     return this.dailyLogsService.create(dto, user);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Exclui definitivamente um registro diário (somente ADMIN)',
+  })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.dailyLogsService.remove(id);
   }
 
   @Patch(':id/return')

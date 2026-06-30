@@ -1,4 +1,5 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { formatDecimal } from '@/lib/formatters';
 
 interface VehicleNameProps {
   vehicle: { plate: string; model: string; currentKm: string | number };
@@ -19,7 +20,7 @@ export function VehicleName({ vehicle, className }: VehicleNameProps) {
       </TooltipTrigger>
       <TooltipContent>
         <p>Placa: {vehicle.plate}</p>
-        <p>KM atual: {Number(vehicle.currentKm).toFixed(1)} km</p>
+        <p>KM atual: {formatDecimal(vehicle.currentKm)} km</p>
       </TooltipContent>
     </Tooltip>
   );

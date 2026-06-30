@@ -75,4 +75,15 @@ export class DriversController {
   ): Promise<void> {
     return this.driversService.remove(id, user.sub);
   }
+
+  @Delete(':id/permanent')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary:
+      'Exclui definitivamente um motorista (somente ADMIN; bloqueado se houver registros vinculados)',
+  })
+  removePermanently(@Param('id') id: string): Promise<void> {
+    return this.driversService.removePermanently(id);
+  }
 }

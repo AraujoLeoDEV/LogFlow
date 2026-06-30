@@ -87,6 +87,28 @@ export class VehiclesService {
     });
   }
 
+  // Exclusão definitiva - somente ADMIN. Diferente de remove() (inativação),
+  // apaga o registro de verdade; bloqueada se houver abastecimentos,
+  // manutenções, ocorrências ou registros diários vinculados a este veículo.
+  async removePermanently(id: string): Promise<void> {
+    await this.findOne(id);
+
+    try {
+      await this.prisma.vehicle.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Não é possível excluir definitivamente: existem abastecimentos, manutenções, ocorrências ou registros diários vinculados a este veículo. Use inativar em vez de excluir.',
+        );
+      }
+
+      throw error;
+    }
+  }
+
   private withDepreciation(vehicle: Vehicle): VehicleWithDepreciation {
     return {
       ...vehicle,

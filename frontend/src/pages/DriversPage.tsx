@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Pencil, Plus, Trash2, UserRound } from 'lucide-react';
+import { Ban, Pencil, Plus, Trash2, UserRound } from 'lucide-react';
 
 import { DriverFormSheet } from '@/components/drivers/DriverFormSheet';
 import { VehicleName } from '@/components/vehicles/VehicleName';
@@ -7,8 +7,10 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCrudResource } from '@/hooks/useCrudResource';
 import { api } from '@/lib/api';
+import { formatDecimal } from '@/lib/formatters';
 import type { CreateDriverPayload, Driver, UpdateDriverPayload } from '@/types/driver';
 import type { Route } from '@/types/route';
 import type { Vehicle } from '@/types/vehicle';
@@ -16,6 +18,9 @@ import type { Vehicle } from '@/types/vehicle';
 const dateFormatter = new Intl.DateTimeFormat('pt-BR');
 
 export function DriversPage() {
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
+
   const {
     items: drivers,
     isLoading,
@@ -25,6 +30,7 @@ export function DriversPage() {
     openCreateSheet,
     openEditSheet,
     handleDelete,
+    handlePermanentDelete,
     createMutation,
     updateMutation,
     isSubmitting,
@@ -40,6 +46,14 @@ export function DriversPage() {
       deleteError: 'Não foi possível remover o motorista.',
     },
     confirmDelete: (driver) => `Remover o motorista "${driver.name}"?`,
+    permanentDelete: {
+      messages: {
+        deleted: 'Motorista excluído definitivamente.',
+        deleteError: 'Não foi possível excluir o motorista.',
+      },
+      confirmDelete: (driver) =>
+        `Excluir DEFINITIVAMENTE o motorista "${driver.name}"? Essa ação não pode ser desfeita.`,
+    },
   });
 
   const { data: vehicles } = useQuery({
@@ -112,7 +126,7 @@ export function DriversPage() {
                 <td className="px-4 py-2 text-muted-foreground">
                   {driver.defaultRouteId ? (routeNameById.get(driver.defaultRouteId) ?? '—') : '—'}
                 </td>
-                <td className="px-4 py-2">{Number(driver.currentKm).toFixed(1)}</td>
+                <td className="px-4 py-2">{formatDecimal(driver.currentKm)}</td>
                 <td className="px-4 py-2 text-muted-foreground">
                   {driver.cnhExpiration
                     ? dateFormatter.format(new Date(driver.cnhExpiration))
@@ -132,6 +146,16 @@ export function DriversPage() {
                     <Trash2 />
                     <span className="sr-only">Remover</span>
                   </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handlePermanentDelete(driver)}
+                    >
+                      <Ban />
+                      <span className="sr-only">Excluir definitivamente</span>
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

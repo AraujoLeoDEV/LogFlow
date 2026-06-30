@@ -121,6 +121,12 @@ export class AlertsService {
     });
 
     for (const log of delayedLogs) {
+      // Rotas sem duração estimada nunca são marcadas ATRASADO em
+      // markOverdueLogs(); a guarda aqui é só defensiva.
+      if (log.route.estimatedDurationMinutes === null) {
+        continue;
+      }
+
       candidates.push(
         buildTripDelayedAlert({
           id: log.id,

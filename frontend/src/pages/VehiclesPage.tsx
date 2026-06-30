@@ -1,19 +1,23 @@
-import { Pencil, Plus, Trash2, Truck } from 'lucide-react';
+import { Ban, Pencil, Plus, Trash2, Truck } from 'lucide-react';
 
 import { VehicleFormSheet } from '@/components/vehicles/VehicleFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCrudResource } from '@/hooks/useCrudResource';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { formatCurrency } from '@/lib/formatters';
+import { formatCurrency, formatDecimal } from '@/lib/formatters';
 import { fuelTypeLabels } from '@/lib/fuelTypes';
 import type { Route } from '@/types/route';
 import type { CreateVehiclePayload, UpdateVehiclePayload, Vehicle } from '@/types/vehicle';
 
 export function VehiclesPage() {
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
+
   const {
     items: vehicles,
     isLoading,
@@ -23,6 +27,7 @@ export function VehiclesPage() {
     openCreateSheet,
     openEditSheet,
     handleDelete,
+    handlePermanentDelete,
     createMutation,
     updateMutation,
     isSubmitting,
@@ -38,6 +43,14 @@ export function VehiclesPage() {
       deleteError: 'Não foi possível remover o veículo.',
     },
     confirmDelete: (vehicle) => `Remover o veículo "${vehicle.plate}"?`,
+    permanentDelete: {
+      messages: {
+        deleted: 'Veículo excluído definitivamente.',
+        deleteError: 'Não foi possível excluir o veículo.',
+      },
+      confirmDelete: (vehicle) =>
+        `Excluir DEFINITIVAMENTE o veículo "${vehicle.plate}"? Essa ação não pode ser desfeita.`,
+    },
   });
 
   const { data: routes } = useQuery({
@@ -102,7 +115,7 @@ export function VehiclesPage() {
                 <td className="px-4 py-2 text-muted-foreground">
                   {vehicle.mainRouteId ? (routeNameById.get(vehicle.mainRouteId) ?? '—') : '—'}
                 </td>
-                <td className="px-4 py-2">{Number(vehicle.currentKm).toFixed(1)}</td>
+                <td className="px-4 py-2">{formatDecimal(vehicle.currentKm)}</td>
                 <td className="px-4 py-2">{formatCurrency(vehicle.monthlyDepreciation)}</td>
                 <td className="px-4 py-2">
                   <Badge variant={vehicle.active ? 'success' : 'outline'}>
@@ -118,6 +131,16 @@ export function VehiclesPage() {
                     <Trash2 />
                     <span className="sr-only">Remover</span>
                   </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handlePermanentDelete(vehicle)}
+                    >
+                      <Ban />
+                      <span className="sr-only">Excluir definitivamente</span>
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -15,6 +18,7 @@ import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface
 import type { PaginatedResult } from '../../common/utils/pagination.util';
 import { Fuel, Role } from '../../../generated/prisma/client';
 import { CreateFuelDto } from './dto/create-fuel.dto';
+import { FuelIndicatorsQueryDto } from './dto/fuel-indicators-query.dto';
 import { FuelQueryDto } from './dto/fuel-query.dto';
 import { UpdateFuelDto } from './dto/update-fuel.dto';
 import { FuelIndicators, FuelService, FuelWithRelations } from './fuel.service';
@@ -61,13 +65,25 @@ export class FuelController {
     return this.fuelService.update(id, dto, user);
   }
 
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Exclui definitivamente um abastecimento (somente ADMIN)',
+  })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.fuelService.remove(id);
+  }
+
   @Get('indicators')
   @Roles(Role.ADMIN, Role.COORDENACAO, Role.FINANCEIRO)
   @ApiOperation({
     summary:
       'Indicadores de consumo e gasto com combustível por veículo e por mês',
   })
-  getIndicators(): Promise<FuelIndicators> {
-    return this.fuelService.getIndicators();
+  getIndicators(
+    @Query() query: FuelIndicatorsQueryDto,
+  ): Promise<FuelIndicators> {
+    return this.fuelService.getIndicators(query);
   }
 }

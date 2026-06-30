@@ -1,14 +1,18 @@
-import { Building2, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Ban, Building2, Pencil, Plus, Trash2 } from 'lucide-react';
 
 import { UnitFormSheet } from '@/components/units/UnitFormSheet';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCrudResource } from '@/hooks/useCrudResource';
 import type { CreateUnitPayload, Unit, UpdateUnitPayload } from '@/types/unit';
 
 export function UnitsPage() {
+  const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
+
   const {
     items: units,
     isLoading,
@@ -18,6 +22,7 @@ export function UnitsPage() {
     openCreateSheet,
     openEditSheet,
     handleDelete,
+    handlePermanentDelete,
     createMutation,
     updateMutation,
     isSubmitting,
@@ -33,6 +38,14 @@ export function UnitsPage() {
       deleteError: 'Não foi possível inativar a unidade.',
     },
     confirmDelete: (unit) => `Inativar a unidade "${unit.name}"?`,
+    permanentDelete: {
+      messages: {
+        deleted: 'Unidade excluída definitivamente.',
+        deleteError: 'Não foi possível excluir a unidade.',
+      },
+      confirmDelete: (unit) =>
+        `Excluir DEFINITIVAMENTE a unidade "${unit.name}"? Essa ação não pode ser desfeita.`,
+    },
   });
 
   return (
@@ -94,6 +107,16 @@ export function UnitsPage() {
                     <Trash2 />
                     <span className="sr-only">Inativar</span>
                   </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => handlePermanentDelete(unit)}
+                    >
+                      <Ban />
+                      <span className="sr-only">Excluir definitivamente</span>
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
@@ -49,5 +60,15 @@ export class ReportsController {
     const filename = `${report.type.toLowerCase()}-${report.id}.${extension}`;
 
     res.download(report.filePath, filename);
+  }
+
+  @Delete(':id')
+  @Roles(Role.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Exclui definitivamente um relatório (somente ADMIN)',
+  })
+  remove(@Param('id') id: string): Promise<void> {
+    return this.reportsService.remove(id);
   }
 }

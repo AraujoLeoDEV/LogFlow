@@ -80,6 +80,28 @@ export class DriversService {
     });
   }
 
+  // Exclusão definitiva - somente ADMIN. Diferente de remove() (inativação),
+  // apaga o registro de verdade; bloqueada se houver viagens, abastecimentos
+  // ou ocorrências vinculadas a este motorista.
+  async removePermanently(id: string): Promise<void> {
+    await this.findOne(id);
+
+    try {
+      await this.prisma.driver.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'Não é possível excluir definitivamente: existem viagens, abastecimentos ou ocorrências vinculadas a este motorista. Use inativar em vez de excluir.',
+        );
+      }
+
+      throw error;
+    }
+  }
+
   // Histórico placeholder - será agregado conforme as Fases 4, 5 e 7 forem concluídas
   async history(id: string): Promise<DriverHistoryDto> {
     await this.findOne(id);

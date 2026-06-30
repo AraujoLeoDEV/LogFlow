@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Wrench } from 'lucide-react';
+import { Ban, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -27,7 +27,7 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { api } from '@/lib/api';
 import { getErrorMessage } from '@/lib/errors';
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/formatters';
+import { formatCurrency, formatDate, formatDateTime, formatDecimal } from '@/lib/formatters';
 import {
   maintenanceCategoryOptions,
   maintenanceTypeOptions,
@@ -45,15 +45,15 @@ import type { PaginatedResult } from '@/types/pagination';
 import type { Vehicle } from '@/types/vehicle';
 
 function formatKm(value: string | number | null): string {
-  return value !== null ? `${Number(value).toFixed(1)} km` : '—';
+  return value !== null ? `${formatDecimal(value)} km` : '—';
 }
 
 function formatKmRemaining(value: number | null) {
   if (value === null) return '—';
   if (value < 0) {
-    return <Badge variant="destructive">{Math.abs(value).toFixed(0)} km atrasado</Badge>;
+    return <Badge variant="destructive">{formatDecimal(Math.abs(value), 0)} km atrasado</Badge>;
   }
-  return `${value.toFixed(0)} km`;
+  return `${formatDecimal(value, 0)} km`;
 }
 
 function formatDaysRemaining(value: number | null) {
@@ -93,6 +93,7 @@ const EMPTY_VALUES: MaintenanceFormValues = {
 export function MaintenancePage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
+  const isAdmin = hasRole('ADMIN');
   const canManage = hasRole('ADMIN', 'COORDENACAO');
   const canViewHistory = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
 
@@ -158,6 +159,27 @@ export function MaintenancePage() {
       scheduledKm: values.scheduledKm,
       performedDate: values.performedDate || undefined,
     });
+  }
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => api.delete(`/maintenance/${id}`),
+    onSuccess: () => {
+      toast.success('Manutenção excluída definitivamente.');
+      invalidateMaintenance();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Não foi possível excluir a manutenção.'));
+    },
+  });
+
+  function handleDelete(maintenance: MaintenanceWithVehicle) {
+    if (
+      window.confirm(
+        `Excluir DEFINITIVAMENTE a manutenção de ${formatDate(maintenance.performedDate)}? Essa ação não pode ser desfeita.`,
+      )
+    ) {
+      deleteMutation.mutate(maintenance.id);
+    }
   }
 
   function handleFilterChange<K extends keyof MaintenanceQuery>(key: K, value: string) {
@@ -497,19 +519,26 @@ export function MaintenancePage() {
                   <th className="px-2 py-2 font-medium">Custo</th>
                   <th className="px-2 py-2 font-medium">Descrição</th>
                   <th className="px-2 py-2 font-medium">Realizada em</th>
+                  {isAdmin && <th className="px-2 py-2 font-medium">Ações</th>}
                 </tr>
               </thead>
               <tbody>
                 {isLoadingHistory && (
                   <tr>
-                    <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={isAdmin ? 9 : 8}
+                      className="px-2 py-6 text-center text-muted-foreground"
+                    >
                       Carregando...
                     </td>
                   </tr>
                 )}
                 {!isLoadingHistory && history?.data.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={isAdmin ? 9 : 8}
+                      className="px-2 py-6 text-center text-muted-foreground"
+                    >
                       Nenhuma manutenção encontrada.
                     </td>
                   </tr>
@@ -535,6 +564,19 @@ export function MaintenancePage() {
                     <td className="px-2 py-2">{formatCurrency(maintenance.cost)}</td>
                     <td className="px-2 py-2 text-muted-foreground">{maintenance.description}</td>
                     <td className="px-2 py-2">{formatDate(maintenance.performedDate)}</td>
+                    {isAdmin && (
+                      <td className="px-2 py-2">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => handleDelete(maintenance)}
+                        >
+                          <Ban />
+                          <span className="sr-only">Excluir definitivamente</span>
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

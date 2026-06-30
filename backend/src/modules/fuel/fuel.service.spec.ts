@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 
@@ -241,6 +242,18 @@ function buildService(
     Promise.resolve(filterFuel(args.where).length),
   );
 
+  const findUniqueFuel = jest.fn((args: { where: { id: string } }) =>
+    Promise.resolve(
+      fuelRecords.find((fuel) => fuel.id === args.where.id) ?? null,
+    ),
+  );
+
+  const deleteFuel = jest.fn((args: { where: { id: string } }) => {
+    const index = fuelRecords.findIndex((fuel) => fuel.id === args.where.id);
+    const [removed] = fuelRecords.splice(index, 1);
+    return Promise.resolve(removed);
+  });
+
   const createFuel = jest.fn((args: CreateFuelArgs): Promise<Fuel> => {
     const created = buildFuel({
       id: `fuel-${fuelRecords.length + 1}`,
@@ -269,6 +282,8 @@ function buildService(
       findMany: findManyFuel,
       count: countFuel,
       create: createFuel,
+      findUnique: findUniqueFuel,
+      delete: deleteFuel,
     },
     vehicle: {
       findFirst: findFirstVehicle,
@@ -507,6 +522,58 @@ describe('FuelService', () => {
         { month: '2026-05', total: 200 },
         { month: '2026-06', total: 520 },
       ]);
+    });
+
+    it('respeita o filtro de período (from/to)', async () => {
+      const { service } = buildService({
+        vehicles: [buildVehicle({ id: 'vehicle-1', plate: 'ABC1D23' })],
+        fuelRecords: [
+          buildFuel({
+            id: 'fuel-1',
+            vehicleId: 'vehicle-1',
+            amountPaid: new Prisma.Decimal(200),
+            date: new Date('2026-05-15T10:00:00Z'),
+          }),
+          buildFuel({
+            id: 'fuel-2',
+            vehicleId: 'vehicle-1',
+            amountPaid: new Prisma.Decimal(220),
+            date: new Date('2026-06-15T10:00:00Z'),
+          }),
+        ],
+      });
+
+      const indicators = await service.getIndicators({
+        from: '2026-06-01',
+        to: '2026-06-30',
+      });
+
+      const vehicle1 = indicators.vehicles.find(
+        (item) => item.vehicleId === 'vehicle-1',
+      );
+
+      expect(vehicle1?.totalSpent).toBe(220);
+      expect(indicators.monthlySpend).toEqual([
+        { month: '2026-06', total: 220 },
+      ]);
+    });
+  });
+
+  describe('remove', () => {
+    it('exclui definitivamente um abastecimento existente', async () => {
+      const { service, fuelRecords } = buildService({
+        fuelRecords: [buildFuel({ id: 'fuel-1' })],
+      });
+
+      await service.remove('fuel-1');
+
+      expect(fuelRecords).toHaveLength(0);
+    });
+
+    it('lança 404 ao excluir abastecimento inexistente', async () => {
+      const { service } = buildService();
+
+      await expect(service.remove('fuel-x')).rejects.toThrow(NotFoundException);
     });
   });
 });

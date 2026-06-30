@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -169,6 +173,20 @@ export class MaintenanceService {
       })),
       new Date(),
     );
+  }
+
+  // Exclusão definitiva - somente ADMIN. Manutenção não tem dependentes no
+  // schema, então não há risco de violação de FK.
+  async remove(id: string): Promise<void> {
+    const existing = await this.prisma.maintenance.findUnique({
+      where: { id },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Manutenção não encontrada.');
+    }
+
+    await this.prisma.maintenance.delete({ where: { id } });
   }
 
   private getEnvNumber(key: string, defaultValue: number): number {

@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { FuelType, Prisma, Vehicle } from '../../../generated/prisma/client';
@@ -48,9 +48,10 @@ function buildVehicle(overrides: Partial<Vehicle> = {}): Vehicle {
   };
 }
 
-function buildService() {
+function buildService(options: { blockedDeleteIds?: string[] } = {}) {
   const store = new Map<string, Vehicle>();
   store.set('vehicle-1', buildVehicle());
+  const blockedDeleteIds = new Set(options.blockedDeleteIds ?? []);
 
   const findFirstMock = jest.fn<Promise<Vehicle | null>, [FindFirstArgs]>(
     (args) => {
@@ -85,12 +86,27 @@ function buildService() {
     return Promise.resolve(updated);
   });
 
+  const deleteMock = jest.fn((args: { where: { id: string } }) => {
+    if (blockedDeleteIds.has(args.where.id)) {
+      return Promise.reject(
+        new Prisma.PrismaClientKnownRequestError('FK violation', {
+          code: 'P2003',
+          clientVersion: '7.8.0',
+        }),
+      );
+    }
+
+    store.delete(args.where.id);
+    return Promise.resolve(undefined);
+  });
+
   const prisma = {
     vehicle: {
       findFirst: findFirstMock,
       findMany: findManyMock,
       update: updateMock,
       create: jest.fn(),
+      delete: deleteMock,
     },
   } as unknown as PrismaService;
 
@@ -136,6 +152,32 @@ describe('VehiclesService', () => {
       await service.remove('vehicle-1', 'user-2');
 
       await expect(service.findOne('vehicle-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('removePermanently', () => {
+    it('exclui definitivamente o veículo quando não há registros vinculados', async () => {
+      const { service, store } = buildService();
+
+      await service.removePermanently('vehicle-1');
+
+      expect(store.has('vehicle-1')).toBe(false);
+    });
+
+    it('lança ConflictException (mensagem amigável) quando há registros vinculados', async () => {
+      const { service } = buildService({ blockedDeleteIds: ['vehicle-1'] });
+
+      await expect(service.removePermanently('vehicle-1')).rejects.toThrow(
+        ConflictException,
+      );
+    });
+
+    it('lança NotFoundException ao excluir veículo inexistente', async () => {
+      const { service } = buildService();
+
+      await expect(service.removePermanently('vehicle-x')).rejects.toThrow(
         NotFoundException,
       );
     });

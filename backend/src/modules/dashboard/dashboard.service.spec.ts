@@ -288,6 +288,36 @@ function buildService(
             ),
           ),
       ),
+      aggregate: jest.fn(
+        (args: {
+          where?: {
+            date?: DateRangeFilter;
+            driverId?: string;
+            vehicleId?: string;
+          };
+        }) => {
+          const filtered = applyDateFilter(
+            fuelRecords
+              .filter(
+                (record) =>
+                  !args.where?.driverId ||
+                  record.driverId === args.where.driverId,
+              )
+              .filter(
+                (record) =>
+                  !args.where?.vehicleId ||
+                  record.vehicleId === args.where.vehicleId,
+              ),
+            (record) => record.date,
+            args.where?.date,
+          );
+          const sum = filtered.reduce(
+            (total, record) => total.plus(record.amountPaid),
+            new Prisma.Decimal(0),
+          );
+          return Promise.resolve({ _sum: { amountPaid: sum } });
+        },
+      ),
     },
     maintenance: {
       findMany: jest.fn(
@@ -305,6 +335,26 @@ function buildService(
               args.where?.createdAt,
             ),
           ),
+      ),
+      aggregate: jest.fn(
+        (args: {
+          where?: { createdAt?: DateRangeFilter; vehicleId?: string };
+        }) => {
+          const filtered = applyDateFilter(
+            maintenances.filter(
+              (record) =>
+                !args.where?.vehicleId ||
+                record.vehicleId === args.where.vehicleId,
+            ),
+            (record) => record.createdAt,
+            args.where?.createdAt,
+          );
+          const sum = filtered.reduce(
+            (total, record) => total.plus(record.cost),
+            new Prisma.Decimal(0),
+          );
+          return Promise.resolve({ _sum: { cost: sum } });
+        },
       ),
     },
     incident: {
@@ -530,6 +580,8 @@ describe('DashboardService', () => {
           kmTotal: 100,
           usageMinutes: 120,
           usageCount: 1,
+          fuelCost: 200,
+          maintenanceCost: 100,
           totalCost: 300,
           costPerKm: 3,
         },

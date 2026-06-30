@@ -14,11 +14,21 @@ interface CrudMessages {
   deleteError: string;
 }
 
+interface PermanentDeleteMessages {
+  deleted: string;
+  deleteError: string;
+}
+
 interface UseCrudResourceOptions<T> {
   queryKey: string;
   basePath: string;
   messages: CrudMessages;
   confirmDelete: (item: T) => string;
+  // Exclusão definitiva (ADMIN) - opcional, ao lado da inativação acima.
+  permanentDelete?: {
+    messages: PermanentDeleteMessages;
+    confirmDelete: (item: T) => string;
+  };
 }
 
 // Hook compartilhado para as telas de cadastro simples (CRUD com Dialog de
@@ -28,7 +38,7 @@ interface UseCrudResourceOptions<T> {
 export function useCrudResource<T extends { id: string }, CreatePayload, UpdatePayload>(
   options: UseCrudResourceOptions<T>,
 ) {
-  const { queryKey, basePath, messages, confirmDelete } = options;
+  const { queryKey, basePath, messages, confirmDelete, permanentDelete } = options;
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
@@ -86,9 +96,27 @@ export function useCrudResource<T extends { id: string }, CreatePayload, UpdateP
     setSheetOpen(true);
   }
 
+  const permanentDeleteMutation = useMutation({
+    mutationFn: async (id: string) => api.delete(`${basePath}/${id}/permanent`),
+    onSuccess: () => {
+      toast.success(permanentDelete?.messages.deleted ?? '');
+      invalidate();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, permanentDelete?.messages.deleteError ?? ''));
+    },
+  });
+
   function handleDelete(item: T) {
     if (window.confirm(confirmDelete(item))) {
       deleteMutation.mutate(item.id);
+    }
+  }
+
+  function handlePermanentDelete(item: T) {
+    if (!permanentDelete) return;
+    if (window.confirm(permanentDelete.confirmDelete(item))) {
+      permanentDeleteMutation.mutate(item.id);
     }
   }
 
@@ -101,9 +129,11 @@ export function useCrudResource<T extends { id: string }, CreatePayload, UpdateP
     openCreateSheet,
     openEditSheet,
     handleDelete,
+    handlePermanentDelete,
     createMutation,
     updateMutation,
     deleteMutation,
+    permanentDeleteMutation,
     isSubmitting: createMutation.isPending || updateMutation.isPending,
   };
 }
