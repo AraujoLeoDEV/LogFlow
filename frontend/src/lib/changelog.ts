@@ -4,9 +4,17 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.8.2026';
+export const APP_VERSION = 'V0.9.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.9.2026',
+    date: '03/07/2026',
+    items: [
+      'Novo: chat interno em tempo real — sala geral para todos os usuários e conversas privadas entre dois usuários, acessível pelo ícone no canto inferior direito da tela.',
+      'Novo: badge vermelho no botão do chat indica mensagens não lidas mesmo com o painel fechado.',
+    ],
+  },
   {
     version: 'V0.8.2026',
     date: '30/06/2026',

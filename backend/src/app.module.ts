@@ -11,6 +11,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { DailyLogsModule } from './modules/daily-logs/daily-logs.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { DriversModule } from './modules/drivers/drivers.module';
@@ -68,6 +69,7 @@ import { PrismaModule } from './prisma/prisma.module';
     CommonModule,
     HealthModule,
     AuthModule,
+    ChatModule,
     UsersModule,
     UnitsModule,
     RoutesModule,

@@ -198,6 +198,8 @@ model User {
   sentShipments       Shipment[]           @relation("ShipmentSender")
   shipmentReceipts    ShipmentReceipt[]
   passwordResetTokens PasswordResetToken[]
+  chatMessages        ChatMessage[]
+  chatRooms           ChatRoomMember[]
 
   @@map("users")
 }
@@ -571,6 +573,53 @@ model Goal {
   vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
 
   @@map("goals")
+}
+
+// Chat interno em tempo real - sala geral + DMs entre usuários
+enum ChatRoomType {
+  GENERAL
+  PRIVATE
+}
+
+model ChatRoom {
+  id        String       @id @default(uuid())
+  type      ChatRoomType @default(GENERAL)
+  // Para salas PRIVATE: par de userIds ordenados e concatenados (ex.:
+  // "id-a:id-b"), garante no máximo 1 sala por dupla sem query complexa.
+  // Sempre null para a sala GENERAL.
+  pairKey   String?      @unique @map("pair_key")
+  createdAt DateTime     @default(now()) @map("created_at")
+
+  messages ChatMessage[]
+  members  ChatRoomMember[]
+
+  @@map("chat_rooms")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  content   String
+  senderId  String   @map("sender_id")
+  roomId    String   @map("room_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  sender User     @relation(fields: [senderId], references: [id])
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, createdAt])
+  @@map("chat_messages")
+}
+
+model ChatRoomMember {
+  roomId     String   @map("room_id")
+  userId     String   @map("user_id")
+  lastReadAt DateTime @default(now()) @map("last_read_at")
+
+  room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, userId])
+  @@map("chat_room_members")
 }
 
 // Relatórios exportáveis (PDF/Excel/CSV) gerados de forma assíncrona via

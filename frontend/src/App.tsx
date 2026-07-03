@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Toaster } from '@/components/ui/sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ChatProvider } from '@/contexts/ChatContext';
 import { queryClient } from '@/lib/queryClient';
 import { DailyLogsPage } from '@/pages/DailyLogsPage';
 import { DashboardPage } from '@/pages/DashboardPage';
@@ -66,7 +67,13 @@ function App() {
             <Route path="/esqueci-senha" element={<ForgotPasswordPage />} />
             <Route path="/reset-senha" element={<ResetPasswordPage />} />
             <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
+              <Route
+                element={
+                  <ChatProvider>
+                    <AppLayout />
+                  </ChatProvider>
+                }
+              >
                 <Route path="/" element={<RootRoute />} />
                 {navItems
                   .filter((item) => item.to !== '/')

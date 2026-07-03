@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 
 import logoIcon from '@/assets/logo-icon.png';
+import { ChatWidget } from '@/components/chat/ChatWidget';
 
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -21,6 +22,7 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <ChatWidget />
     </div>
   );
 }
