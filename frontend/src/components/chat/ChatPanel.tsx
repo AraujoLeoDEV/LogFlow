@@ -25,7 +25,7 @@ export function ChatPanel() {
   function handleBack() {
     setActiveRoom(GENERAL_ROOM_ID);
     setPrivateRoomLabel(null);
-    setTab('geral');
+    setTab('usuarios');
   }
 
   return (
