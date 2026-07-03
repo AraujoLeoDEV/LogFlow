@@ -8,6 +8,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
+import { toast } from 'sonner';
 import { io, type Socket } from 'socket.io-client';
 
 import { getAccessToken } from '@/lib/api';
@@ -31,6 +32,8 @@ interface ChatContextValue {
   isConnected: boolean;
   messages: Map<string, ChatMessage[]>;
   unreadCount: number;
+  // userIds de DMs com mensagens não lidas
+  unreadDmUserIds: Set<string>;
   onlineUserIds: string[];
   users: ChatUser[];
   activeRoomId: string;
@@ -50,6 +53,7 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const userIdRef = useRef<string | undefined>(user?.id);
   const socketRef = useRef<Socket | null>(null);
   const joinCallbacksRef = useRef<Map<string, (roomId: string) => void>>(new Map());
 
@@ -57,11 +61,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<Map<string, ChatMessage[]>>(new Map());
   const messagesRef = useRef<Map<string, ChatMessage[]>>(new Map());
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadDmUserIds, setUnreadDmUserIds] = useState<Set<string>>(new Set());
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
   const [users] = useState<ChatUser[]>([]);
   const [activeRoomId, setActiveRoomId] = useState(GENERAL_ROOM_ID);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [privateRooms, setPrivateRooms] = useState<Map<string, string>>(new Map());
+  // roomId -> userId (inverso de privateRooms, para lookup rápido no handler)
+  const privateRoomsInverseRef = useRef<Map<string, string>>(new Map());
 
   const addMessages = useCallback((roomId: string, incoming: ChatMessage[]) => {
     setMessages((prev) => {
@@ -77,6 +84,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    userIdRef.current = user?.id;
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -119,6 +130,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socket.on('chat:room-joined', ({ roomId, userId: peerId }: PrivateRoomJoined) => {
       socket.emit('chat:history', { roomId });
       setPrivateRooms((prev) => new Map(prev).set(peerId, roomId));
+      privateRoomsInverseRef.current.set(roomId, peerId);
       const cb = joinCallbacksRef.current.get(peerId);
       if (cb) {
         joinCallbacksRef.current.delete(peerId);
@@ -145,8 +157,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     const handler = (message: ChatMessage) => {
       addMessages(message.roomId, [message]);
+      const isOwn = message.senderId === userIdRef.current;
       if (!isPanelOpen || message.roomId !== activeRoomId) {
         setUnreadCount((n) => n + 1);
+        // Marca o userId do DM como tendo mensagem não lida
+        const dmUserId = privateRoomsInverseRef.current.get(message.roomId);
+        if (dmUserId && !isOwn) {
+          setUnreadDmUserIds((prev) => new Set(prev).add(dmUserId));
+        }
+        if (!isOwn) {
+          toast(message.senderName, {
+            description:
+              message.content.length > 80 ? message.content.slice(0, 80) + '…' : message.content,
+            duration: 4000,
+          });
+        }
       }
     };
 
@@ -166,6 +191,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const markRead = useCallback((roomId: string) => {
     socketRef.current?.emit('chat:read', { roomId });
     setUnreadCount((n) => Math.max(0, n - (messagesRef.current.get(roomId)?.length ?? 0)));
+    const dmUserId = privateRoomsInverseRef.current.get(roomId);
+    if (dmUserId) {
+      setUnreadDmUserIds((prev) => {
+        const next = new Set(prev);
+        next.delete(dmUserId);
+        return next;
+      });
+    }
   }, []);
 
   const loadHistory = useCallback((roomId: string, cursor?: string) => {
@@ -195,6 +228,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       isConnected,
       messages,
       unreadCount,
+      unreadDmUserIds,
       onlineUserIds,
       users,
       activeRoomId,
@@ -211,6 +245,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       isConnected,
       messages,
       unreadCount,
+      unreadDmUserIds,
       onlineUserIds,
       users,
       activeRoomId,

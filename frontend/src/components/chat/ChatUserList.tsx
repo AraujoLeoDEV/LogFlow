@@ -11,7 +11,7 @@ interface ChatUserListProps {
 }
 
 export function ChatUserList({ onSelectUser }: ChatUserListProps) {
-  const { onlineUserIds } = useChat();
+  const { onlineUserIds, unreadDmUserIds } = useChat();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<ChatUser[]>([]);
 
@@ -56,6 +56,9 @@ export function ChatUserList({ onSelectUser }: ChatUserListProps) {
                 className={`h-2 w-2 shrink-0 rounded-full ${isOnline ? 'bg-green-500' : 'bg-muted-foreground/40'}`}
               />
               <span className="flex-1 truncate">{u.name}</span>
+              {unreadDmUserIds.has(u.id) && (
+                <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />
+              )}
               <span className="shrink-0 text-[10px] text-muted-foreground">{u.role}</span>
             </button>
           </li>

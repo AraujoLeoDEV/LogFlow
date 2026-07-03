@@ -11,7 +11,7 @@ type Tab = 'geral' | 'usuarios';
 
 export function ChatPanel() {
   const { setIsPanelOpen, setActiveRoom, activeRoomId, joinPrivate } = useChat();
-  const [tab, setTab] = useState<Tab>('geral');
+  const [tab, setTab] = useState<Tab>('usuarios');
   const [privateRoomLabel, setPrivateRoomLabel] = useState<string | null>(null);
   const isInPrivate = activeRoomId !== GENERAL_ROOM_ID;
 
