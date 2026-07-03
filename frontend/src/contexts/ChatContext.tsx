@@ -55,6 +55,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<Map<string, ChatMessage[]>>(new Map());
+  const messagesRef = useRef<Map<string, ChatMessage[]>>(new Map());
   const [unreadCount, setUnreadCount] = useState(0);
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
   const [users] = useState<ChatUser[]>([]);
@@ -68,12 +69,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const existing = prev.get(roomId) ?? [];
       const existingIds = new Set(existing.map((m) => m.id));
       const deduped = incoming.filter((m) => !existingIds.has(m.id));
-      next.set(
-        roomId,
-        [...existing, ...deduped].sort(
-          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-        ),
+      const sorted = [...existing, ...deduped].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
+      next.set(roomId, sorted);
+      messagesRef.current = next;
       return next;
     });
   }, []);
@@ -163,13 +163,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socketRef.current?.emit('chat:join-private', { userId });
   }, []);
 
-  const markRead = useCallback(
-    (roomId: string) => {
-      socketRef.current?.emit('chat:read', { roomId });
-      setUnreadCount((n) => Math.max(0, n - (messages.get(roomId)?.length ?? 0)));
-    },
-    [messages],
-  );
+  const markRead = useCallback((roomId: string) => {
+    socketRef.current?.emit('chat:read', { roomId });
+    setUnreadCount((n) => Math.max(0, n - (messagesRef.current.get(roomId)?.length ?? 0)));
+  }, []);
 
   const loadHistory = useCallback((roomId: string, cursor?: string) => {
     socketRef.current?.emit('chat:history', { roomId, ...(cursor ? { cursor } : {}) });
