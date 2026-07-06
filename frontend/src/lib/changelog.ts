@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.10.2026';
+export const APP_VERSION = 'V0.11.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.11.2026',
+    date: '06/07/2026',
+    items: [
+      'Correção: campo de quantidade nos envios agora incrementa de 1 em 1 (era 0,01) e aceita somente inteiros.',
+      'Correção: perfil Conferente agora visualiza o histórico de envios criados por sua unidade, além dos recebidos.',
+      'Correção: notificações de novo envio não são mais enviadas ao próprio remetente.',
+    ],
+  },
   {
     version: 'V0.10.2026',
     date: '06/07/2026',

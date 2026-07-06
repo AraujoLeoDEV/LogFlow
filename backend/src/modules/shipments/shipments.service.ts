@@ -226,7 +226,7 @@ export class ShipmentsService {
   }
 
   // Listagem com filtros por status, unidade de destino e período - seção 4.9.
-  // Usuários Conferente só veem envios destinados à sua própria unidade.
+  // Usuários Conferente veem envios destinados à sua unidade OU enviados por ela.
   async findAll(
     query: ShipmentQueryDto,
     user: AuthenticatedUser,
@@ -240,7 +240,12 @@ export class ShipmentsService {
     };
 
     if (user.role === Role.CONFERENTE) {
-      where.destinationUnitId = await this.getConferenteUnitId(user);
+      const unitId = await this.getConferenteUnitId(user);
+      delete (where as Record<string, unknown>).destinationUnitId;
+      where.OR = [{ destinationUnitId: unitId }, { originUnitId: unitId }];
+      if (query.status) {
+        where.status = query.status;
+      }
     }
 
     const dateFilter = buildDateRangeFilter(query.from, query.to);
@@ -283,7 +288,10 @@ export class ShipmentsService {
     if (user.role === Role.CONFERENTE) {
       const unitId = await this.getConferenteUnitId(user);
 
-      if (shipment.destinationUnitId !== unitId) {
+      if (
+        shipment.destinationUnitId !== unitId &&
+        shipment.originUnitId !== unitId
+      ) {
         throw new ForbiddenException('Você não tem acesso a este envio.');
       }
     }
@@ -293,7 +301,7 @@ export class ShipmentsService {
 
   // Busca um envio pelo id (usado para resolver o link de uma notificação de
   // envio até o protocolo correspondente). Usuários Conferente só podem
-  // acessar envios destinados à sua unidade.
+  // acessar envios da sua unidade.
   async findById(
     id: string,
     user: AuthenticatedUser,
@@ -310,7 +318,10 @@ export class ShipmentsService {
     if (user.role === Role.CONFERENTE) {
       const unitId = await this.getConferenteUnitId(user);
 
-      if (shipment.destinationUnitId !== unitId) {
+      if (
+        shipment.destinationUnitId !== unitId &&
+        shipment.originUnitId !== unitId
+      ) {
         throw new ForbiddenException('Você não tem acesso a este envio.');
       }
     }
@@ -668,21 +679,36 @@ export class ShipmentsService {
       const now = new Date();
 
       const destUsers = await this.prisma.user.findMany({
-        where: { unitId: destUnit.id, isActive: true, deletedAt: null },
+        where: {
+          unitId: destUnit.id,
+          isActive: true,
+          deletedAt: null,
+          id: { not: shipment.senderId },
+        },
         select: { id: true, email: true, name: true },
       });
 
+      const coordUsers = await this.prisma.user.findMany({
+        where: {
+          role: Role.COORDENACAO,
+          isActive: true,
+          deletedAt: null,
+          id: { not: shipment.senderId },
+        },
+        select: { id: true, email: true },
+      });
+
       const alertData = [
-        {
+        ...coordUsers.map((u) => ({
           type: AlertType.SHIPMENT_CREATED,
           referenceType: 'SHIPMENT' as const,
           referenceId: shipment.id,
           message,
           severity: AlertSeverity.INFO,
           dueDate: now,
-          targetRole: Role.COORDENACAO,
-          targetUserId: null as string | null,
-        },
+          targetRole: null as Role | null,
+          targetUserId: u.id,
+        })),
         ...destUsers.map((u) => ({
           type: AlertType.SHIPMENT_CREATED,
           referenceType: 'SHIPMENT' as const,
@@ -701,11 +727,6 @@ export class ShipmentsService {
       });
 
       if (this.mailer.isEnabled()) {
-        const coordUsers = await this.prisma.user.findMany({
-          where: { role: Role.COORDENACAO, isActive: true, deletedAt: null },
-          select: { email: true },
-        });
-
         const emailTargets = [
           ...coordUsers.map((u) => u.email),
           ...destUsers.map((u) => u.email),

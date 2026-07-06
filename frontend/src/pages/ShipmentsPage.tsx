@@ -77,7 +77,8 @@ const shipmentItemSchema = z.object({
   category: z.string(),
   quantity: z
     .number({ message: 'Informe a quantidade.' })
-    .min(0.01, 'A quantidade deve ser maior que zero.'),
+    .int('A quantidade deve ser um número inteiro.')
+    .min(1, 'A quantidade deve ser pelo menos 1.'),
   unit: z.string().min(1, 'Selecione a unidade.'),
   notes: z.string(),
 });
@@ -688,8 +689,8 @@ export function ShipmentsPage() {
                                 <FormControl>
                                   <Input
                                     type="number"
-                                    min="0.01"
-                                    step="0.01"
+                                    min="1"
+                                    step="1"
                                     value={field.value ?? ''}
                                     onChange={(event) =>
                                       field.onChange(
@@ -1356,8 +1357,8 @@ export function ShipmentsPage() {
                           <FormControl>
                             <Input
                               type="number"
-                              min="0.01"
-                              step="0.01"
+                              min="1"
+                              step="1"
                               value={field.value ?? ''}
                               onChange={(event) =>
                                 field.onChange(
