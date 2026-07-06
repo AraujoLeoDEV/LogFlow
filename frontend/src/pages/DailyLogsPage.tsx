@@ -72,18 +72,29 @@ const departureSchema = z.object({
     .number({ message: 'Informe o KM inicial.' })
     .min(0, 'O KM inicial não pode ser negativo.'),
   observations: z.string(),
+  departureAt: z.string().min(1, 'Informe a data e hora da saída.'),
 });
 
 type DepartureFormValues = z.infer<typeof departureSchema>;
 
-const EMPTY_DEPARTURE_VALUES: DepartureFormValues = {
-  vehicleId: '',
-  driverId: '',
-  routeId: '',
-  destination: '',
-  startKm: 0,
-  observations: '',
-};
+function getTodayDatetimeLocal(): string {
+  const now = new Date();
+  const offset = now.getTimezoneOffset();
+  const local = new Date(now.getTime() - offset * 60_000);
+  return local.toISOString().slice(0, 16);
+}
+
+function getEmptyDepartureValues(): DepartureFormValues {
+  return {
+    vehicleId: '',
+    driverId: '',
+    routeId: '',
+    destination: '',
+    startKm: 0,
+    observations: '',
+    departureAt: getTodayDatetimeLocal(),
+  };
+}
 
 export function DailyLogsPage() {
   const queryClient = useQueryClient();
@@ -138,14 +149,14 @@ export function DailyLogsPage() {
 
   const departureForm = useForm<DepartureFormValues>({
     resolver: zodResolver(departureSchema),
-    defaultValues: EMPTY_DEPARTURE_VALUES,
+    defaultValues: getEmptyDepartureValues(),
   });
 
   const createMutation = useMutation({
     mutationFn: async (payload: CreateDailyLogPayload) => api.post('/daily-logs', payload),
     onSuccess: () => {
       toast.success('Saída registrada com sucesso.');
-      departureForm.reset(EMPTY_DEPARTURE_VALUES);
+      departureForm.reset(getEmptyDepartureValues());
       invalidateDailyLogs();
     },
     onError: (error) => {
@@ -191,6 +202,7 @@ export function DailyLogsPage() {
       destination: values.destination || undefined,
       startKm: values.startKm,
       observations: values.observations || undefined,
+      departureAt: new Date(values.departureAt).toISOString(),
     });
   }
 
@@ -403,6 +415,19 @@ export function DailyLogsPage() {
                         {...field}
                         onChange={(event) => field.onChange(event.target.valueAsNumber)}
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={departureForm.control}
+                name="departureAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data e hora da saída</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

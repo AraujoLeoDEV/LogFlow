@@ -4,9 +4,16 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.9.2026';
+export const APP_VERSION = 'V0.10.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.10.2026',
+    date: '06/07/2026',
+    items: [
+      'Melhoria: campo "Data e hora da saída" no Registro Diário — permite registrar saídas com data retroativa, com preenchimento automático da data e hora atual.',
+    ],
+  },
   {
     version: 'V0.9.2026',
     date: '03/07/2026',
