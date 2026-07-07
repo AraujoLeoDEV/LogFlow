@@ -65,7 +65,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [onlineUserIds, setOnlineUserIds] = useState<string[]>([]);
   const [users] = useState<ChatUser[]>([]);
   const [activeRoomId, setActiveRoomId] = useState(GENERAL_ROOM_ID);
+  const activeRoomIdRef = useRef(GENERAL_ROOM_ID);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const isPanelOpenRef = useRef(false);
   const [privateRooms, setPrivateRooms] = useState<Map<string, string>>(new Map());
   // roomId -> userId (inverso de privateRooms, para lookup rápido no handler)
   const privateRoomsInverseRef = useRef<Map<string, string>>(new Map());
@@ -88,6 +90,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     userIdRef.current = user?.id;
   }, [user?.id]);
+
+  useEffect(() => {
+    activeRoomIdRef.current = activeRoomId;
+  }, [activeRoomId]);
+
+  useEffect(() => {
+    isPanelOpenRef.current = isPanelOpen;
+  }, [isPanelOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -120,8 +130,20 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     socket.on('chat:message', (message: ChatMessage) => {
       addMessages(message.roomId, [message]);
-      if (!isPanelOpen || message.roomId !== activeRoomId) {
+      const isOwn = message.senderId === userIdRef.current;
+      if (!isPanelOpenRef.current || message.roomId !== activeRoomIdRef.current) {
         setUnreadCount((n) => n + 1);
+        const dmUserId = privateRoomsInverseRef.current.get(message.roomId);
+        if (dmUserId && !isOwn) {
+          setUnreadDmUserIds((prev) => new Set(prev).add(dmUserId));
+        }
+        if (!isOwn) {
+          toast(message.senderName, {
+            description:
+              message.content.length > 80 ? message.content.slice(0, 80) + '…' : message.content,
+            duration: 4000,
+          });
+        }
       }
     });
 
@@ -154,36 +176,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
-
-  // Reaplica o efeito de atualizar o unread quando o painel ou sala ativa mudam
-  // sem re-criar o socket (apenas a closure de isPanelOpen/activeRoomId atualiza).
-  useEffect(() => {
-    const socket = socketRef.current;
-    if (!socket) return;
-
-    const handler = (message: ChatMessage) => {
-      addMessages(message.roomId, [message]);
-      const isOwn = message.senderId === userIdRef.current;
-      if (!isPanelOpen || message.roomId !== activeRoomId) {
-        setUnreadCount((n) => n + 1);
-        // Marca o userId do DM como tendo mensagem não lida
-        const dmUserId = privateRoomsInverseRef.current.get(message.roomId);
-        if (dmUserId && !isOwn) {
-          setUnreadDmUserIds((prev) => new Set(prev).add(dmUserId));
-        }
-        if (!isOwn) {
-          toast(message.senderName, {
-            description:
-              message.content.length > 80 ? message.content.slice(0, 80) + '…' : message.content,
-            duration: 4000,
-          });
-        }
-      }
-    };
-
-    socket.off('chat:message');
-    socket.on('chat:message', handler);
-  }, [isPanelOpen, activeRoomId, addMessages]);
 
   const sendMessage = useCallback((roomId: string, content: string) => {
     socketRef.current?.emit('chat:message', { roomId, content });
