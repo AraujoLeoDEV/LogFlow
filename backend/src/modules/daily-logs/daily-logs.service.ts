@@ -27,6 +27,7 @@ import type { AuthenticatedUser } from '../../common/types/jwt-payload.interface
 import { CreateDailyLogDto } from './dto/create-daily-log.dto';
 import { DailyLogQueryDto } from './dto/daily-log-query.dto';
 import { ReturnDailyLogDto } from './dto/return-daily-log.dto';
+import { UpdateDailyLogDto } from './dto/update-daily-log.dto';
 import { calculateReturnMetrics } from './daily-logs.util';
 
 export interface DailyLogWithRelations extends DailyLog {
@@ -179,6 +180,43 @@ export class DailyLogsService {
     ]);
 
     return paginate(data, total, page, limit);
+  }
+
+  // Edição de campos do registro — somente ADMIN/COORDENACAO.
+  async update(
+    id: string,
+    dto: UpdateDailyLogDto,
+    user: AuthenticatedUser,
+  ): Promise<DailyLog> {
+    const existing = await this.prisma.dailyLog.findUnique({ where: { id } });
+
+    if (!existing) {
+      throw new NotFoundException('Registro diário não encontrado.');
+    }
+
+    try {
+      return await this.prisma.dailyLog.update({
+        where: { id },
+        data: {
+          ...(dto.vehicleId !== undefined && { vehicleId: dto.vehicleId }),
+          ...(dto.driverId !== undefined && { driverId: dto.driverId }),
+          ...(dto.routeId !== undefined && { routeId: dto.routeId }),
+          ...(dto.departureAt !== undefined && {
+            departureAt: new Date(dto.departureAt),
+          }),
+          ...(dto.startKm !== undefined && { startKm: dto.startKm }),
+          ...(dto.destination !== undefined && {
+            destination: dto.destination || null,
+          }),
+          ...(dto.observations !== undefined && {
+            observations: dto.observations || null,
+          }),
+          updatedBy: user.sub,
+        },
+      });
+    } catch (error) {
+      throw this.toFriendlyError(error);
+    }
   }
 
   // Exclusão definitiva - somente ADMIN. Registro Diário não tem

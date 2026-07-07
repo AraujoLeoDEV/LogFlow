@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, MessageSquare, Users } from 'lucide-react';
+import { MessageSquare, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { GENERAL_ROOM_ID, useChat } from '@/contexts/ChatContext';
@@ -7,7 +7,7 @@ import { GENERAL_ROOM_ID, useChat } from '@/contexts/ChatContext';
 import { ChatRoom } from './ChatRoom';
 import { ChatUserList } from './ChatUserList';
 
-type Tab = 'geral' | 'usuarios';
+type Tab = 'geral' | 'usuarios' | 'dm';
 
 export function ChatPanel() {
   const { setIsPanelOpen, setActiveRoom, activeRoomId, joinPrivate } = useChat();
@@ -19,29 +19,20 @@ export function ChatPanel() {
     setPrivateRoomLabel(userName);
     joinPrivate(userId, (roomId) => {
       setActiveRoom(roomId);
+      setTab('dm');
     });
   }
 
-  function handleBack() {
-    setActiveRoom(GENERAL_ROOM_ID);
-    setPrivateRoomLabel(null);
-    setTab('usuarios');
+  function handleTabChange(next: Tab) {
+    setTab(next);
+    if (next === 'geral') setActiveRoom(GENERAL_ROOM_ID);
   }
 
   return (
     <div className="flex h-[480px] w-80 flex-col overflow-hidden rounded-xl border bg-background shadow-2xl">
       {/* cabeçalho */}
       <div className="flex items-center justify-between border-b px-4 py-2.5">
-        {isInPrivate ? (
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <span className="truncate text-sm font-semibold">{privateRoomLabel}</span>
-          </div>
-        ) : (
-          <span className="text-sm font-semibold">Chat</span>
-        )}
+        <span className="text-sm font-semibold">Chat</span>
         <Button
           variant="ghost"
           size="icon"
@@ -52,39 +43,50 @@ export function ChatPanel() {
         </Button>
       </div>
 
-      {/* tabs (só visíveis fora de DM) */}
-      {!isInPrivate && (
-        <div className="flex border-b text-xs font-medium">
+      {/* tabs */}
+      <div className="flex border-b text-xs font-medium">
+        <button
+          type="button"
+          onClick={() => handleTabChange('geral')}
+          className={`flex flex-1 items-center justify-center gap-1.5 py-2 transition-colors ${
+            tab === 'geral'
+              ? 'border-b-2 border-primary text-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <MessageSquare className="h-3.5 w-3.5" />
+          Geral
+        </button>
+        <button
+          type="button"
+          onClick={() => handleTabChange('usuarios')}
+          className={`flex flex-1 items-center justify-center gap-1.5 py-2 transition-colors ${
+            tab === 'usuarios'
+              ? 'border-b-2 border-primary text-primary'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Users className="h-3.5 w-3.5" />
+          Usuários
+        </button>
+        {isInPrivate && privateRoomLabel && (
           <button
             type="button"
-            onClick={() => setTab('geral')}
-            className={`flex flex-1 items-center justify-center gap-1.5 py-2 transition-colors ${
-              tab === 'geral'
+            onClick={() => setTab('dm')}
+            className={`flex flex-1 items-center justify-center gap-1.5 py-2 transition-colors truncate px-2 ${
+              tab === 'dm'
                 ? 'border-b-2 border-primary text-primary'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Geral
+            <span className="truncate">{privateRoomLabel}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setTab('usuarios')}
-            className={`flex flex-1 items-center justify-center gap-1.5 py-2 transition-colors ${
-              tab === 'usuarios'
-                ? 'border-b-2 border-primary text-primary'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Users className="h-3.5 w-3.5" />
-            Usuários
-          </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* conteúdo */}
       <div className="min-h-0 flex-1 overflow-hidden">
-        {isInPrivate ? (
+        {tab === 'dm' && isInPrivate ? (
           <ChatRoom roomId={activeRoomId} />
         ) : tab === 'geral' ? (
           <ChatRoom roomId={GENERAL_ROOM_ID} />

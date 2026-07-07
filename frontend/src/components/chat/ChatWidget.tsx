@@ -23,21 +23,26 @@ export function ChatWidget() {
         </div>
       )}
 
-      <Button
-        onClick={() => setIsPanelOpen(!isPanelOpen)}
-        className="relative h-12 w-12 rounded-full shadow-lg"
-        aria-label="Abrir chat"
-      >
-        <MessageCircle className="h-5 w-5" />
+      <div className="relative">
         {unreadCount > 0 && (
-          <span
-            className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center
-                       rounded-full bg-red-500 text-[10px] font-bold text-white shadow"
-          >
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
+          <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-40 pointer-events-none" />
         )}
-      </Button>
+        <Button
+          onClick={() => setIsPanelOpen(!isPanelOpen)}
+          className="relative h-12 w-12 rounded-full shadow-lg"
+          aria-label="Abrir chat"
+        >
+          <MessageCircle className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span
+              className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center
+                         rounded-full bg-red-500 text-[10px] font-bold text-white shadow"
+            >
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

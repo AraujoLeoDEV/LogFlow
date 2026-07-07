@@ -11,7 +11,7 @@ import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { io, type Socket } from 'socket.io-client';
 
-import { getAccessToken } from '@/lib/api';
+import { api, getAccessToken } from '@/lib/api';
 import type { ChatMessage, ChatUser } from '@/types/chat';
 
 import { useAuth } from './AuthContext';

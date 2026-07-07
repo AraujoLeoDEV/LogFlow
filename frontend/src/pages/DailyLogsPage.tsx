@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, ClipboardList } from 'lucide-react';
+import { Ban, ClipboardList, Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -12,6 +12,14 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Form,
   FormControl,
@@ -34,6 +42,7 @@ import type {
   DailyLogQuery,
   DailyLogWithRelations,
   ReturnDailyLogPayload,
+  UpdateDailyLogPayload,
 } from '@/types/dailyLog';
 import type { Driver } from '@/types/driver';
 import type { PaginatedResult } from '@/types/pagination';
@@ -96,6 +105,20 @@ function getEmptyDepartureValues(): DepartureFormValues {
   };
 }
 
+const editSchema = z.object({
+  vehicleId: z.string().min(1, 'Selecione o veículo.'),
+  driverId: z.string(),
+  routeId: z.string(),
+  destination: z.string(),
+  startKm: z
+    .number({ message: 'Informe o KM inicial.' })
+    .min(0, 'O KM inicial não pode ser negativo.'),
+  observations: z.string(),
+  departureAt: z.string().min(1, 'Informe a data da saída.'),
+});
+
+type EditFormValues = z.infer<typeof editSchema>;
+
 export function DailyLogsPage() {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
@@ -106,6 +129,8 @@ export function DailyLogsPage() {
   const [page, setPage] = useState(1);
   const [returnSheetOpen, setReturnSheetOpen] = useState(false);
   const [selectedLog, setSelectedLog] = useState<DailyLogWithRelations | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingLog, setEditingLog] = useState<DailyLogWithRelations | null>(null);
 
   const { data: vehicles } = useQuery({
     queryKey: ['vehicles'],
@@ -193,6 +218,63 @@ export function DailyLogsPage() {
       departureForm.setValue('startKm', Number(vehicle.currentKm));
     }
   }, [selectedVehicleId, vehicles, departureForm]);
+
+  const editForm = useForm<EditFormValues>({
+    resolver: zodResolver(editSchema),
+    defaultValues: {
+      vehicleId: '',
+      driverId: '',
+      routeId: '',
+      destination: '',
+      startKm: 0,
+      observations: '',
+      departureAt: getTodayDateOnly(),
+    },
+  });
+
+  const editMutation = useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: UpdateDailyLogPayload }) =>
+      api.patch(`/daily-logs/${id}`, payload),
+    onSuccess: () => {
+      toast.success('Registro diário atualizado.');
+      setEditDialogOpen(false);
+      invalidateDailyLogs();
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, 'Não foi possível atualizar o registro.'));
+    },
+  });
+
+  function openEditDialog(log: DailyLogWithRelations) {
+    setEditingLog(log);
+    const dateStr = log.departureAt ? log.departureAt.slice(0, 10) : getTodayDateOnly();
+    editForm.reset({
+      vehicleId: log.vehicleId,
+      driverId: log.driverId,
+      routeId: log.routeId,
+      destination: log.destination ?? '',
+      startKm: Number(log.startKm),
+      observations: log.observations ?? '',
+      departureAt: dateStr,
+    });
+    setEditDialogOpen(true);
+  }
+
+  function onSubmitEdit(values: EditFormValues) {
+    if (!editingLog) return;
+    editMutation.mutate({
+      id: editingLog.id,
+      payload: {
+        vehicleId: values.vehicleId,
+        driverId: values.driverId || undefined,
+        routeId: values.routeId || undefined,
+        destination: values.destination || undefined,
+        startKm: values.startKm,
+        observations: values.observations || undefined,
+        departureAt: new Date(`${values.departureAt}T00:00:00`).toISOString(),
+      },
+    });
+  }
 
   function onSubmitDeparture(values: DepartureFormValues) {
     createMutation.mutate({
@@ -548,14 +630,14 @@ export function DailyLogsPage() {
                 <th className="px-2 py-2 font-medium">Duração</th>
                 <th className="px-2 py-2 font-medium">Vel. média</th>
                 <th className="px-2 py-2 font-medium">Status</th>
-                {isAdmin && <th className="px-2 py-2 font-medium">Ações</th>}
+                {canManageOthers && <th className="px-2 py-2 font-medium">Ações</th>}
               </tr>
             </thead>
             <tbody>
               {isLoadingHistory && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 11 : 10}
+                    colSpan={canManageOthers ? 11 : 10}
                     className="px-2 py-6 text-center text-muted-foreground"
                   >
                     Carregando...
@@ -565,7 +647,7 @@ export function DailyLogsPage() {
               {!isLoadingHistory && history?.data.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isAdmin ? 11 : 10}
+                    colSpan={canManageOthers ? 11 : 10}
                     className="px-2 py-6 text-center text-muted-foreground"
                   >
                     Nenhum registro encontrado.
@@ -592,17 +674,30 @@ export function DailyLogsPage() {
                   <td className="px-2 py-2">
                     <StatusBadge status={log.status} />
                   </td>
-                  {isAdmin && (
+                  {canManageOthers && (
                     <td className="px-2 py-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={() => handleDelete(log)}
-                      >
-                        <Ban />
-                        <span className="sr-only">Excluir definitivamente</span>
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => openEditDialog(log)}
+                        >
+                          <Pencil />
+                          <span className="sr-only">Editar</span>
+                        </Button>
+                        {isAdmin && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleDelete(log)}
+                          >
+                            <Ban />
+                            <span className="sr-only">Excluir definitivamente</span>
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -625,6 +720,151 @@ export function DailyLogsPage() {
         onOpenChange={setReturnSheetOpen}
         onSubmit={handleReturnSubmit}
       />
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar registro diário</DialogTitle>
+            <DialogDescription>
+              Altere os dados da saída. O status e os dados de retorno não são afetados.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...editForm}>
+            <form
+              onSubmit={editForm.handleSubmit(onSubmitEdit)}
+              className="grid gap-4 sm:grid-cols-2 px-4 pb-4"
+            >
+              <FormField
+                control={editForm.control}
+                name="vehicleId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Veículo</FormLabel>
+                    <FormControl>
+                      <Select {...field} required>
+                        <option value="">Selecione...</option>
+                        {(vehicles ?? [])
+                          .filter((v) => v.active)
+                          .map((vehicle) => (
+                            <option key={vehicle.id} value={vehicle.id}>
+                              {vehicle.model} ({vehicle.plate})
+                            </option>
+                          ))}
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="driverId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Motorista</FormLabel>
+                    <FormControl>
+                      <Select {...field}>
+                        <option value="">Selecione...</option>
+                        {activeDrivers.map((driver) => (
+                          <option key={driver.id} value={driver.id}>
+                            {driver.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="routeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rota</FormLabel>
+                    <FormControl>
+                      <Select {...field}>
+                        <option value="">Selecione...</option>
+                        {activeRoutes.map((route) => (
+                          <option key={route.id} value={route.id}>
+                            {route.name}
+                          </option>
+                        ))}
+                      </Select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="departureAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data da saída</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="startKm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>KM inicial</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="destination"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Destino</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Destino da saída" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="observations"
+                render={({ field }) => (
+                  <FormItem className="sm:col-span-2">
+                    <FormLabel>Observações</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Observações" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="sm:col-span-2">
+                <Button type="submit" disabled={editMutation.isPending}>
+                  {editMutation.isPending ? 'Salvando...' : 'Salvar alterações'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

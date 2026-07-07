@@ -21,6 +21,7 @@ import { DailyLogsService, DailyLogWithRelations } from './daily-logs.service';
 import { CreateDailyLogDto } from './dto/create-daily-log.dto';
 import { DailyLogQueryDto } from './dto/daily-log-query.dto';
 import { ReturnDailyLogDto } from './dto/return-daily-log.dto';
+import { UpdateDailyLogDto } from './dto/update-daily-log.dto';
 
 @ApiTags('daily-logs')
 @ApiBearerAuth()
@@ -48,6 +49,17 @@ export class DailyLogsController {
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<DailyLog> {
     return this.dailyLogsService.create(dto, user);
+  }
+
+  @Patch(':id')
+  @Roles(Role.ADMIN, Role.COORDENACAO)
+  @ApiOperation({ summary: 'Edita um registro diário (ADMIN/COORDENACAO)' })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDailyLogDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<DailyLog> {
+    return this.dailyLogsService.update(id, dto, user);
   }
 
   @Delete(':id')

@@ -37,6 +37,16 @@ export interface CreateDailyLogPayload {
   observations?: string;
 }
 
+export interface UpdateDailyLogPayload {
+  vehicleId?: string;
+  driverId?: string;
+  routeId?: string;
+  departureAt?: string;
+  startKm?: number;
+  destination?: string;
+  observations?: string;
+}
+
 export interface ReturnDailyLogPayload {
   returnAt?: string;
   endKm: number;
