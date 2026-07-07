@@ -196,7 +196,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const markRead = useCallback((roomId: string) => {
     socketRef.current?.emit('chat:read', { roomId });
-    setUnreadCount((n) => Math.max(0, n - (messagesRef.current.get(roomId)?.length ?? 0)));
+    setUnreadCount(0);
     const dmUserId = privateRoomsInverseRef.current.get(roomId);
     if (dmUserId) {
       setUnreadDmUserIds((prev) => {
