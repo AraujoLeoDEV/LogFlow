@@ -103,6 +103,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     socket.on('connect', () => {
       setIsConnected(true);
       socket.emit('chat:history', { roomId: GENERAL_ROOM_ID });
+      api
+        .get<{ count: number }>('/chat/unread-count')
+        .then((res) => {
+          setUnreadCount(res.data.count);
+        })
+        .catch(() => {});
     });
 
     socket.on('disconnect', () => setIsConnected(false));

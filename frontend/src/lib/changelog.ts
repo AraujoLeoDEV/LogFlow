@@ -4,9 +4,17 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.11.2026';
+export const APP_VERSION = 'V0.12.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.12.2026',
+    date: '07/07/2026',
+    items: [
+      'Melhoria: campo de data no Registro Diário exibe apenas o dia, sem horário.',
+      'Correção: badge de mensagens não lidas no chat agora aparece corretamente ao fazer login após receber mensagens.',
+    ],
+  },
   {
     version: 'V0.11.2026',
     date: '06/07/2026',

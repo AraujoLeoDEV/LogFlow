@@ -72,16 +72,16 @@ const departureSchema = z.object({
     .number({ message: 'Informe o KM inicial.' })
     .min(0, 'O KM inicial não pode ser negativo.'),
   observations: z.string(),
-  departureAt: z.string().min(1, 'Informe a data e hora da saída.'),
+  departureAt: z.string().min(1, 'Informe a data da saída.'),
 });
 
 type DepartureFormValues = z.infer<typeof departureSchema>;
 
-function getTodayDatetimeLocal(): string {
+function getTodayDateOnly(): string {
   const now = new Date();
-  const offset = now.getTimezoneOffset();
-  const local = new Date(now.getTime() - offset * 60_000);
-  return local.toISOString().slice(0, 16);
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 function getEmptyDepartureValues(): DepartureFormValues {
@@ -92,7 +92,7 @@ function getEmptyDepartureValues(): DepartureFormValues {
     destination: '',
     startKm: 0,
     observations: '',
-    departureAt: getTodayDatetimeLocal(),
+    departureAt: getTodayDateOnly(),
   };
 }
 
@@ -202,7 +202,7 @@ export function DailyLogsPage() {
       destination: values.destination || undefined,
       startKm: values.startKm,
       observations: values.observations || undefined,
-      departureAt: new Date(values.departureAt).toISOString(),
+      departureAt: new Date(`${values.departureAt}T00:00:00`).toISOString(),
     });
   }
 
@@ -425,9 +425,9 @@ export function DailyLogsPage() {
                 name="departureAt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data e hora da saída</FormLabel>
+                    <FormLabel>Data da saída</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} />
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
