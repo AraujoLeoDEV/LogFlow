@@ -35,6 +35,17 @@ export interface VehicleIndicators {
   mostExpensive: VehicleIndicator | null;
 }
 
+export interface FuelVehicleIndicator {
+  vehicleId: string;
+  plate: string;
+  model: string;
+  fuelCount: number;
+  totalLiters: number;
+  totalPaid: number;
+  avgConsumptionKmL: number | null;
+  avgPricePerLiter: number | null;
+}
+
 export interface RouteIndicator {
   routeId: string;
   name: string;

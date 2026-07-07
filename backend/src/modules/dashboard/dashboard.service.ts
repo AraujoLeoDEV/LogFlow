@@ -36,6 +36,17 @@ export interface VehicleIndicators {
   mostExpensive: VehicleIndicator | null;
 }
 
+export interface FuelVehicleIndicator {
+  vehicleId: string;
+  plate: string;
+  model: string;
+  fuelCount: number;
+  totalLiters: number;
+  totalPaid: number;
+  avgConsumptionKmL: number | null;
+  avgPricePerLiter: number | null;
+}
+
 export interface RouteIndicator {
   routeId: string;
   name: string;
@@ -331,5 +342,86 @@ export class DashboardService {
     });
 
     return indicators.sort((a, b) => b.usageCount - a.usageCount);
+  }
+
+  // Indicadores de combustível por veículo: total de litros, gasto total,
+  // consumo médio (km/L), nº de abastecimentos e preço médio por litro.
+  async getFuelIndicators(
+    query: DashboardQueryDto,
+  ): Promise<FuelVehicleIndicator[]> {
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
+
+    const [vehicles, fuelRecords] = await Promise.all([
+      this.prisma.vehicle.findMany({
+        select: { id: true, plate: true, model: true },
+      }),
+      this.prisma.fuel.findMany({
+        where: {
+          ...(dateFilter ? { createdAt: dateFilter } : {}),
+          ...(query.vehicleId ? { vehicleId: query.vehicleId } : {}),
+        },
+        select: {
+          vehicleId: true,
+          liters: true,
+          amountPaid: true,
+          consumptionKmL: true,
+        },
+      }),
+    ]);
+
+    const vehicleMap = new Map(vehicles.map((v) => [v.id, v]));
+
+    const grouped = new Map<
+      string,
+      {
+        totalLiters: number;
+        totalPaid: number;
+        consumptionSum: number;
+        consumptionCount: number;
+        fuelCount: number;
+      }
+    >();
+
+    for (const record of fuelRecords) {
+      const entry = grouped.get(record.vehicleId) ?? {
+        totalLiters: 0,
+        totalPaid: 0,
+        consumptionSum: 0,
+        consumptionCount: 0,
+        fuelCount: 0,
+      };
+      entry.totalLiters += record.liters.toNumber();
+      entry.totalPaid += record.amountPaid.toNumber();
+      if (record.consumptionKmL !== null) {
+        entry.consumptionSum += record.consumptionKmL.toNumber();
+        entry.consumptionCount += 1;
+      }
+      entry.fuelCount += 1;
+      grouped.set(record.vehicleId, entry);
+    }
+
+    const indicators: FuelVehicleIndicator[] = [];
+
+    for (const [vehicleId, data] of grouped.entries()) {
+      const vehicle = vehicleMap.get(vehicleId);
+      if (!vehicle) continue;
+
+      indicators.push({
+        vehicleId,
+        plate: vehicle.plate,
+        model: vehicle.model,
+        fuelCount: data.fuelCount,
+        totalLiters: data.totalLiters,
+        totalPaid: data.totalPaid,
+        avgConsumptionKmL:
+          data.consumptionCount > 0
+            ? data.consumptionSum / data.consumptionCount
+            : null,
+        avgPricePerLiter:
+          data.totalLiters > 0 ? data.totalPaid / data.totalLiters : null,
+      });
+    }
+
+    return indicators.sort((a, b) => b.totalLiters - a.totalLiters);
   }
 }

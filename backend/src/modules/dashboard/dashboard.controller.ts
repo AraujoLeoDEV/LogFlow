@@ -6,6 +6,7 @@ import { Role } from '../../../generated/prisma/client';
 import {
   DashboardService,
   DriverIndicator,
+  FuelVehicleIndicator,
   RouteIndicator,
   VehicleIndicators,
 } from './dashboard.service';
@@ -51,5 +52,17 @@ export class DashboardController {
     @Query() query: DashboardQueryDto,
   ): Promise<RouteIndicator[]> {
     return this.dashboardService.getRouteIndicators(query);
+  }
+
+  @Get('fuel')
+  @Roles(Role.ADMIN, Role.COORDENACAO, Role.FINANCEIRO)
+  @ApiOperation({
+    summary:
+      'Indicadores de combustível por veículo: total de litros, gasto, consumo médio e preço médio/L',
+  })
+  getFuelIndicators(
+    @Query() query: DashboardQueryDto,
+  ): Promise<FuelVehicleIndicator[]> {
+    return this.dashboardService.getFuelIndicators(query);
   }
 }

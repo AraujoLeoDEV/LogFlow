@@ -26,6 +26,7 @@ import { formatCurrency, formatNumber } from '@/lib/formatters';
 import type {
   DashboardQuery,
   DriverIndicator,
+  FuelVehicleIndicator,
   RouteIndicator,
   VehicleIndicators,
 } from '@/types/dashboard';
@@ -43,6 +44,7 @@ export function DashboardPage() {
   const canViewDrivers = hasRole('ADMIN', 'COORDENACAO');
   const canViewVehicles = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
   const canViewRoutes = hasRole('ADMIN', 'COORDENACAO');
+  const canViewFuel = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
 
   const [filters, setFilters] = useState<DashboardQuery>({});
 
@@ -83,6 +85,13 @@ export function DashboardPage() {
     enabled: canViewRoutes,
   });
 
+  const { data: fuelIndicators, isLoading: isLoadingFuel } = useQuery({
+    queryKey: ['dashboard', 'fuel', filters],
+    queryFn: async () =>
+      (await api.get<FuelVehicleIndicator[]>('/dashboard/fuel', { params: filters })).data,
+    enabled: canViewFuel,
+  });
+
   const driverChartData = (driverIndicators ?? []).map((driver) => ({
     name: driver.driverName,
     kmTotal: driver.kmTotal,
@@ -96,6 +105,11 @@ export function DashboardPage() {
   const routeChartData = (routeIndicators ?? []).map((route) => ({
     name: route.name,
     usageCount: route.usageCount,
+  }));
+
+  const fuelChartData = (fuelIndicators ?? []).map((v) => ({
+    name: `${v.model} (${v.plate})`,
+    avgConsumptionKmL: v.avgConsumptionKmL ?? 0,
   }));
 
   const defaultTab = canViewDrivers ? 'drivers' : canViewVehicles ? 'vehicles' : 'routes';
@@ -205,6 +219,7 @@ export function DashboardPage() {
           {canViewDrivers && <TabsTab value="drivers">Motoristas</TabsTab>}
           {canViewVehicles && <TabsTab value="vehicles">Veículos</TabsTab>}
           {canViewRoutes && <TabsTab value="routes">Rotas</TabsTab>}
+          {canViewFuel && <TabsTab value="fuel">Combustível</TabsTab>}
         </TabsList>
 
         {canViewDrivers && (
@@ -463,6 +478,93 @@ export function DashboardPage() {
                               <Bar
                                 dataKey="usageCount"
                                 name="Usos"
+                                fill={chartGradientUrl('route')}
+                                radius={[6, 6, 0, 0]}
+                              />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsPanel>
+        )}
+        {canViewFuel && (
+          <TabsPanel value="fuel">
+            <Card>
+              <CardHeader>
+                <CardTitle>Indicadores de combustível</CardTitle>
+                <CardDescription>
+                  Consumo médio (km/L), total de litros, gasto total e preço médio por litro —
+                  filtráveis por veículo e período.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-6">
+                {isLoadingFuel && <p className="text-sm text-muted-foreground">Carregando...</p>}
+                {!isLoadingFuel && fuelIndicators && (
+                  <>
+                    <table className="w-full text-sm">
+                      <thead className="border-b text-left text-xs text-muted-foreground uppercase">
+                        <tr>
+                          <th className="px-2 py-2 font-medium">Veículo</th>
+                          <th className="px-2 py-2 font-medium">Abastecimentos</th>
+                          <th className="px-2 py-2 font-medium">Total litros</th>
+                          <th className="px-2 py-2 font-medium">Gasto total</th>
+                          <th className="px-2 py-2 font-medium">Consumo médio</th>
+                          <th className="px-2 py-2 font-medium">Preço médio/L</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fuelIndicators.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-2 py-6 text-center text-muted-foreground">
+                              Nenhum abastecimento encontrado no período.
+                            </td>
+                          </tr>
+                        )}
+                        {fuelIndicators.map((v) => (
+                          <tr key={v.vehicleId} className="border-b last:border-0">
+                            <td className="px-2 py-2 font-medium">
+                              {v.model} ({v.plate})
+                            </td>
+                            <td className="px-2 py-2">{v.fuelCount}</td>
+                            <td className="px-2 py-2">{formatNumber(v.totalLiters, 2)} L</td>
+                            <td className="px-2 py-2">{formatCurrency(v.totalPaid)}</td>
+                            <td className="px-2 py-2">
+                              {v.avgConsumptionKmL !== null
+                                ? `${formatNumber(v.avgConsumptionKmL, 2)} km/L`
+                                : '—'}
+                            </td>
+                            <td className="px-2 py-2">
+                              {v.avgPricePerLiter !== null
+                                ? formatCurrency(v.avgPricePerLiter)
+                                : '—'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+
+                    {fuelChartData.length > 0 && (
+                      <div>
+                        <p className="mb-2 text-sm font-medium">Consumo médio por veículo (km/L)</p>
+                        <div className="h-72 w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={fuelChartData}>
+                              <ChartGradientDefs />
+                              <CartesianGrid {...chartGridProps} />
+                              <XAxis dataKey="name" {...chartAxisProps} />
+                              <YAxis {...chartAxisProps} />
+                              <Tooltip
+                                {...chartTooltipProps}
+                                formatter={(value) => `${formatNumber(Number(value), 2)} km/L`}
+                              />
+                              <Bar
+                                dataKey="avgConsumptionKmL"
+                                name="Consumo médio"
                                 fill={chartGradientUrl('route')}
                                 radius={[6, 6, 0, 0]}
                               />

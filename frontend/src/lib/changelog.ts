@@ -4,9 +4,19 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.12.2026';
+export const APP_VERSION = 'V0.13.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.13.2026',
+    date: '07/07/2026',
+    items: [
+      'Novo: aba "Combustível" no Dashboard com consumo médio (km/L), total de litros, gasto total e preço médio por litro — filtrável por veículo e período.',
+      'Melhoria: coordenadores e administradores podem editar registros diários existentes.',
+      'Melhoria: botão do chat pulsa visualmente ao receber mensagens não lidas.',
+      'Melhoria: nome do contato exibido na aba da conversa privada no chat.',
+    ],
+  },
   {
     version: 'V0.12.2026',
     date: '07/07/2026',
