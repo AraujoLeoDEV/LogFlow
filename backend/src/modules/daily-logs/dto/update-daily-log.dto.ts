@@ -31,9 +31,20 @@ export class UpdateDailyLogDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsDateString({}, { message: 'Data/hora de chegada inválida.' })
+  returnAt?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsNumber({}, { message: 'KM inicial inválido.' })
   @Min(0, { message: 'O KM inicial não pode ser negativo.' })
   startKm?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber({}, { message: 'KM final inválido.' })
+  @Min(0, { message: 'O KM final não pode ser negativo.' })
+  endKm?: number;
 
   @ApiPropertyOptional()
   @IsOptional()

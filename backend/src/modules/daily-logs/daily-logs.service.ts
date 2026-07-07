@@ -194,6 +194,36 @@ export class DailyLogsService {
       throw new NotFoundException('Registro diário não encontrado.');
     }
 
+    const newDepartureAt =
+      dto.departureAt !== undefined
+        ? new Date(dto.departureAt)
+        : existing.departureAt;
+    const newReturnAt =
+      dto.returnAt !== undefined ? new Date(dto.returnAt) : existing.returnAt;
+    const newStartKm =
+      dto.startKm !== undefined ? dto.startKm : existing.startKm.toNumber();
+    const newEndKm =
+      dto.endKm !== undefined
+        ? dto.endKm
+        : (existing.endKm?.toNumber() ?? null);
+
+    const kmDriven =
+      newEndKm !== null && newEndKm >= newStartKm
+        ? newEndKm - newStartKm
+        : (existing.kmDriven?.toNumber() ?? null);
+
+    const totalDurationMinutes =
+      newReturnAt !== null
+        ? Math.round((newReturnAt.getTime() - newDepartureAt.getTime()) / 60000)
+        : existing.totalDurationMinutes;
+
+    const avgSpeedKmh =
+      kmDriven !== null &&
+      totalDurationMinutes !== null &&
+      totalDurationMinutes > 0
+        ? (kmDriven / totalDurationMinutes) * 60
+        : (existing.avgSpeedKmh?.toNumber() ?? null);
+
     try {
       return await this.prisma.dailyLog.update({
         where: { id },
@@ -201,10 +231,13 @@ export class DailyLogsService {
           ...(dto.vehicleId !== undefined && { vehicleId: dto.vehicleId }),
           ...(dto.driverId !== undefined && { driverId: dto.driverId }),
           ...(dto.routeId !== undefined && { routeId: dto.routeId }),
-          ...(dto.departureAt !== undefined && {
-            departureAt: new Date(dto.departureAt),
-          }),
-          ...(dto.startKm !== undefined && { startKm: dto.startKm }),
+          departureAt: newDepartureAt,
+          ...(dto.returnAt !== undefined && { returnAt: newReturnAt }),
+          startKm: newStartKm,
+          ...(dto.endKm !== undefined && { endKm: newEndKm }),
+          ...(kmDriven !== null && { kmDriven }),
+          ...(totalDurationMinutes !== null && { totalDurationMinutes }),
+          ...(avgSpeedKmh !== null && { avgSpeedKmh }),
           ...(dto.destination !== undefined && {
             destination: dto.destination || null,
           }),

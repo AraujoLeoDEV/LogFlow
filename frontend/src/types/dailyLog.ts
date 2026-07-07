@@ -42,7 +42,9 @@ export interface UpdateDailyLogPayload {
   driverId?: string;
   routeId?: string;
   departureAt?: string;
+  returnAt?: string;
   startKm?: number;
+  endKm?: number;
   destination?: string;
   observations?: string;
 }

@@ -113,8 +113,13 @@ const editSchema = z.object({
   startKm: z
     .number({ message: 'Informe o KM inicial.' })
     .min(0, 'O KM inicial não pode ser negativo.'),
+  endKm: z
+    .number({ message: 'Informe o KM final.' })
+    .min(0, 'O KM final não pode ser negativo.')
+    .optional(),
   observations: z.string(),
   departureAt: z.string().min(1, 'Informe a data da saída.'),
+  returnAt: z.string().optional(),
 });
 
 type EditFormValues = z.infer<typeof editSchema>;
@@ -227,8 +232,10 @@ export function DailyLogsPage() {
       routeId: '',
       destination: '',
       startKm: 0,
+      endKm: undefined,
       observations: '',
       departureAt: getTodayDateOnly(),
+      returnAt: '',
     },
   });
 
@@ -248,14 +255,17 @@ export function DailyLogsPage() {
   function openEditDialog(log: DailyLogWithRelations) {
     setEditingLog(log);
     const dateStr = log.departureAt ? log.departureAt.slice(0, 10) : getTodayDateOnly();
+    const returnStr = log.returnAt ? log.returnAt.slice(0, 16) : '';
     editForm.reset({
       vehicleId: log.vehicleId,
       driverId: log.driverId,
       routeId: log.routeId,
       destination: log.destination ?? '',
       startKm: Number(log.startKm),
+      endKm: log.endKm !== null ? Number(log.endKm) : undefined,
       observations: log.observations ?? '',
       departureAt: dateStr,
+      returnAt: returnStr,
     });
     setEditDialogOpen(true);
   }
@@ -270,8 +280,10 @@ export function DailyLogsPage() {
         routeId: values.routeId || undefined,
         destination: values.destination || undefined,
         startKm: values.startKm,
+        endKm: values.endKm,
         observations: values.observations || undefined,
         departureAt: new Date(`${values.departureAt}T00:00:00`).toISOString(),
+        returnAt: values.returnAt ? new Date(values.returnAt).toISOString() : undefined,
       },
     });
   }
@@ -726,7 +738,7 @@ export function DailyLogsPage() {
           <DialogHeader>
             <DialogTitle>Editar registro diário</DialogTitle>
             <DialogDescription>
-              Altere os dados da saída. O status e os dados de retorno não são afetados.
+              Altere os dados da saída e/ou retorno. O status não é alterado automaticamente.
             </DialogDescription>
           </DialogHeader>
           <Form {...editForm}>
@@ -825,6 +837,40 @@ export function DailyLogsPage() {
                           field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)
                         }
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="endKm"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>KM final</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(e.target.value === '' ? undefined : e.target.valueAsNumber)
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="returnAt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Data/hora de chegada</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
