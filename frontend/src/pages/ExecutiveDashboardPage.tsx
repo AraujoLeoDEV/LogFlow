@@ -43,6 +43,7 @@ import type {
   DashboardQuery,
   DriverIndicator,
   RouteIndicator,
+  ShipmentUnitIndicator,
   VehicleIndicators,
 } from '@/types/dashboard';
 import type { CostPerKmResult, MonthlyFinanceComparison } from '@/types/finance';
@@ -142,6 +143,12 @@ export function ExecutiveDashboardPage() {
       ).data,
   });
 
+  const { data: shipmentIndicators } = useQuery({
+    queryKey: ['dashboard', 'shipments', filters],
+    queryFn: async () =>
+      (await api.get<ShipmentUnitIndicator[]>('/dashboard/shipments', { params: filters })).data,
+  });
+
   const isLoading = isLoadingDrivers || isLoadingVehicles || isLoadingRoutes || isLoadingComparison;
 
   const totals = useMemo(() => {
@@ -163,9 +170,18 @@ export function ExecutiveDashboardPage() {
       ? (vehicles.filter((v) => v.usageCount > 0).length / vehicles.length) * 100
       : null;
 
+  const fuelCostFromVehicles = (vehicleIndicators?.vehicles ?? []).reduce(
+    (sum, v) => sum + v.fuelCost,
+    0,
+  );
+  const maintenanceCostFromVehicles = (vehicleIndicators?.vehicles ?? []).reduce(
+    (sum, v) => sum + v.maintenanceCost,
+    0,
+  );
+
   const costDistribution = [
-    { name: 'Combustível', value: totals.fuelCost },
-    { name: 'Manutenção', value: totals.maintenanceCost },
+    { name: 'Combustível', value: fuelCostFromVehicles },
+    { name: 'Manutenção', value: maintenanceCostFromVehicles },
     { name: 'Depreciação', value: totals.depreciation },
   ].filter((entry) => entry.value > 0);
 
@@ -191,9 +207,15 @@ export function ExecutiveDashboardPage() {
   }));
 
   const routeUsageData = [...(routeIndicators ?? [])]
+    .filter((r) => r.usageCount > 0)
     .sort((a, b) => b.usageCount - a.usageCount)
     .slice(0, 8)
     .map((route) => ({ name: route.name, usos: route.usageCount }));
+
+  const topShipmentUnits = [...(shipmentIndicators ?? [])]
+    .sort((a, b) => b.sentItems - a.sentItems)
+    .slice(0, 8)
+    .map((u) => ({ name: u.unitName, itens: u.sentItems }));
 
   const topDrivers = [...(driverIndicators ?? [])].sort((a, b) => a.rank - b.rank).slice(0, TOP_N);
 
@@ -470,6 +492,62 @@ export function ExecutiveDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Envios por unidade</CardTitle>
+          <CardDescription>
+            Unidades que mais enviaram itens no período, com totais de envios e itens recebidos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6">
+          {(shipmentIndicators ?? []).length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sem envios no período.</p>
+          ) : (
+            <>
+              <div className="h-72 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={topShipmentUnits} layout="vertical" margin={{ left: 24 }}>
+                    <ChartGradientDefs />
+                    <CartesianGrid {...chartGridProps} horizontal={false} />
+                    <XAxis type="number" allowDecimals={false} {...chartAxisProps} />
+                    <YAxis type="category" dataKey="name" width={160} {...chartAxisProps} />
+                    <Tooltip {...chartTooltipProps} />
+                    <Bar
+                      dataKey="itens"
+                      name="Itens enviados"
+                      fill={chartGradientUrl('chart-2')}
+                      radius={[0, 6, 6, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <table className="w-full text-sm">
+                <thead className="border-b text-left text-xs text-muted-foreground uppercase">
+                  <tr>
+                    <th className="px-2 py-2 font-medium">Unidade</th>
+                    <th className="px-2 py-2 font-medium">Envios realizados</th>
+                    <th className="px-2 py-2 font-medium">Itens enviados</th>
+                    <th className="px-2 py-2 font-medium">Envios recebidos</th>
+                    <th className="px-2 py-2 font-medium">Itens recebidos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(shipmentIndicators ?? []).map((u) => (
+                    <tr key={u.unitId} className="border-b last:border-0">
+                      <td className="px-2 py-2 font-medium">{u.unitName}</td>
+                      <td className="px-2 py-2">{u.sentCount}</td>
+                      <td className="px-2 py-2">{formatNumber(u.sentItems, 0)}</td>
+                      <td className="px-2 py-2">{u.receivedCount}</td>
+                      <td className="px-2 py-2">{formatNumber(u.receivedItems, 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

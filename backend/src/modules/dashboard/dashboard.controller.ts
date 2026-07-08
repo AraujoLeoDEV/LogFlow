@@ -8,6 +8,7 @@ import {
   DriverIndicator,
   FuelVehicleIndicator,
   RouteIndicator,
+  ShipmentUnitIndicator,
   VehicleIndicators,
 } from './dashboard.service';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
@@ -64,5 +65,17 @@ export class DashboardController {
     @Query() query: DashboardQueryDto,
   ): Promise<FuelVehicleIndicator[]> {
     return this.dashboardService.getFuelIndicators(query);
+  }
+
+  @Get('shipments')
+  @Roles(Role.ADMIN, Role.COORDENACAO)
+  @ApiOperation({
+    summary:
+      'Indicadores de envios por unidade: qtd. de envios, itens enviados e recebidos no período',
+  })
+  getShipmentIndicators(
+    @Query() query: DashboardQueryDto,
+  ): Promise<ShipmentUnitIndicator[]> {
+    return this.dashboardService.getShipmentIndicators(query);
   }
 }

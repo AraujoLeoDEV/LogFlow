@@ -46,6 +46,15 @@ export interface FuelVehicleIndicator {
   avgPricePerLiter: number | null;
 }
 
+export interface ShipmentUnitIndicator {
+  unitId: string;
+  unitName: string;
+  sentCount: number;
+  sentItems: number;
+  receivedCount: number;
+  receivedItems: number;
+}
+
 export interface RouteIndicator {
   routeId: string;
   name: string;

@@ -28,6 +28,7 @@ import type {
   DriverIndicator,
   FuelVehicleIndicator,
   RouteIndicator,
+  ShipmentUnitIndicator,
   VehicleIndicators,
 } from '@/types/dashboard';
 import type { Driver } from '@/types/driver';
@@ -45,6 +46,7 @@ export function DashboardPage() {
   const canViewVehicles = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
   const canViewRoutes = hasRole('ADMIN', 'COORDENACAO');
   const canViewFuel = hasRole('ADMIN', 'COORDENACAO', 'FINANCEIRO');
+  const canViewShipments = hasRole('ADMIN', 'COORDENACAO');
 
   const [filters, setFilters] = useState<DashboardQuery>({});
 
@@ -90,6 +92,13 @@ export function DashboardPage() {
     queryFn: async () =>
       (await api.get<FuelVehicleIndicator[]>('/dashboard/fuel', { params: filters })).data,
     enabled: canViewFuel,
+  });
+
+  const { data: shipmentIndicators, isLoading: isLoadingShipments } = useQuery({
+    queryKey: ['dashboard', 'shipments', filters],
+    queryFn: async () =>
+      (await api.get<ShipmentUnitIndicator[]>('/dashboard/shipments', { params: filters })).data,
+    enabled: canViewShipments,
   });
 
   const driverChartData = (driverIndicators ?? []).map((driver) => ({
@@ -220,6 +229,7 @@ export function DashboardPage() {
           {canViewVehicles && <TabsTab value="vehicles">Veículos</TabsTab>}
           {canViewRoutes && <TabsTab value="routes">Rotas</TabsTab>}
           {canViewFuel && <TabsTab value="fuel">Combustível</TabsTab>}
+          {canViewShipments && <TabsTab value="shipments">Envios</TabsTab>}
         </TabsList>
 
         {canViewDrivers && (
@@ -574,6 +584,54 @@ export function DashboardPage() {
                       </div>
                     )}
                   </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsPanel>
+        )}
+        {canViewShipments && (
+          <TabsPanel value="shipments">
+            <Card>
+              <CardHeader>
+                <CardTitle>Envios por unidade</CardTitle>
+                <CardDescription>
+                  Quantidade de envios realizados e recebidos por unidade, com totais de itens.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingShipments && (
+                  <p className="text-sm text-muted-foreground">Carregando...</p>
+                )}
+                {!isLoadingShipments && (
+                  <table className="w-full text-sm">
+                    <thead className="border-b text-left text-xs text-muted-foreground uppercase">
+                      <tr>
+                        <th className="px-2 py-2 font-medium">Unidade</th>
+                        <th className="px-2 py-2 font-medium">Envios realizados</th>
+                        <th className="px-2 py-2 font-medium">Itens enviados</th>
+                        <th className="px-2 py-2 font-medium">Envios recebidos</th>
+                        <th className="px-2 py-2 font-medium">Itens recebidos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(shipmentIndicators ?? []).length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-2 py-6 text-center text-muted-foreground">
+                            Nenhum envio encontrado no período.
+                          </td>
+                        </tr>
+                      )}
+                      {(shipmentIndicators ?? []).map((u) => (
+                        <tr key={u.unitId} className="border-b last:border-0">
+                          <td className="px-2 py-2 font-medium">{u.unitName}</td>
+                          <td className="px-2 py-2">{u.sentCount}</td>
+                          <td className="px-2 py-2">{formatNumber(u.sentItems, 0)}</td>
+                          <td className="px-2 py-2">{u.receivedCount}</td>
+                          <td className="px-2 py-2">{formatNumber(u.receivedItems, 0)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </CardContent>
             </Card>

@@ -4,9 +4,19 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.13.2026';
+export const APP_VERSION = 'V0.14.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.14.2026',
+    date: '08/07/2026',
+    items: [
+      'Novo: seção "Envios por unidade" na visão executiva com gráfico e tabela de itens enviados/recebidos por unidade.',
+      'Novo: aba "Envios" no Dashboard com ranking de unidades por envios e itens no período.',
+      'Correção: distribuição de custos na visão executiva agora exibe corretamente combustível e manutenção.',
+      'Correção: gráfico "Uso por rota" agora exibe apenas rotas com viagens registradas no período.',
+    ],
+  },
   {
     version: 'V0.13.2026',
     date: '07/07/2026',

@@ -57,6 +57,15 @@ export interface RouteIndicator {
   estimatedCost: number | null;
 }
 
+export interface ShipmentUnitIndicator {
+  unitId: string;
+  unitName: string;
+  sentCount: number;
+  sentItems: number;
+  receivedCount: number;
+  receivedItems: number;
+}
+
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
@@ -423,5 +432,83 @@ export class DashboardService {
     }
 
     return indicators.sort((a, b) => b.totalLiters - a.totalLiters);
+  }
+
+  // Indicadores de envios por unidade: quantos envios e itens cada unidade
+  // enviou e recebeu no período.
+  async getShipmentIndicators(
+    query: DashboardQueryDto,
+  ): Promise<ShipmentUnitIndicator[]> {
+    const dateFilter = buildDateRangeFilter(query.from, query.to);
+
+    const [units, shipments] = await Promise.all([
+      this.prisma.unit.findMany({
+        where: { active: true },
+        select: { id: true, name: true },
+      }),
+      this.prisma.shipment.findMany({
+        where: dateFilter ? { createdAt: dateFilter } : undefined,
+        select: {
+          originUnitId: true,
+          destinationUnitId: true,
+          items: { select: { quantity: true } },
+        },
+      }),
+    ]);
+
+    const unitMap = new Map(units.map((u) => [u.id, u.name]));
+
+    const byUnit = new Map<
+      string,
+      {
+        sentCount: number;
+        sentItems: number;
+        receivedCount: number;
+        receivedItems: number;
+      }
+    >();
+
+    for (const unit of units) {
+      byUnit.set(unit.id, {
+        sentCount: 0,
+        sentItems: 0,
+        receivedCount: 0,
+        receivedItems: 0,
+      });
+    }
+
+    for (const shipment of shipments) {
+      const totalQty = shipment.items.reduce(
+        (sum, item) => sum + item.quantity.toNumber(),
+        0,
+      );
+
+      if (shipment.originUnitId) {
+        const entry = byUnit.get(shipment.originUnitId);
+        if (entry) {
+          entry.sentCount += 1;
+          entry.sentItems += totalQty;
+        }
+      }
+
+      const destEntry = byUnit.get(shipment.destinationUnitId);
+      if (destEntry) {
+        destEntry.receivedCount += 1;
+        destEntry.receivedItems += totalQty;
+      }
+    }
+
+    const indicators: ShipmentUnitIndicator[] = [];
+    for (const [unitId, data] of byUnit.entries()) {
+      if (data.sentCount > 0 || data.receivedCount > 0) {
+        indicators.push({
+          unitId,
+          unitName: unitMap.get(unitId) ?? unitId,
+          ...data,
+        });
+      }
+    }
+
+    return indicators.sort((a, b) => b.sentItems - a.sentItems);
   }
 }
