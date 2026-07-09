@@ -184,6 +184,7 @@ export class ShipmentsService {
     });
 
     void this.notifyShipmentCreated(created);
+    void this.enqueuePdfGeneration(created.id);
 
     return created;
   }

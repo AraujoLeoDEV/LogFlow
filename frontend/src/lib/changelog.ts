@@ -4,9 +4,18 @@ export interface ChangelogEntry {
   items: string[];
 }
 
-export const APP_VERSION = 'V0.14.2026';
+export const APP_VERSION = 'V0.15.2026';
 
 export const changelog: ChangelogEntry[] = [
+  {
+    version: 'V0.15.2026',
+    date: '09/07/2026',
+    items: [
+      'Novo: comprovante PDF gerado imediatamente ao registrar o envio (antes era gerado apenas na confirmação de recebimento).',
+      'Correção: fotos do envio agora aparecem corretamente nas miniaturas (path absoluto e MIME type dinâmico por extensão).',
+      'Melhoria: PDF do comprovante agora pode ser visualizado diretamente no site, sem abrir nova aba com erro.',
+    ],
+  },
   {
     version: 'V0.14.2026',
     date: '08/07/2026',

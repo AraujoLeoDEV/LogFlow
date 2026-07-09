@@ -17,6 +17,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
+import { extname, resolve } from 'path';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -87,11 +88,25 @@ export class ShipmentsController {
     @Res() res: Response,
   ): Promise<void> {
     const file = await this.shipmentsService.findFileByPublicToken(token);
-    const mimeType = file.type === 'PDF' ? 'application/pdf' : 'image/jpeg';
+
+    let mimeType: string;
+    if (file.type === 'PDF') {
+      mimeType = 'application/pdf';
+    } else {
+      const ext = extname(file.filePath).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.gif': 'image/gif',
+      };
+      mimeType = mimeMap[ext] ?? 'image/jpeg';
+    }
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Content-Disposition', 'inline');
-    res.sendFile(file.filePath);
+    res.sendFile(resolve(file.filePath));
   }
 
   @Get('by-id/:id')
