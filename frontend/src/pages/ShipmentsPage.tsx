@@ -494,7 +494,9 @@ export function ShipmentsPage() {
 
   const pdfFile = selectedShipment?.files.find((file) => file.type === 'PDF');
   const pdfUrl = pdfFile ? `${API_URL}/shipments/files/${pdfFile.publicToken}/download` : null;
+  const pdfViewUrl = pdfFile ? `${API_URL}/shipments/files/${pdfFile.publicToken}/view` : null;
   const whatsappUrl = selectedShipment ? buildWhatsappShareUrl(selectedShipment, pdfUrl) : null;
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
 
   const canConfirmReceipt =
     selectedShipment &&
@@ -1041,19 +1043,28 @@ export function ShipmentsPage() {
                   </div>
                 )}
 
-                {(pdfUrl || whatsappUrl) && (
+                {(pdfViewUrl || whatsappUrl) && (
                   <div>
-                    {pdfUrl && <p className="mb-2 text-sm font-medium">Comprovante (PDF)</p>}
+                    {pdfViewUrl && <p className="mb-2 text-sm font-medium">Comprovante (PDF)</p>}
                     <div className="flex flex-wrap gap-2">
-                      {pdfUrl && (
-                        <a
-                          href={pdfUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                        >
-                          Ver / baixar PDF
-                        </a>
+                      {pdfViewUrl && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPdfPreviewOpen(true)}
+                          >
+                            Visualizar PDF
+                          </Button>
+                          <a
+                            href={pdfUrl!}
+                            download
+                            className={buttonVariants({ variant: 'outline', size: 'sm' })}
+                          >
+                            Baixar PDF
+                          </a>
+                        </>
                       )}
                       {whatsappUrl && (
                         <a
@@ -1062,7 +1073,7 @@ export function ShipmentsPage() {
                           rel="noreferrer"
                           className={buttonVariants({ variant: 'outline', size: 'sm' })}
                         >
-                          {pdfUrl ? 'Compartilhar via WhatsApp' : 'Avisar via WhatsApp'}
+                          {pdfViewUrl ? 'Compartilhar via WhatsApp' : 'Avisar via WhatsApp'}
                         </a>
                       )}
                     </div>
@@ -1072,18 +1083,21 @@ export function ShipmentsPage() {
                 {selectedShipment.files.some((f) => f.type === 'PHOTO') && (
                   <div>
                     <p className="mb-2 text-sm font-medium">Fotos do envio</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-3">
                       {selectedShipment.files
                         .filter((f) => f.type === 'PHOTO')
                         .map((f) => (
                           <a
                             key={f.id}
-                            href={`${API_URL}/shipments/files/${f.publicToken}/download`}
+                            href={`${API_URL}/shipments/files/${f.publicToken}/view`}
                             target="_blank"
                             rel="noreferrer"
-                            className={buttonVariants({ variant: 'outline', size: 'sm' })}
                           >
-                            Ver foto
+                            <img
+                              src={`${API_URL}/shipments/files/${f.publicToken}/view`}
+                              alt="Foto do envio"
+                              className="h-32 w-32 rounded-md border object-cover"
+                            />
                           </a>
                         ))}
                     </div>
@@ -1432,6 +1446,21 @@ export function ShipmentsPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={pdfPreviewOpen} onOpenChange={setPdfPreviewOpen}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-4 pt-4 pb-2 shrink-0">
+            <DialogTitle>Comprovante PDF</DialogTitle>
+          </DialogHeader>
+          {pdfViewUrl && (
+            <iframe
+              src={pdfViewUrl}
+              className="flex-1 w-full rounded-b-lg border-t"
+              title="Comprovante PDF"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

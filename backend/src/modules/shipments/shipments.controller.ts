@@ -60,15 +60,38 @@ export class ShipmentsController {
   @Roles()
   @Public()
   @ApiOperation({
-    summary: 'Baixa publicamente o PDF de comprovante de um envio pelo token',
+    summary: 'Baixa publicamente o comprovante/foto de um envio pelo token',
   })
   async downloadFile(
     @Param('token') token: string,
     @Res() res: Response,
   ): Promise<void> {
     const file = await this.shipmentsService.findFileByPublicToken(token);
+    const filename =
+      file.type === 'PDF'
+        ? `comprovante-${file.shipmentId}.pdf`
+        : `foto-${file.shipmentId}.jpg`;
 
-    res.download(file.filePath, `comprovante-${file.shipmentId}.pdf`);
+    res.download(file.filePath, filename);
+  }
+
+  @Get('files/:token/view')
+  @Roles()
+  @Public()
+  @ApiOperation({
+    summary:
+      'Exibe inline o comprovante/foto de um envio pelo token (sem forçar download)',
+  })
+  async viewFile(
+    @Param('token') token: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const file = await this.shipmentsService.findFileByPublicToken(token);
+    const mimeType = file.type === 'PDF' ? 'application/pdf' : 'image/jpeg';
+
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Content-Disposition', 'inline');
+    res.sendFile(file.filePath);
   }
 
   @Get('by-id/:id')
