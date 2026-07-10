@@ -1083,21 +1083,21 @@ export function ShipmentsPage() {
                 {selectedShipment.files.some((f) => f.type === 'PHOTO') && (
                   <div>
                     <p className="mb-2 text-sm font-medium">Fotos do envio</p>
-                    <div className="flex flex-wrap gap-3">
+                    <div className="flex flex-wrap gap-2">
                       {selectedShipment.files
                         .filter((f) => f.type === 'PHOTO')
-                        .map((f) => (
+                        .map((f, idx) => (
                           <a
                             key={f.id}
                             href={`${API_URL}/shipments/files/${f.publicToken}/view`}
                             target="_blank"
                             rel="noreferrer"
+                            className={buttonVariants({ variant: 'outline', size: 'sm' })}
                           >
-                            <img
-                              src={`${API_URL}/shipments/files/${f.publicToken}/view`}
-                              alt="Foto do envio"
-                              className="h-32 w-32 rounded-md border object-cover"
-                            />
+                            Ver foto{' '}
+                            {selectedShipment.files.filter((x) => x.type === 'PHOTO').length > 1
+                              ? idx + 1
+                              : ''}
                           </a>
                         ))}
                     </div>
