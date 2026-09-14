@@ -376,6 +376,11 @@ model Fuel {
   currentKm      Decimal  @map("current_km") @db.Decimal(10, 1)
   fuelType       FuelType @map("fuel_type")
   date           DateTime @default(now())
+  // Abastecimento retroativo (seção 4.6): lançamento de um abastecimento
+  // passado que não reflete o KM atual real do veículo. Quando true, o KM
+  // atual do veículo nunca é alterado e a validação de KM mínimo (>= último
+  // abastecimento) é ignorada.
+  isRetroactive  Boolean  @default(false) @map("is_retroactive")
   consumptionKmL Decimal? @map("consumption_km_l") @db.Decimal(10, 3)
   costPerKm      Decimal? @map("cost_per_km") @db.Decimal(10, 4)
   createdBy      String?  @map("created_by")

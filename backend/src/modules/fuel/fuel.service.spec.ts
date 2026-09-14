@@ -26,7 +26,13 @@ interface FindFirstVehicleArgs {
 }
 
 interface FindFirstFuelArgs {
-  where: { vehicleId: string };
+  where: {
+    vehicleId: string;
+    id?: { not?: string };
+    isRetroactive?: boolean;
+    date?: { lt?: Date };
+  };
+  orderBy?: { currentKm?: 'desc' } | { date?: 'desc' };
 }
 
 interface FuelWhere {
@@ -50,6 +56,7 @@ interface CreateFuelArgs {
     currentKm: number;
     fuelType: FuelType;
     date: Date;
+    isRetroactive: boolean;
     consumptionKmL: Prisma.Decimal | null;
     costPerKm: Prisma.Decimal | null;
     createdBy: string;
@@ -135,6 +142,7 @@ function buildFuel(overrides: Partial<Fuel> = {}): Fuel {
     currentKm: new Prisma.Decimal(1000),
     fuelType: FuelType.FLEX,
     date: new Date('2026-06-01T10:00:00Z'),
+    isRetroactive: false,
     consumptionKmL: null,
     costPerKm: null,
     createdBy: 'user-admin',
@@ -176,13 +184,35 @@ function buildService(
 
   const findFirstFuel = jest.fn(
     (args: FindFirstFuelArgs): Promise<Fuel | null> => {
-      const filtered = fuelRecords.filter(
+      let filtered = fuelRecords.filter(
         (fuel) => fuel.vehicleId === args.where.vehicleId,
       );
+
+      if (args.where.id?.not) {
+        const excludedId = args.where.id.not;
+        filtered = filtered.filter((fuel) => fuel.id !== excludedId);
+      }
+
+      if (args.where.isRetroactive !== undefined) {
+        filtered = filtered.filter(
+          (fuel) => fuel.isRetroactive === args.where.isRetroactive,
+        );
+      }
+
+      if (args.where.date?.lt) {
+        const lt = args.where.date.lt;
+        filtered = filtered.filter((fuel) => fuel.date < lt);
+      }
+
       if (filtered.length === 0) return Promise.resolve(null);
 
+      const orderByDate =
+        args.orderBy && 'date' in args.orderBy && args.orderBy.date === 'desc';
+
       const sorted = [...filtered].sort((a, b) =>
-        new Prisma.Decimal(b.currentKm).comparedTo(a.currentKm),
+        orderByDate
+          ? b.date.getTime() - a.date.getTime()
+          : new Prisma.Decimal(b.currentKm).comparedTo(a.currentKm),
       );
       return Promise.resolve(sorted[0]);
     },
@@ -432,6 +462,96 @@ describe('FuelService', () => {
 
       expect(created.driverId).toBe('driver-1');
       expect(fuelRecords).toHaveLength(1);
+    });
+
+    it('retroativo com KM menor que o último registrado não é rejeitado e não altera o KM do veículo', async () => {
+      const { service, vehicles } = buildService({
+        fuelRecords: [
+          buildFuel({
+            id: 'fuel-existing',
+            vehicleId: 'vehicle-1',
+            currentKm: new Prisma.Decimal(1500),
+            date: new Date('2026-06-10T10:00:00Z'),
+          }),
+        ],
+        vehicles: [buildVehicle({ currentKm: new Prisma.Decimal(1500) })],
+      });
+
+      const created = await service.create(
+        {
+          vehicleId: 'vehicle-1',
+          driverId: 'driver-1',
+          liters: 40,
+          amountPaid: 200,
+          currentKm: 1200,
+          fuelType: FuelType.FLEX,
+          date: '2026-06-05T10:00:00Z',
+          isRetroactive: true,
+        },
+        adminUser,
+      );
+
+      expect(created.isRetroactive).toBe(true);
+      expect(vehicles[0].currentKm.toNumber()).toBe(1500);
+    });
+
+    it('retroativo com KM maior que o KM atual do veículo também não altera o KM do veículo', async () => {
+      const { service, vehicles } = buildService({
+        vehicles: [buildVehicle({ currentKm: new Prisma.Decimal(1000) })],
+      });
+
+      await service.create(
+        {
+          vehicleId: 'vehicle-1',
+          driverId: 'driver-1',
+          liters: 40,
+          amountPaid: 200,
+          currentKm: 5000,
+          fuelType: FuelType.FLEX,
+          isRetroactive: true,
+        },
+        adminUser,
+      );
+
+      expect(vehicles[0].currentKm.toNumber()).toBe(1000);
+    });
+
+    it('retroativo calcula consumo com base no abastecimento cronologicamente anterior', async () => {
+      const { service } = buildService({
+        fuelRecords: [
+          buildFuel({
+            id: 'fuel-jan',
+            vehicleId: 'vehicle-1',
+            currentKm: new Prisma.Decimal(1000),
+            date: new Date('2026-01-01T10:00:00Z'),
+          }),
+          buildFuel({
+            id: 'fuel-mar',
+            vehicleId: 'vehicle-1',
+            currentKm: new Prisma.Decimal(2000),
+            date: new Date('2026-03-01T10:00:00Z'),
+          }),
+        ],
+        vehicles: [buildVehicle({ currentKm: new Prisma.Decimal(2000) })],
+      });
+
+      // Lançado retroativamente entre jan e mar, deve usar o de jan (1000 km)
+      // como referência para o consumo, e não o de maior KM (2000 km).
+      const created = await service.create(
+        {
+          vehicleId: 'vehicle-1',
+          driverId: 'driver-1',
+          liters: 25,
+          amountPaid: 150,
+          currentKm: 1500,
+          fuelType: FuelType.FLEX,
+          date: '2026-02-01T10:00:00Z',
+          isRetroactive: true,
+        },
+        adminUser,
+      );
+
+      expect(created.consumptionKmL?.toNumber()).toBe(20);
     });
 
     it('rejeita MOTORISTA sem motorista vinculado', async () => {

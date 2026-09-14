@@ -1,5 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional, IsUUID, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsUUID,
+  Min,
+} from 'class-validator';
 
 import { FuelType } from '../../../../generated/prisma/client';
 
@@ -50,4 +57,15 @@ export class CreateFuelDto {
   @IsOptional()
   @IsDateString({}, { message: 'Data/hora do abastecimento inválida.' })
   date?: string;
+
+  @ApiPropertyOptional({
+    default: false,
+    description:
+      'Marca o abastecimento como retroativo (lançamento de um abastecimento passado). ' +
+      'Quando true, o KM informado não precisa ser maior/igual ao último registrado e ' +
+      'o KM atual do veículo não é alterado.',
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isRetroactive deve ser verdadeiro ou falso.' })
+  isRetroactive?: boolean;
 }

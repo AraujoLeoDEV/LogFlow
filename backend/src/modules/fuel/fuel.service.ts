@@ -80,12 +80,20 @@ export class FuelService {
       );
     }
 
+    const isRetroactive = dto.isRetroactive ?? false;
+
+    // Abastecimento retroativo (seção 4.6): lançamento de um abastecimento
+    // passado. Nesse caso o KM informado é histórico e pode ser menor que o
+    // já registrado, então a trava de "KM não pode retroceder" não se aplica.
+    // A busca do "último" abastecimento ignora retroativos: eles não seguem
+    // a sequência real do odômetro e não devem servir de referência.
     const previous = await this.prisma.fuel.findFirst({
-      where: { vehicleId: dto.vehicleId },
+      where: { vehicleId: dto.vehicleId, isRetroactive: false },
       orderBy: { currentKm: 'desc' },
     });
 
     if (
+      !isRetroactive &&
       previous &&
       new Prisma.Decimal(dto.currentKm).lessThan(previous.currentKm)
     ) {
@@ -94,9 +102,22 @@ export class FuelService {
       );
     }
 
+    // Para retroativo, calcula o consumo com base no abastecimento anterior
+    // mais próximo cronologicamente (não o de maior KM), já que o lançamento
+    // não segue a ordem de chegada dos registros.
+    const previousForMetrics = isRetroactive
+      ? await this.prisma.fuel.findFirst({
+          where: {
+            vehicleId: dto.vehicleId,
+            date: { lt: dto.date ? new Date(dto.date) : new Date() },
+          },
+          orderBy: { date: 'desc' },
+        })
+      : previous;
+
     const metrics = calculateFuelMetrics({
       currentKm: dto.currentKm,
-      previousKm: previous?.currentKm ?? null,
+      previousKm: previousForMetrics?.currentKm ?? null,
       liters: dto.liters,
       amountPaid: dto.amountPaid,
     });
@@ -109,6 +130,7 @@ export class FuelService {
       currentKm: dto.currentKm,
       fuelType: dto.fuelType,
       date: dto.date ? new Date(dto.date) : new Date(),
+      isRetroactive,
       consumptionKmL: metrics.consumptionKmL,
       costPerKm: metrics.costPerKm,
       createdBy: user.sub,
@@ -116,7 +138,12 @@ export class FuelService {
     };
 
     try {
-      if (new Prisma.Decimal(dto.currentKm).greaterThan(vehicle.currentKm)) {
+      // Retroativo nunca atualiza o KM atual do veículo, mesmo que o valor
+      // informado seja maior que o KM atual registrado.
+      if (
+        !isRetroactive &&
+        new Prisma.Decimal(dto.currentKm).greaterThan(vehicle.currentKm)
+      ) {
         const [created] = await this.prisma.$transaction([
           this.prisma.fuel.create({ data }),
           this.prisma.vehicle.update({
@@ -135,7 +162,8 @@ export class FuelService {
 
   // Edição de abastecimento - restrita a ADMIN/COORDENACAO pelo controller.
   // Não permite trocar o veículo; recalcula consumo/custo e realinha o KM do
-  // veículo com o maior currentKm registrado para ele.
+  // veículo com o maior currentKm registrado para ele (exceto se retroativo -
+  // seção 4.6, ver create()).
   async update(
     id: string,
     dto: UpdateFuelDto,
@@ -174,13 +202,19 @@ export class FuelService {
     }
 
     const currentKm = dto.currentKm ?? existing.currentKm;
+    const isRetroactive = dto.isRetroactive ?? existing.isRetroactive;
 
     const previous = await this.prisma.fuel.findFirst({
-      where: { vehicleId: existing.vehicleId, id: { not: id } },
+      where: {
+        vehicleId: existing.vehicleId,
+        id: { not: id },
+        isRetroactive: false,
+      },
       orderBy: { currentKm: 'desc' },
     });
 
     if (
+      !isRetroactive &&
       previous &&
       new Prisma.Decimal(currentKm).lessThan(previous.currentKm)
     ) {
@@ -191,10 +225,22 @@ export class FuelService {
 
     const liters = dto.liters ?? existing.liters;
     const amountPaid = dto.amountPaid ?? existing.amountPaid;
+    const date = dto.date ? new Date(dto.date) : existing.date;
+
+    const previousForMetrics = isRetroactive
+      ? await this.prisma.fuel.findFirst({
+          where: {
+            vehicleId: existing.vehicleId,
+            id: { not: id },
+            date: { lt: date },
+          },
+          orderBy: { date: 'desc' },
+        })
+      : previous;
 
     const metrics = calculateFuelMetrics({
       currentKm,
-      previousKm: previous?.currentKm ?? null,
+      previousKm: previousForMetrics?.currentKm ?? null,
       liters,
       amountPaid,
     });
@@ -205,7 +251,8 @@ export class FuelService {
       amountPaid,
       currentKm,
       fuelType,
-      date: dto.date ? new Date(dto.date) : existing.date,
+      date,
+      isRetroactive,
       consumptionKmL: metrics.consumptionKmL,
       costPerKm: metrics.costPerKm,
       updatedBy: user.sub,
@@ -214,16 +261,20 @@ export class FuelService {
     try {
       const updated = await this.prisma.fuel.update({ where: { id }, data });
 
-      const latest = await this.prisma.fuel.findFirst({
-        where: { vehicleId: existing.vehicleId },
-        orderBy: { currentKm: 'desc' },
-      });
-
-      if (latest && !latest.currentKm.equals(vehicle.currentKm)) {
-        await this.prisma.vehicle.update({
-          where: { id: existing.vehicleId },
-          data: { currentKm: latest.currentKm },
+      // Abastecimentos retroativos nunca realinham o KM do veículo - nem o
+      // próprio registro, nem ao recalcular o "maior KM" da frota para ele.
+      if (!isRetroactive) {
+        const latest = await this.prisma.fuel.findFirst({
+          where: { vehicleId: existing.vehicleId, isRetroactive: false },
+          orderBy: { currentKm: 'desc' },
         });
+
+        if (latest && !latest.currentKm.equals(vehicle.currentKm)) {
+          await this.prisma.vehicle.update({
+            where: { id: existing.vehicleId },
+            data: { currentKm: latest.currentKm },
+          });
+        }
       }
 
       return updated;

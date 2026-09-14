@@ -53,6 +53,7 @@ function buildFuel(overrides: Partial<Fuel> = {}): Fuel {
     currentKm: new Prisma.Decimal(1000),
     fuelType: FuelType.FLEX,
     date: new Date('2026-06-01T10:00:00Z'),
+    isRetroactive: false,
     consumptionKmL: null,
     costPerKm: null,
     createdBy: 'user-admin',
