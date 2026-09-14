@@ -10,6 +10,7 @@ export interface Fuel {
   currentKm: string;
   fuelType: FuelType;
   date: string;
+  isRetroactive: boolean;
   consumptionKmL: string | null;
   costPerKm: string | null;
   createdAt: string;
@@ -29,6 +30,7 @@ export interface CreateFuelPayload {
   currentKm: number;
   fuelType: FuelType;
   date?: string;
+  isRetroactive?: boolean;
 }
 
 export interface UpdateFuelPayload {
@@ -38,6 +40,7 @@ export interface UpdateFuelPayload {
   currentKm?: number;
   fuelType?: FuelType;
   date?: string;
+  isRetroactive?: boolean;
 }
 
 export interface FuelQuery extends PaginationQuery {

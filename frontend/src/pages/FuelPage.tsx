@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { ChartGradientDefs } from '@/components/charts/ChartGradientDefs';
 import { VehicleName } from '@/components/vehicles/VehicleName';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -89,6 +90,7 @@ const fuelSchema = z.object({
     .min(0, 'O KM atual não pode ser negativo.'),
   fuelType: z.string().min(1, 'Selecione o tipo de combustível.'),
   date: z.string().min(1, 'Selecione a data do abastecimento.'),
+  isRetroactive: z.boolean(),
 });
 
 type FuelFormValues = z.infer<typeof fuelSchema>;
@@ -101,6 +103,7 @@ const EMPTY_FUEL_VALUES: FuelFormValues = {
   currentKm: 0,
   fuelType: '',
   date: todayDateOnly(),
+  isRetroactive: false,
 };
 
 const editFuelSchema = z.object({
@@ -116,6 +119,7 @@ const editFuelSchema = z.object({
     .min(0, 'O KM atual não pode ser negativo.'),
   fuelType: z.string().min(1, 'Selecione o tipo de combustível.'),
   date: z.string().min(1, 'Selecione a data do abastecimento.'),
+  isRetroactive: z.boolean(),
 });
 
 type EditFuelFormValues = z.infer<typeof editFuelSchema>;
@@ -191,6 +195,7 @@ export function FuelPage() {
       currentKm: 0,
       fuelType: '',
       date: todayDateOnly(),
+      isRetroactive: false,
     },
   });
 
@@ -237,6 +242,7 @@ export function FuelPage() {
       currentKm: Number(fuel.currentKm),
       fuelType: fuel.fuelType,
       date: dateOnly(fuel.date),
+      isRetroactive: fuel.isRetroactive,
     });
   }
 
@@ -251,6 +257,7 @@ export function FuelPage() {
         currentKm: values.currentKm,
         fuelType: values.fuelType as FuelType,
         date: new Date(`${values.date}T00:00:00`).toISOString(),
+        isRetroactive: values.isRetroactive,
       },
     });
   }
@@ -272,6 +279,7 @@ export function FuelPage() {
       currentKm: values.currentKm,
       fuelType: values.fuelType as FuelType,
       date: new Date(`${values.date}T00:00:00`).toISOString(),
+      isRetroactive: values.isRetroactive,
     });
   }
 
@@ -536,6 +544,27 @@ export function FuelPage() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={fuelForm.control}
+                  name="isRetroactive"
+                  render={({ field }) => (
+                    <FormItem className="justify-end">
+                      <label className="flex items-center gap-2 text-sm font-medium">
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={(event) => field.onChange(event.target.checked)}
+                          className="size-4 rounded border-input"
+                        />
+                        Abastecimento retroativo
+                      </label>
+                      <p className="text-xs text-muted-foreground">
+                        Lançamento de um abastecimento passado. Não altera o KM atual do veículo.
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 <div className="sm:col-span-2 lg:col-span-3">
                   <Button type="submit" disabled={createMutation.isPending}>
                     {createMutation.isPending ? 'Registrando...' : 'Registrar abastecimento'}
@@ -639,7 +668,14 @@ export function FuelPage() {
                 )}
                 {history?.data.map((fuel) => (
                   <tr key={fuel.id} className="border-b last:border-0">
-                    <td className="px-2 py-2 text-muted-foreground">{formatDateTime(fuel.date)}</td>
+                    <td className="px-2 py-2 text-muted-foreground">
+                      {formatDateTime(fuel.date)}
+                      {fuel.isRetroactive && (
+                        <Badge variant="outline" className="ml-2">
+                          Retroativo
+                        </Badge>
+                      )}
+                    </td>
                     <td className="px-2 py-2 font-medium">
                       <VehicleName vehicle={fuel.vehicle} />
                     </td>
@@ -816,6 +852,27 @@ export function FuelPage() {
                     <FormControl>
                       <DatePicker value={field.value} onChange={field.onChange} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="isRetroactive"
+                render={({ field }) => (
+                  <FormItem>
+                    <label className="flex items-center gap-2 text-sm font-medium">
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(event) => field.onChange(event.target.checked)}
+                        className="size-4 rounded border-input"
+                      />
+                      Abastecimento retroativo
+                    </label>
+                    <p className="text-xs text-muted-foreground">
+                      Não altera o KM atual do veículo.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
